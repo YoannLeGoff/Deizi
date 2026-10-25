@@ -1,0 +1,14 @@
+Options -Indexes
+
+# Private application: no indexing by search engines, static files included.
+<IfModule mod_headers.c>
+    Header always set X-Robots-Tag "noindex, nofollow, noarchive"
+</IfModule>
+
+<FilesMatch "^(config\.json|README\.md|router\.php)$">
+    Require all denied
+</FilesMatch>
+
+<FilesMatch "^\.">
+    Require all denied
+</FilesMatch>
