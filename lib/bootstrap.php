@@ -745,6 +745,17 @@ function app_config(): array
 }
 
 const DEFAULT_SITE_TAGLINE = 'L’agenda Kerlenn Pondi';
+// Deizi is free software under the GNU AGPL v3: every page links to the licence and to the source
+// code, as the licence requires for a network service. "source_url" in config.json points to the
+// code of this installation (a modified version must publish its own).
+const DEIZI_SOURCE_URL = 'https://github.com/Yoann/Deizi';
+const DEIZI_LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
+
+function app_source_url(): string
+{
+    $url = app_config()['source_url'] ?? null;
+    return is_string($url) && preg_match('#^https?://\S+$#', trim($url)) === 1 ? trim($url) : DEIZI_SOURCE_URL;
+}
 // Configurable logos: key in the "site" settings => label used by the console.
 const SITE_LOGOS = ['logo' => 'Logo de l’en-tête', 'login_logo' => 'Logo de la page de connexion', 'app_icon' => 'Icône de l’application (téléphone)'];
 
@@ -1955,12 +1966,13 @@ function app_footer(): void
 {
     ?>
     </main>
-    <?php // Shown to logged-in users only, like the site banner (not on the login page). ?>
-    <?php if (app_current_user() !== null): ?>
     <footer class="site-footer">
-      <?= app_escape(app_site_title()) ?> — Dernière mise à jour le <a href="updates.php" title="Voir les nouveautés"><?= app_files_updated_at()->format('d/m/Y') ?></a>
+      <?php // Title and last update: logged-in users only, like the site banner (not on the login page). ?>
+      <?php if (app_current_user() !== null): ?>
+      <?= app_escape(app_site_title()) ?> — Dernière mise à jour le <a href="updates.php" title="Voir les nouveautés"><?= app_files_updated_at()->format('d/m/Y') ?></a> ·
+      <?php endif; ?>
+      Deizi, logiciel libre sous <a href="<?= app_escape(DEIZI_LICENSE_URL) ?>" target="_blank" rel="noopener license">licence AGPL</a> · <a href="<?= app_escape(app_source_url()) ?>" target="_blank" rel="noopener">code source</a>
     </footer>
-    <?php endif; ?>
   </body>
 </html>
 <?php

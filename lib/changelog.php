@@ -10,6 +10,7 @@ const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations d
 
 const CHANGELOG = [
     '2026-10-25' => [
+        ['Logiciel libre', 'Deizi est publié sous licence libre AGPL : le bas de chaque page donne les liens vers la licence et vers le code source.'],
         ['Présentation modifiable', 'Le texte de présentation en tête de la page « À propos » se modifie dans Configuration › Identité du site ; il est précédé en gras de la phrase d’accroche.'],
         ['Journal d’un membre', 'La fiche d’un compte a un onglet « Journal d’audit » (administrateurs) : connexions, réponses et changements de profil du membre, et ce qu’il a saisi.'],
         ['Managers : photos et identifiants', 'Les managers peuvent changer la photo et l’identifiant des artistes et managers de leur périmètre (lien « Modifier » du trombinoscope), ainsi que leur propre photo. Les changements de photo, d’identifiant, de prénom, de nom et de titre sont notés dans le journal d’audit, avec leur auteur.'],

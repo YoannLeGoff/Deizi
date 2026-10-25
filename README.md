@@ -9,7 +9,7 @@
 
 Une présentation par rôle (diaporama, PDF et script vidéo, avec des données fictives) se trouve dans [`OnBoarding/`](OnBoarding/).
 
-**Licence** : [GNU AGPL v3](LICENSE). Si vous mettez en ligne une version modifiée, vous devez en publier le code source à ses utilisateurs.
+**Licence** : [GNU AGPL v3](LICENSE). Si vous mettez en ligne une version modifiée, vous devez en publier le code source à ses utilisateurs. Le pied de chaque page, connexion et pages partagées comprises, porte les liens « licence AGPL » et « code source » : ce dernier pointe vers ce dépôt, ou vers l'adresse `source_url` de `config.json` (par exemple `"source_url": "https://github.com/votre-compte/Deizi"`) pour une version modifiée.
 
 Le titre du site est configurable dans `config.json`, puis dans **Configuration › Identité du site**. Les comptes et événements sont conservés sous forme de fichiers JSON privés ; aucune base de données ni Node.js ne sont nécessaires.
 
