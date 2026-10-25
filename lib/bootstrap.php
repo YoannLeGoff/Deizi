@@ -748,7 +748,7 @@ const DEFAULT_SITE_TAGLINE = 'L’agenda Kerlenn Pondi';
 // Deizi is free software under the GNU AGPL v3: every page links to the licence and to the source
 // code, as the licence requires for a network service. "source_url" in config.json points to the
 // code of this installation (a modified version must publish its own).
-const DEIZI_SOURCE_URL = 'https://github.com/Yoann/Deizi';
+const DEIZI_SOURCE_URL = 'https://github.com/YoannLeGoff/Deizi';
 const DEIZI_LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
 
 function app_source_url(): string
