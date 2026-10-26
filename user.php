@@ -390,7 +390,7 @@ endif; ?>
             <dd><?= app_user_title($account) !== '' ? app_escape(app_user_title($account)) : '<span class="muted-copy">Aucun</span>' ?><?php if ($actorIsAdmin && $canEdit): ?> <a class="page-switch" href="#account-title"><?= app_user_title($account) !== '' ? 'Modifier' : 'Ajouter un titre' ?></a><?php endif; ?></dd>
             <?php endif; ?>
             <dt>Rôle</dt>
-            <dd><?= app_escape(USER_ROLES[$accountRole] ?? $accountRole) ?></dd>
+            <dd><?= app_escape(app_roles()[$accountRole] ?? $accountRole) ?></dd>
             <dt>Statut</dt>
             <dd><?= ($account['active'] ?? false) === true ? 'Actif' : '<span class="account-inactive">Désactivé</span>' ?></dd>
             <dt>Membre de</dt>

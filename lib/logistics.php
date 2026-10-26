@@ -666,7 +666,7 @@ const LOGISTICS_WORKFLOW_EXITS = [
 // payment in one column per status of the date, then the statuses outside that path.
 function app_render_logistics_workflow(): void
 {
-    $badge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(EVENT_STATUSES[$status]) . '</span>';
+    $badge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(app_statuses()[$status]) . '</span>';
     $statuses = app_logistics_statuses();
     $step = static fn (string $key): string => '<span class="workflow-code">' . app_escape($statuses[$key][0]) . '</span> ' . app_escape($statuses[$key][1]);
     $statusesOf = static fn (string $eventStatus): array => array_keys(array_filter($statuses, static fn (array $definition): bool => $definition[2] === $eventStatus));

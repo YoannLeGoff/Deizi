@@ -30,10 +30,10 @@ if ($event !== null) {
 $visibleLeaves = $isManager ? $eventLeaves : array_values(array_intersect($eventLeaves, $userLeaves));
 if ($event === null || $date === null || !is_string($event['title'] ?? null) || $visibleLeaves === [] || !app_user_can_see_event($user, $event)) {
     http_response_code(404);
-    app_header('Date introuvable', $user);
+    app_header(__('Date introuvable'), $user);
     ?>
       <section class="management-section">
-        <p class="management-panel muted-copy">Cette date n’existe pas ou ne concerne pas vos sections. <a class="page-switch" href="index.php">Retour à l’agenda</a></p>
+        <p class="management-panel muted-copy"><?= app_escape(__('Cette date n’existe pas ou ne concerne pas vos sections.')) ?> <a class="page-switch" href="index.php"><?= app_escape(__('Retour à l’agenda')) ?></a></p>
       </section>
 <?php
     app_footer();
@@ -82,9 +82,7 @@ $validUrl = filter_var($url, FILTER_VALIDATE_URL) !== false && in_array(parse_ur
 $attendance = isset($event['attendance']) && is_array($event['attendance']) ? $event['attendance'] : [];
 $sectionLabels = app_section_labels();
 
-$weekdayNames = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-$monthNames = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
-$formatLongDate = static fn (DateTimeImmutable $value): string => $weekdayNames[(int) $value->format('N')] . ' ' . $value->format('j') . ' ' . $monthNames[(int) $value->format('n')] . ' ' . $value->format('Y');
+$formatLongDate = static fn (DateTimeImmutable $value): string => app_long_date($value, true, true, false);
 
 function eventResponse(array $attendance, string $userId): string
 {
@@ -129,30 +127,30 @@ app_header($event['title'], $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> DÉTAIL DE LA DATE</p>
-          <?php app_page_links([['Retour à l’agenda', 'index.php#event-' . rawurlencode($event['id'])], $isManager ? ['Tableau de présence', app_matrix_tab_url()] : null]); ?>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('DÉTAIL DE LA DATE')) ?></p>
+          <?php app_page_links([['Retour à l’agenda', 'index.php#event-' . rawurlencode($event['id'])], $isManager ? [__('Tableau de présence'), app_matrix_tab_url()] : null]); ?>
         </div>
         <div class="section-heading">
           <div>
             <h1><?= app_escape($event['title']) ?><span class="heading-dot">.</span><?= $changeNotice !== null && $changeNotice['type'] === 'changed' ? app_change_badge($changeNotice) : '' ?></h1>
             <?php if ($changeNotice !== null): ?>
-            <p class="change-notice"><?= $changeNotice['type'] === 'new' ? app_change_badge($changeNotice) . ' Nouvelle date depuis votre dernière visite.' : 'Modifié depuis votre dernière consultation : ' . app_escape(implode(', ', $changeNotice['fields'])) . '.' ?></p>
+            <p class="change-notice"><?= $changeNotice['type'] === 'new' ? app_change_badge($changeNotice) . ' ' . app_escape(__('Nouvelle date depuis votre dernière visite.')) : app_escape(__('Modifié depuis votre dernière consultation : {fields}.', ['fields' => implode(', ', array_map('__', $changeNotice['fields']))])) ?></p>
             <?php endif; ?>
           </div>
           <div class="page-actions">
             <?php if ($canEditEvent): ?>
-            <a class="secondary-button compact-button" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>">Modifier</a>
+            <a class="secondary-button compact-button" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>"><?= app_escape(__('Modifier')) ?></a>
             <?php endif; ?>
           </div>
         </div>
 
-        <nav class="detail-tabs" aria-label="Sections de la page">
-          <a class="detail-tab" href="<?= app_escape($tabUrl('details')) ?>"<?= $tab === 'details' ? ' aria-current="page"' : '' ?>>Détails</a>
+        <nav class="detail-tabs" aria-label="<?= app_escape(__('Sections de la page')) ?>">
+          <a class="detail-tab" href="<?= app_escape($tabUrl('details')) ?>"<?= $tab === 'details' ? ' aria-current="page"' : '' ?>><?= app_escape(__('Détails')) ?></a>
           <?php if ($matrixEvent !== null): ?>
-          <a class="detail-tab" href="<?= app_escape($tabUrl('presences')) ?>"<?= $tab === 'presences' ? ' aria-current="page"' : '' ?>>Présences</a>
+          <a class="detail-tab" href="<?= app_escape($tabUrl('presences')) ?>"<?= $tab === 'presences' ? ' aria-current="page"' : '' ?>><?= app_escape(__('Présences')) ?></a>
           <?php endif; ?>
           <?php if ($showRoadmapTab): ?>
-          <a class="detail-tab" href="<?= app_escape($tabUrl('feuille-de-route')) ?>"<?= $tab === 'feuille-de-route' ? ' aria-current="page"' : '' ?>>Feuille de route</a>
+          <a class="detail-tab" href="<?= app_escape($tabUrl('feuille-de-route')) ?>"<?= $tab === 'feuille-de-route' ? ' aria-current="page"' : '' ?>><?= app_escape(__('Feuille de route')) ?></a>
           <?php endif; ?>
           <?php foreach ($polls as $poll): ?>
           <?php
@@ -160,56 +158,56 @@ app_header($event['title'], $user);
               $tabLabel = app_truncate($poll['question'], 32) . (strlen($poll['question']) > strlen(app_truncate($poll['question'], 32)) ? '…' : '');
               $isPending = $isConcerned && !$poll['closed'] && app_poll_hidden_reason($event, $poll) === null && !isset($poll['responses'][$user['id']]);
           ?>
-          <a class="detail-tab poll-tab" href="<?= app_escape($tabUrl('sondage-' . $poll['id'])) ?>" title="Sondage : <?= app_escape($poll['question']) ?>"<?= $isCurrent ? ' aria-current="page"' : '' ?>>
+          <a class="detail-tab poll-tab" href="<?= app_escape($tabUrl('sondage-' . $poll['id'])) ?>" title="<?= app_escape(__('Sondage : {question}', ['question' => $poll['question']])) ?>"<?= $isCurrent ? ' aria-current="page"' : '' ?>>
             <?= app_escape($tabLabel) ?>
-            <?php if ($isManager): ?><span class="count-badge" title="Réponses reçues"><?= count($poll['responses']) ?></span><?php endif; ?>
-            <?php if (($hiddenReason = app_poll_hidden_reason($event, $poll)) !== null): ?><span class="poll-hidden-mark" title="Masqué aux membres : <?= app_escape($hiddenReason) ?>">Masqué</span><?php endif; ?>
-            <?php if ($isPending): ?><span class="poll-pending-dot" title="Sondage à remplir"><span class="sr-only">(à remplir)</span></span><?php endif; ?>
-            <?php if ($poll['closed']): ?><span class="poll-closed-badge">Clos</span><?php endif; ?>
+            <?php if ($isManager): ?><span class="count-badge" title="<?= app_escape(__('Réponses reçues')) ?>"><?= count($poll['responses']) ?></span><?php endif; ?>
+            <?php if (($hiddenReason = app_poll_hidden_reason($event, $poll)) !== null): ?><span class="poll-hidden-mark" title="<?= app_escape(__('Masqué aux membres : {reason}', ['reason' => $hiddenReason])) ?>"><?= app_escape(__('Masqué')) ?></span><?php endif; ?>
+            <?php if ($isPending): ?><span class="poll-pending-dot" title="<?= app_escape(__('Sondage à remplir')) ?>"><span class="sr-only"><?= app_escape(__('(à remplir)')) ?></span></span><?php endif; ?>
+            <?php if ($poll['closed']): ?><span class="poll-closed-badge"><?= app_escape(__('Clos')) ?></span><?php endif; ?>
           </a>
           <?php endforeach; ?>
           <?php if ($isManager): ?>
-          <a class="detail-tab poll-new-tab" href="<?= app_escape($tabUrl('nouveau-sondage')) ?>"<?= $tab === 'new-poll' ? ' aria-current="page"' : '' ?>>+ Sondage</a>
+          <a class="detail-tab poll-new-tab" href="<?= app_escape($tabUrl('nouveau-sondage')) ?>"<?= $tab === 'new-poll' ? ' aria-current="page"' : '' ?>><?= app_escape(__('+ Sondage')) ?></a>
           <?php endif; ?>
           <?php if ($canSeeHistory): ?>
-          <a class="detail-tab" href="<?= app_escape($tabUrl('historique')) ?>"<?= $tab === 'historique' ? ' aria-current="page"' : '' ?>>Journal d’audit <span class="count-badge"><?= count($logEntries) ?></span></a>
+          <a class="detail-tab" href="<?= app_escape($tabUrl('historique')) ?>"<?= $tab === 'historique' ? ' aria-current="page"' : '' ?>><?= app_escape(__('Journal d’audit')) ?> <span class="count-badge"><?= count($logEntries) ?></span></a>
           <?php endif; ?>
         </nav>
 
         <?php if ($tab === 'feuille-de-route'): ?>
-        <section class="management-panel detail-panel has-tabs roadmap-panel" aria-label="Feuille de route">
+        <section class="management-panel detail-panel has-tabs roadmap-panel" aria-label="<?= app_escape(__('Feuille de route')) ?>">
           <div class="roadmap-actions">
             <?php if (!app_roadmap_is_empty($roadmap)): ?>
-            <button class="primary-button compact-button" type="button" data-print>Imprimer / enregistrer en PDF</button>
+            <button class="primary-button compact-button" type="button" data-print><?= app_escape(__('Imprimer / enregistrer en PDF')) ?></button>
             <?php endif; ?>
             <?php if ($canEditEvent): ?>
-            <a class="secondary-button compact-button" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>#roadmap">Modifier la feuille de route</a>
+            <a class="secondary-button compact-button" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>#roadmap"><?= app_escape(__('Modifier la feuille de route')) ?></a>
             <?php endif; ?>
           </div>
           <?php $shareToken = app_roadmap_share_token($event); ?>
           <?php if ($shareToken !== null || $isManager): ?>
           <div class="roadmap-share">
-            <span class="roadmap-form-label">Lien public</span>
+            <span class="roadmap-form-label"><?= app_escape(__('Lien public')) ?></span>
             <?php if ($shareToken !== null): ?>
             <div class="roadmap-share-link">
-              <label class="sr-only" for="roadmap-share-url">Lien public de la feuille de route</label>
+              <label class="sr-only" for="roadmap-share-url"><?= app_escape(__('Lien public de la feuille de route')) ?></label>
               <input id="roadmap-share-url" type="url" readonly value="<?= app_escape(app_roadmap_share_url($shareToken)) ?>">
-              <button class="secondary-button compact-button" type="button" data-copy="roadmap-share-url">Copier le lien</button>
+              <button class="secondary-button compact-button" type="button" data-copy="roadmap-share-url"><?= app_escape(__('Copier le lien')) ?></button>
             </div>
-            <p class="field-help">Toute personne qui a ce lien peut consulter et imprimer la feuille de route sans compte, contacts compris.</p>
+            <p class="field-help"><?= app_escape(__('Toute personne qui a ce lien peut consulter et imprimer la feuille de route sans compte, contacts compris.')) ?></p>
             <?php if ($isManager): ?>
             <div class="roadmap-share-tools">
-              <form method="post" action="roadmap-share-action.php" onsubmit="return confirm('Créer un nouveau lien ? L’ancien cessera de fonctionner.');">
+              <form method="post" action="roadmap-share-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('Créer un nouveau lien ? L’ancien cessera de fonctionner.'), JSON_UNESCAPED_UNICODE)) ?>);">
                 <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                 <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
                 <input type="hidden" name="action" value="renew">
-                <button class="text-button" type="submit">Renouveler le lien</button>
+                <button class="text-button" type="submit"><?= app_escape(__('Renouveler le lien')) ?></button>
               </form>
-              <form method="post" action="roadmap-share-action.php" onsubmit="return confirm('Désactiver le lien public ? Il cessera de fonctionner.');">
+              <form method="post" action="roadmap-share-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('Désactiver le lien public ? Il cessera de fonctionner.'), JSON_UNESCAPED_UNICODE)) ?>);">
                 <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                 <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
                 <input type="hidden" name="action" value="revoke">
-                <button class="text-button" type="submit">Désactiver le lien</button>
+                <button class="text-button" type="submit"><?= app_escape(__('Désactiver le lien')) ?></button>
               </form>
             </div>
             <?php endif; ?>
@@ -218,28 +216,28 @@ app_header($event['title'], $user);
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
               <input type="hidden" name="action" value="create">
-              <span class="field-help">Aucun lien public pour l’instant.</span>
-              <button class="secondary-button compact-button" type="submit">Créer un lien public</button>
+              <span class="field-help"><?= app_escape(__('Aucun lien public pour l’instant.')) ?></span>
+              <button class="secondary-button compact-button" type="submit"><?= app_escape(__('Créer un lien public')) ?></button>
             </form>
             <?php endif; ?>
           </div>
           <?php endif; ?>
           <?php if (app_roadmap_is_empty($roadmap)): ?>
-          <p class="muted-copy">La feuille de route de cette date n’a pas encore été renseignée.</p>
+          <p class="muted-copy"><?= app_escape(__('La feuille de route de cette date n’a pas encore été renseignée.')) ?></p>
           <?php else: ?>
           <?php app_render_roadmap($event, $roadmap, app_settings()); ?>
           <?php endif; ?>
         </section>
         <?php elseif ($tab === 'poll'): ?>
         <?php $myAnswer = $activePoll['responses'][$user['id']] ?? null; ?>
-        <section class="management-panel detail-panel has-tabs poll-panel" aria-label="Sondage">
+        <section class="management-panel detail-panel has-tabs poll-panel" aria-label="<?= app_escape(__('Sondage')) ?>">
           <div class="detail-panel-heading">
             <h2 class="detail-heading"><?= app_escape($activePoll['question']) ?></h2>
-            <span class="status-badge <?= $activePoll['closed'] ? 'status-badge-cancelled' : 'status-badge-pending' ?>"><?= $activePoll['closed'] ? 'Clos' : 'Ouvert' ?></span>
+            <span class="status-badge <?= $activePoll['closed'] ? 'status-badge-cancelled' : 'status-badge-pending' ?>"><?= $activePoll['closed'] ? __('Clos') : __('Ouvert') ?></span>
           </div>
           <?php $activeHiddenReason = app_poll_hidden_reason($event, $activePoll); ?>
           <?php if ($activeHiddenReason !== null): ?>
-          <p class="poll-hidden-notice"><strong>Sondage masqué aux membres</strong> (<?= app_escape($activeHiddenReason) ?>) : seuls les managers, organisateurs et administrateurs le voient ; les membres ne peuvent pas y répondre, mais la saisie pour un membre reste possible.<?= $activePoll['hidden'] && $activeHiddenReason === 'masqué temporairement' ? ' Utilisez « Réafficher le sondage » pour le rendre de nouveau visible.' : '' ?></p>
+          <p class="poll-hidden-notice"><strong><?= app_escape(__('Sondage masqué aux membres')) ?></strong> <?= app_escape(__('({reason}) : seuls les managers, organisateurs et administrateurs le voient ; les membres ne peuvent pas y répondre, mais la saisie pour un membre reste possible.', ['reason' => $activeHiddenReason])) ?><?= $activePoll['hidden'] && $activeHiddenReason === __('masqué temporairement') ? ' ' . __('Utilisez « Réafficher le sondage » pour le rendre de nouveau visible.') : '' ?></p>
           <?php endif; ?>
           <?php if ($activePoll['description'] !== ''): ?>
           <p class="poll-description"><?= nl2br(app_linkify($activePoll['description']), false) ?></p>
@@ -247,33 +245,33 @@ app_header($event['title'], $user);
 
           <?php if ($isManager): ?>
           <details class="poll-manage">
-            <summary>Modifier le sondage</summary>
+            <summary><?= app_escape(__('Modifier le sondage')) ?></summary>
             <form class="form-stack" method="post" action="poll-action.php">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
               <input type="hidden" name="poll_id" value="<?= app_escape($activePoll['id']) ?>">
               <input type="hidden" name="action" value="update">
-              <label for="poll-question">Question</label>
+              <label for="poll-question"><?= app_escape(__('Question')) ?></label>
               <input id="poll-question" name="question" maxlength="<?= POLL_QUESTION_MAX_LENGTH ?>" required value="<?= app_escape($activePoll['question']) ?>">
-              <label for="poll-description">Commentaire (facultatif)</label>
-              <textarea id="poll-description" name="description" rows="2" maxlength="<?= POLL_DESCRIPTION_MAX_LENGTH ?>" placeholder="Précisions sur la question ou les réponses"><?= app_escape($activePoll['description']) ?></textarea>
-              <label for="poll-options">Réponses possibles</label>
-              <p class="field-help">Une réponse par ligne (2 à <?= POLL_MAX_OPTIONS ?>). Les réponses déjà données à une option conservée sont gardées ; celles d’une option retirée sont effacées.</p>
+              <label for="poll-description"><?= app_escape(__('Commentaire (facultatif)')) ?></label>
+              <textarea id="poll-description" name="description" rows="2" maxlength="<?= POLL_DESCRIPTION_MAX_LENGTH ?>" placeholder="<?= app_escape(__('Précisions sur la question ou les réponses')) ?>"><?= app_escape($activePoll['description']) ?></textarea>
+              <label for="poll-options"><?= app_escape(__('Réponses possibles')) ?></label>
+              <p class="field-help"><?= app_escape(__('Une réponse par ligne (2 à {max}). Les réponses déjà données à une option conservée sont gardées ; celles d’une option retirée sont effacées.', ['max' => POLL_MAX_OPTIONS])) ?></p>
               <textarea id="poll-options" name="options" rows="<?= max(3, count($activePoll['options']) + 1) ?>" required><?= app_escape(implode("\n", $activePoll['options'])) ?></textarea>
               <fieldset class="section-options poll-user-info">
-                <legend>Informations des membres à afficher dans les résultats</legend>
+                <legend><?= app_escape(__('Informations des membres à afficher dans les résultats')) ?></legend>
                 <div class="checkbox-row">
-                  <?php foreach (POLL_USER_INFO as $flag => $label): ?>
+                  <?php foreach (app_translated(POLL_USER_INFO) as $flag => $label): ?>
                   <label><input type="checkbox" name="user_info[]" value="<?= $flag ?>"<?= in_array($flag, $activePoll['user_info'], true) ? ' checked' : '' ?>> <?= app_escape($label) ?></label>
                   <?php endforeach; ?>
                 </div>
               </fieldset>
               <?php // Closing and deleting are separate forms; their buttons sit on the same line as "Enregistrer". ?>
               <div class="form-actions poll-manage-actions">
-                <button class="primary-button compact-button" type="submit">Enregistrer</button>
-                <button class="secondary-button compact-button" type="submit" form="poll-toggle-form"><?= $activePoll['closed'] ? 'Rouvrir le sondage' : 'Clore le sondage' ?></button>
-                <button class="secondary-button compact-button" type="submit" form="poll-hide-form"><?= $activePoll['hidden'] ? 'Réafficher le sondage' : 'Masquer le sondage' ?></button>
-                <button class="text-button poll-delete-button" type="submit" form="poll-delete-form">Supprimer le sondage</button>
+                <button class="primary-button compact-button" type="submit"><?= app_escape(__('Enregistrer')) ?></button>
+                <button class="secondary-button compact-button" type="submit" form="poll-toggle-form"><?= $activePoll['closed'] ? __('Rouvrir le sondage') : __('Clore le sondage') ?></button>
+                <button class="secondary-button compact-button" type="submit" form="poll-hide-form"><?= $activePoll['hidden'] ? __('Réafficher le sondage') : __('Masquer le sondage') ?></button>
+                <button class="text-button poll-delete-button" type="submit" form="poll-delete-form"><?= app_escape(__('Supprimer le sondage')) ?></button>
               </div>
             </form>
             <form id="poll-toggle-form" method="post" action="poll-action.php">
@@ -288,7 +286,7 @@ app_header($event['title'], $user);
               <input type="hidden" name="poll_id" value="<?= app_escape($activePoll['id']) ?>">
               <input type="hidden" name="action" value="hide">
             </form>
-            <form id="poll-delete-form" method="post" action="poll-action.php" onsubmit="return confirm('Supprimer ce sondage et toutes ses réponses ?');">
+            <form id="poll-delete-form" method="post" action="poll-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('Supprimer ce sondage et toutes ses réponses ?'), JSON_UNESCAPED_UNICODE)) ?>);">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
               <input type="hidden" name="poll_id" value="<?= app_escape($activePoll['id']) ?>">
@@ -303,15 +301,15 @@ app_header($event['title'], $user);
             <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
             <input type="hidden" name="poll_id" value="<?= app_escape($activePoll['id']) ?>">
             <input type="hidden" name="action" value="respond">
-            <span class="attendance-label">Ma réponse</span>
-            <div class="attendance-options" role="group" aria-label="Votre réponse : <?= app_escape($activePoll['question']) ?>">
+            <span class="attendance-label"><?= app_escape(__('Ma réponse')) ?></span>
+            <div class="attendance-options" role="group" aria-label="<?= app_escape(__('Votre réponse : {question}', ['question' => $activePoll['question']])) ?>">
               <?php foreach ($activePoll['options'] as $optionId => $label): ?>
               <button class="attendance-option poll-option<?= $myAnswer === $optionId ? ' is-selected' : '' ?>" type="submit" name="option" value="<?= app_escape($optionId) ?>" aria-pressed="<?= $myAnswer === $optionId ? 'true' : 'false' ?>"><?= app_escape($label) ?></button>
               <?php endforeach; ?>
             </div>
           </form>
           <?php elseif ($isConcerned): ?>
-          <p class="muted-copy">Ce sondage est clos. <?= $myAnswer !== null ? 'Votre réponse : <strong>' . app_escape($activePoll['options'][$myAnswer]) . '</strong>.' : 'Vous n’y avez pas répondu.' ?></p>
+          <p class="muted-copy"><?= app_escape(__('Ce sondage est clos.')) ?> <?= $myAnswer !== null ? __('Votre réponse : {answer}.', ['answer' => '<strong>' . app_escape($activePoll['options'][$myAnswer]) . '</strong>']) : app_escape(__('Vous n’y avez pas répondu.')) ?></p>
           <?php endif; ?>
 
           <?php if ($isManager): ?>
@@ -329,7 +327,7 @@ app_header($event['title'], $user);
               }
               // Account information chosen for this poll: badges on names and counts per answer.
               $userInfo = $activePoll['user_info'];
-              $flagBadges = ['vegetarian' => 'Végé', 'minor' => 'Mineur'];
+              $flagBadges = ['vegetarian' => __('Végé'), 'minor' => __('Mineur')];
               $enteredBy = $activePoll['entered_by'];
               $renderMembers = static function (array $members) use ($userInfo, $flagBadges, $enteredBy): string {
                   if ($members === []) {
@@ -343,7 +341,7 @@ app_header($event['title'], $user);
                           }
                       }
                       if (isset($enteredBy[$member['id']])) {
-                          $html .= ' <span class="poll-entered-by">(saisi par ' . app_escape($enteredBy[$member['id']]) . ')</span>';
+                          $html .= ' <span class="poll-entered-by">' . app_escape(__('(saisi par {name})', ['name' => $enteredBy[$member['id']]])) . '</span>';
                       }
                       return $html;
                   }, $members));
@@ -360,17 +358,17 @@ app_header($event['title'], $user);
           ?>
           <div class="detail-responses">
             <div class="detail-panel-heading">
-              <h2 class="detail-heading">Résultats <span class="poll-result-total"><?= count($answeredIds) ?> réponse<?= count($answeredIds) > 1 ? 's' : '' ?> · <?= count($concernedMembers) ?> membre<?= count($concernedMembers) > 1 ? 's' : '' ?> concerné<?= count($concernedMembers) > 1 ? 's' : '' ?></span></h2>
+              <h2 class="detail-heading"><?= app_escape(__('Résultats')) ?> <span class="poll-result-total"><?= app_escape(__n('{n} réponse', '{n} réponses', count($answeredIds))) ?> · <?= app_escape(__n('{n} membre concerné', '{n} membres concernés', count($concernedMembers))) ?></span></h2>
               <div class="poll-export-links">
-                <a class="section-note page-switch" href="poll-export.php?<?= app_escape(http_build_query(['event' => $event['id'], 'poll' => $activePoll['id']])) ?>">Exporter en CSV <span aria-hidden="true">↓</span></a>
+                <a class="section-note page-switch" href="poll-export.php?<?= app_escape(http_build_query(['event' => $event['id'], 'poll' => $activePoll['id']])) ?>"><?= app_escape(__('Exporter en CSV')) ?> <span aria-hidden="true">↓</span></a>
                 <?php if (count($polls) > 1): ?>
-                <a class="section-note page-switch" href="poll-export.php?<?= app_escape(http_build_query(['event' => $event['id']])) ?>">Tous les sondages (CSV) <span aria-hidden="true">↓</span></a>
+                <a class="section-note page-switch" href="poll-export.php?<?= app_escape(http_build_query(['event' => $event['id']])) ?>"><?= app_escape(__('Tous les sondages (CSV)')) ?> <span aria-hidden="true">↓</span></a>
                 <?php endif; ?>
               </div>
             </div>
             <div class="log-scroll">
               <table class="log-table poll-results">
-                <thead><tr><th scope="col">Réponse</th><th scope="col">Nombre</th><th scope="col">Membres</th></tr></thead>
+                <thead><tr><th scope="col"><?= app_escape(__('Réponse')) ?></th><th scope="col"><?= app_escape(__('Nombre')) ?></th><th scope="col"><?= app_escape(__('Membres')) ?></th></tr></thead>
                 <tbody>
                   <?php foreach ($activePoll['options'] as $optionId => $label): ?>
                   <tr>
@@ -380,7 +378,7 @@ app_header($event['title'], $user);
                   </tr>
                   <?php endforeach; ?>
                   <tr class="poll-results-pending">
-                    <th scope="row">Sans réponse</th>
+                    <th scope="row"><?= app_escape(__('Sans réponse')) ?></th>
                     <td><span class="log-response"><?= count($withoutAnswer) ?></span><?= $infoCounts($withoutAnswer) ?></td>
                     <td><?= $renderMembers($withoutAnswer) ?></td>
                   </tr>
@@ -395,26 +393,26 @@ app_header($event['title'], $user);
             <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
             <input type="hidden" name="poll_id" value="<?= app_escape($activePoll['id']) ?>">
             <input type="hidden" name="action" value="respond_for">
-            <span class="roadmap-form-label">Saisir une réponse pour un membre</span>
+            <span class="roadmap-form-label"><?= app_escape(__('Saisir une réponse pour un membre')) ?></span>
             <div class="poll-proxy-fields">
-              <label class="sr-only" for="poll-proxy-member">Membre</label>
+              <label class="sr-only" for="poll-proxy-member"><?= app_escape(__('Membre')) ?></label>
               <select id="poll-proxy-member" name="member_id" required>
-                <option value="">Choisir un membre…</option>
+                <option value=""><?= app_escape(__('Choisir un membre…')) ?></option>
                 <?php foreach ($proxyMembers as $member): ?>
                 <?php $current = $activePoll['responses'][$member['id']] ?? null; ?>
-                <option value="<?= app_escape($member['id']) ?>"><?= app_escape($member['username']) ?> — <?= $current !== null ? app_escape($activePoll['options'][$current]) : 'sans réponse' ?></option>
+                <option value="<?= app_escape($member['id']) ?>"><?= app_escape($member['username']) ?> — <?= $current !== null ? app_escape($activePoll['options'][$current]) : __('sans réponse') ?></option>
                 <?php endforeach; ?>
               </select>
-              <label class="sr-only" for="poll-proxy-option">Réponse</label>
+              <label class="sr-only" for="poll-proxy-option"><?= app_escape(__('Réponse')) ?></label>
               <select id="poll-proxy-option" name="option">
                 <?php foreach ($activePoll['options'] as $optionId => $label): ?>
                 <option value="<?= app_escape($optionId) ?>"><?= app_escape($label) ?></option>
                 <?php endforeach; ?>
-                <option value="">(Effacer la réponse)</option>
+                <option value=""><?= app_escape(__('(Effacer la réponse)')) ?></option>
               </select>
-              <button class="secondary-button compact-button" type="submit">Enregistrer</button>
+              <button class="secondary-button compact-button" type="submit"><?= app_escape(__('Enregistrer')) ?></button>
             </div>
-            <p class="field-help"><?= in_array($user['role'], ALL_SECTIONS_ROLES, true) ? 'Tous les membres concernés par la date.' : 'Membres concernés par la date dans votre périmètre de management.' ?> La réponse apparaît comme « saisie par <?= app_escape($user['username']) ?> » jusqu’à ce que le membre réponde lui-même<?= $activePoll['closed'] ? ' ; la saisie reste possible sur un sondage clos' : '' ?>.</p>
+            <p class="field-help"><?= in_array($user['role'], ALL_SECTIONS_ROLES, true) ? __('Tous les membres concernés par la date.') : __('Membres concernés par la date dans votre périmètre de management.') ?> <?= app_escape($activePoll['closed'] ? __('La réponse apparaît comme « saisie par {name} » jusqu’à ce que le membre réponde lui-même ; la saisie reste possible sur un sondage clos.', ['name' => $user['username']]) : __('La réponse apparaît comme « saisie par {name} » jusqu’à ce que le membre réponde lui-même.', ['name' => $user['username']])) ?></p>
           </form>
           <?php endif; ?>
 
@@ -429,32 +427,32 @@ app_header($event['title'], $user);
           ?>
           <div class="detail-responses poll-detail">
             <div class="detail-panel-heading poll-detail-heading">
-              <h2 class="detail-heading">Tableau détaillé</h2>
+              <h2 class="detail-heading"><?= app_escape(__('Tableau détaillé')) ?></h2>
               <?php if ($respondents !== []): ?>
-              <button class="secondary-button compact-button" type="button" data-print-poll-detail>Imprimer</button>
+              <button class="secondary-button compact-button" type="button" data-print-poll-detail><?= app_escape(__('Imprimer')) ?></button>
               <?php endif; ?>
             </div>
             <?php // Printed alone (portrait): the date and the question head the table. ?>
             <p class="poll-detail-print-title"><strong><?= app_escape($event['title']) ?></strong><?= $date !== null ? ' — ' . app_escape(ucfirst($formatLongDate($date))) : '' ?><br><?= app_escape($activePoll['question']) ?></p>
             <?php if ($respondents === []): ?>
-            <p class="muted-copy">Personne n’a encore répondu à ce sondage.</p>
+            <p class="muted-copy"><?= app_escape(__('Personne n’a encore répondu à ce sondage.')) ?></p>
             <?php else: ?>
             <?php // Filter on the login, first name or last name (menu.js; ignores case and accents). ?>
             <div class="poll-detail-filter" data-poll-filter hidden>
-              <label for="poll-detail-search">Filtrer</label>
-              <input id="poll-detail-search" type="search" placeholder="Identifiant, prénom ou nom" autocomplete="off" aria-describedby="poll-detail-count">
+              <label for="poll-detail-search"><?= app_escape(__('Filtrer')) ?></label>
+              <input id="poll-detail-search" type="search" placeholder="<?= app_escape(__('Identifiant, prénom ou nom')) ?>" autocomplete="off" aria-describedby="poll-detail-count">
               <span class="field-help" id="poll-detail-count" aria-live="polite" data-poll-filter-count></span>
             </div>
             <div class="log-scroll">
               <table class="log-table poll-detail-table" data-poll-filter-table>
                 <thead>
                   <tr>
-                    <th scope="col">Identifiant</th>
-                    <th scope="col">Prénom</th>
-                    <th scope="col">Nom</th>
+                    <th scope="col"><?= app_escape(__('Identifiant')) ?></th>
+                    <th scope="col"><?= app_escape(__('Prénom')) ?></th>
+                    <th scope="col"><?= app_escape(__('Nom')) ?></th>
                     <?php // Account information checked in "Informations des membres à afficher dans les résultats", then the answers. ?>
                     <?php foreach ($userInfo as $flag): ?>
-                    <th scope="col" class="poll-detail-option poll-detail-info"><?= app_escape(POLL_USER_INFO[$flag]) ?></th>
+                    <th scope="col" class="poll-detail-option poll-detail-info"><?= app_escape(__(POLL_USER_INFO[$flag])) ?></th>
                     <?php endforeach; ?>
                     <?php foreach ($activePoll['options'] as $label): ?>
                     <th scope="col" class="poll-detail-option"><?= app_escape($label) ?></th>
@@ -465,7 +463,7 @@ app_header($event['title'], $user);
                   <?php foreach ($respondents as $member): ?>
                   <?php $answer = $activePoll['responses'][$member['id']]; ?>
                   <tr data-search="<?= app_escape(implode(' ', [$member['username'], (string) ($member['first_name'] ?? ''), (string) ($member['last_name'] ?? '')])) ?>">
-                    <th scope="row"><?= app_escape($member['username']) ?><?php if (isset($enteredBy[$member['id']])): ?> <span class="poll-entered-by">(saisi par <?= app_escape($enteredBy[$member['id']]) ?>)</span><?php endif; ?></th>
+                    <th scope="row"><?= app_escape($member['username']) ?><?php if (isset($enteredBy[$member['id']])): ?> <span class="poll-entered-by"><?= app_escape(__('(saisi par {name})', ['name' => $enteredBy[$member['id']]])) ?></span><?php endif; ?></th>
                     <td><?= app_escape((string) ($member['first_name'] ?? '')) ?></td>
                     <td><?= app_escape((string) ($member['last_name'] ?? '')) ?></td>
                     <?php foreach ($userInfo as $flag): ?>
@@ -477,12 +475,12 @@ app_header($event['title'], $user);
                   </tr>
                   <?php endforeach; ?>
                   <tr data-poll-filter-empty hidden>
-                    <td colspan="<?= 3 + count($userInfo) + count($activePoll['options']) ?>" class="muted-copy">Aucun membre ne correspond à ce filtre.</td>
+                    <td colspan="<?= 3 + count($userInfo) + count($activePoll['options']) ?>" class="muted-copy"><?= app_escape(__('Aucun membre ne correspond à ce filtre.')) ?></td>
                   </tr>
                 </tbody>
                 <tfoot>
                   <tr>
-                    <th scope="row" colspan="3">Total (<?= count($respondents) ?> réponse<?= count($respondents) > 1 ? 's' : '' ?> sur <?= count($concernedMembers) ?> membres concernés)</th>
+                    <th scope="row" colspan="3"><?= app_escape(__n('Total ({n} réponse sur {total} membres concernés)', 'Total ({n} réponses sur {total} membres concernés)', count($respondents), ['total' => count($concernedMembers)])) ?></th>
                     <?php foreach ($userInfo as $flag): ?>
                     <td class="poll-detail-option"><?= count(array_filter($respondents, static fn (array $member): bool => ($member[$flag] ?? false) === true)) ?></td>
                     <?php endforeach; ?>
@@ -500,44 +498,44 @@ app_header($event['title'], $user);
         </section>
         <?php elseif ($tab === 'new-poll'): ?>
         <section class="management-panel detail-panel has-tabs" aria-labelledby="new-poll-title">
-          <h2 class="detail-heading" id="new-poll-title">Nouveau sondage</h2>
-          <p class="muted-copy">Les membres concernés par la date y répondent comme à leur présence, depuis l’onglet du sondage ; l’agenda leur signale les sondages à remplir.</p>
+          <h2 class="detail-heading" id="new-poll-title"><?= app_escape(__('Nouveau sondage')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('Les membres concernés par la date y répondent comme à leur présence, depuis l’onglet du sondage ; l’agenda leur signale les sondages à remplir.')) ?></p>
           <form class="form-stack" method="post" action="poll-action.php">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
             <input type="hidden" name="poll_id" value="">
             <input type="hidden" name="action" value="create">
-            <label for="new-poll-question">Question</label>
-            <input id="new-poll-question" name="question" maxlength="<?= POLL_QUESTION_MAX_LENGTH ?>" required placeholder="Prendrez-vous le bus ?">
-            <label for="new-poll-description">Commentaire (facultatif)</label>
-            <p class="field-help">Affiché sous la question pour expliciter la question ou les réponses.</p>
-            <textarea id="new-poll-description" name="description" rows="2" maxlength="<?= POLL_DESCRIPTION_MAX_LENGTH ?>" placeholder="Départ du bus à 18h devant le local, retour vers 0h30. Répondez avant le 1er juillet."></textarea>
-            <label for="new-poll-options">Réponses possibles</label>
-            <p class="field-help">Une réponse par ligne (2 à <?= POLL_MAX_OPTIONS ?>). Exemple pour le bus : « Aller et retour », « Aller seulement », « Retour seulement », « Pas de bus ».</p>
-            <textarea id="new-poll-options" name="options" rows="5" required>Aller et retour
+            <label for="new-poll-question"><?= app_escape(__('Question')) ?></label>
+            <input id="new-poll-question" name="question" maxlength="<?= POLL_QUESTION_MAX_LENGTH ?>" required placeholder="<?= app_escape(__('Prendrez-vous le bus ?')) ?>">
+            <label for="new-poll-description"><?= app_escape(__('Commentaire (facultatif)')) ?></label>
+            <p class="field-help"><?= app_escape(__('Affiché sous la question pour expliciter la question ou les réponses.')) ?></p>
+            <textarea id="new-poll-description" name="description" rows="2" maxlength="<?= POLL_DESCRIPTION_MAX_LENGTH ?>" placeholder="<?= app_escape(__('Départ du bus à 18h devant le local, retour vers 0h30. Répondez avant le 1er juillet.')) ?>"></textarea>
+            <label for="new-poll-options"><?= app_escape(__('Réponses possibles')) ?></label>
+            <p class="field-help"><?= app_escape(__('Une réponse par ligne (2 à {max}). Exemple pour le bus : « Aller et retour », « Aller seulement », « Retour seulement », « Pas de bus ».', ['max' => POLL_MAX_OPTIONS])) ?></p>
+            <textarea id="new-poll-options" name="options" rows="5" required><?= app_escape(__('Aller et retour
 Aller seulement
 Retour seulement
-Pas de bus</textarea>
+Pas de bus')) ?></textarea>
             <fieldset class="section-options poll-user-info">
-              <legend>Informations des membres à afficher dans les résultats</legend>
-              <p class="field-help">Ajoute ces informations aux noms et aux décomptes des résultats, ainsi qu’à l’export CSV, par exemple pour prévoir les repas ou l’encadrement des mineurs.</p>
+              <legend><?= app_escape(__('Informations des membres à afficher dans les résultats')) ?></legend>
+              <p class="field-help"><?= app_escape(__('Ajoute ces informations aux noms et aux décomptes des résultats, ainsi qu’à l’export CSV, par exemple pour prévoir les repas ou l’encadrement des mineurs.')) ?></p>
               <div class="checkbox-row">
-                <?php foreach (POLL_USER_INFO as $flag => $label): ?>
+                <?php foreach (app_translated(POLL_USER_INFO) as $flag => $label): ?>
                 <label><input type="checkbox" name="user_info[]" value="<?= $flag ?>"> <?= app_escape($label) ?></label>
                 <?php endforeach; ?>
               </div>
             </fieldset>
-            <div class="form-actions"><button class="primary-button" type="submit">Créer le sondage</button></div>
+            <div class="form-actions"><button class="primary-button" type="submit"><?= app_escape(__('Créer le sondage')) ?></button></div>
           </form>
         </section>
         <?php elseif ($tab === 'presences'): ?>
-        <section class="management-panel detail-panel has-tabs" aria-label="Présences">
+        <section class="management-panel detail-panel has-tabs" aria-label="<?= app_escape(__('Présences')) ?>">
           <div class="detail-panel-heading">
-            <h2 class="detail-heading">Présences</h2>
-            <a class="section-note page-switch" href="<?= app_escape(app_matrix_tab_url()) ?>">Toutes les dates <span aria-hidden="true">↗</span></a>
+            <h2 class="detail-heading"><?= app_escape(__('Présences')) ?></h2>
+            <a class="section-note page-switch" href="<?= app_escape(app_matrix_tab_url()) ?>"><?= app_escape(__('Toutes les dates')) ?> <span aria-hidden="true">↗</span></a>
           </div>
           <?php if ($user['role'] === 'manager'): ?>
-          <p class="matrix-scope">Votre périmètre : <strong><?= app_escape(app_describe_sections(app_user_managed_sections($user))) ?></strong></p>
+          <p class="matrix-scope"><?= app_escape(__('Votre périmètre :')) ?> <strong><?= app_escape(app_describe_sections(app_user_managed_sections($user))) ?></strong></p>
           <?php endif; ?>
           <div class="matrix-toolbar">
             <?php app_matrix_legend($canSeeHistory); ?>
@@ -545,38 +543,38 @@ Pas de bus</textarea>
           <?php app_matrix_render($user, [$matrixEvent], app_matrix_members($user), 'attendance-matrix.php', ['return_event' => $event['id']], true); ?>
         </section>
         <?php elseif ($tab === 'details'): ?>
-        <section class="management-panel detail-panel has-tabs" aria-label="Détails de la date">
+        <section class="management-panel detail-panel has-tabs" aria-label="<?= app_escape(__('Détails de la date')) ?>">
           <?php $comment = app_event_comment($event); ?>
           <?php $showAdminNote = app_can_see_admin_note($user); ?>
           <div class="event-detail-layout<?= $comment !== '' || $showAdminNote ? ' has-comment' : '' ?>">
           <dl class="event-detail-list">
-            <dt>Date</dt>
-            <dd><?= app_escape(ucfirst($formatLongDate($date))) ?><?= $endDate !== null ? ' — jusqu’au ' . app_escape($formatLongDate($endDate)) : '' ?></dd>
-            <dt>Horaire</dt>
-            <dd><?php if ($allDay): ?>Journée entière<?php elseif ($timeRange !== ''): ?><?= app_escape($timeRange) ?><?php else: ?><span class="muted-copy">Non précisé</span><?php endif; ?></dd>
-            <dt>Statut</dt>
-            <dd><span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(EVENT_STATUSES[$status]) ?></span></dd>
+            <dt><?= app_escape(__('Date')) ?></dt>
+            <dd><?= app_escape(ucfirst($formatLongDate($date))) ?><?= $endDate !== null ? ' — ' . app_escape(__('jusqu’au {date}', ['date' => $formatLongDate($endDate)])) : '' ?></dd>
+            <dt><?= app_escape(__('Horaire')) ?></dt>
+            <dd><?php if ($allDay): ?><?= app_escape(__('Journée entière')) ?><?php elseif ($timeRange !== ''): ?><?= app_escape($timeRange) ?><?php else: ?><span class="muted-copy"><?= app_escape(__('Non précisé')) ?></span><?php endif; ?></dd>
+            <dt><?= app_escape(__('Statut')) ?></dt>
+            <dd><span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(app_statuses()[$status]) ?></span></dd>
             <?php if ($location !== ''): ?>
-            <dt>Lieu</dt>
+            <dt><?= app_escape(__('Lieu')) ?></dt>
             <dd><?= app_escape($location) ?></dd>
             <?php endif; ?>
             <?php if ($validUrl): ?>
-            <dt>Lien</dt>
-            <dd><a class="page-switch" href="<?= app_escape($url) ?>" target="_blank" rel="noopener noreferrer">En savoir plus <span aria-hidden="true">↗</span></a></dd>
+            <dt><?= app_escape(__('Lien')) ?></dt>
+            <dd><a class="page-switch" href="<?= app_escape($url) ?>" target="_blank" rel="noopener noreferrer"><?= app_escape(__('En savoir plus')) ?> <span aria-hidden="true">↗</span></a></dd>
             <?php endif; ?>
-            <dt>Sections</dt>
+            <dt><?= app_escape(__('Sections')) ?></dt>
             <dd class="event-sections">
               <?php foreach (app_section_display_items($eventLeaves) as $section): ?>
               <span class="section-tag <?= app_escape(app_section_css_class($section)) ?>"><?= app_escape($sectionLabels[$section]) ?></span>
               <?php endforeach; ?>
-              <?php if (app_event_is_reserved($event)): ?><span class="reserved-tag" title="Visible uniquement par les membres des sous-sections concernées, leurs managers, les organisateurs et les administrateurs">Réservée</span><?php endif; ?>
+              <?php if (app_event_is_reserved($event)): ?><span class="reserved-tag" title="<?= app_escape(__('Visible uniquement par les membres des sous-sections concernées, leurs managers, les organisateurs et les administrateurs')) ?>"><?= app_escape(__('Réservée')) ?></span><?php endif; ?>
             </dd>
           </dl>
           <?php if ($comment !== '' || $showAdminNote): ?>
           <div class="event-detail-side">
             <?php if ($comment !== ''): ?>
             <aside class="event-comment" aria-labelledby="event-comment-title">
-              <h2 class="event-comment-title" id="event-comment-title">Commentaire</h2>
+              <h2 class="event-comment-title" id="event-comment-title"><?= app_escape(__('Commentaire')) ?></h2>
               <p><?= nl2br(app_linkify($comment), false) ?></p>
             </aside>
             <?php endif; ?>
@@ -584,9 +582,9 @@ Pas de bus</textarea>
             <?php if ($showAdminNote): ?>
             <?php $adminNote = app_event_admin_note($event); ?>
             <div class="admin-note">
-              <p class="admin-note-title">Note admin <span class="admin-only-badge" title="Visible des organisateurs, logisticiens et administrateurs uniquement">Interne</span><?php if (app_can_manage_logistics($user)): ?> <a class="page-switch" href="logistics.php?event=<?= rawurlencode($event['id']) ?>">Logistique <span aria-hidden="true">↗</span></a><?php endif; ?></p>
+              <p class="admin-note-title"><?= app_escape(__('Note admin')) ?> <span class="admin-only-badge" title="<?= app_escape(__('Visible des organisateurs, logisticiens et administrateurs uniquement')) ?>"><?= app_escape(__('Interne')) ?></span><?php if (app_can_manage_logistics($user)): ?> <a class="page-switch" href="logistics.php?event=<?= rawurlencode($event['id']) ?>"><?= app_escape(__('Logistique')) ?> <span aria-hidden="true">↗</span></a><?php endif; ?></p>
               <?php if ($adminNote === ''): ?>
-              <p class="muted-copy">Aucune note. <a class="page-switch" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>#event-admin-note">Ajouter une note</a></p>
+              <p class="muted-copy"><?= app_escape(__('Aucune note.')) ?> <a class="page-switch" href="manage-events.php?edit=<?= rawurlencode($event['id']) ?>#event-admin-note"><?= app_escape(__('Ajouter une note')) ?></a></p>
               <?php else: ?>
               <p class="admin-note-text"><?= nl2br(app_linkify($adminNote), false) ?></p>
               <?php endif; ?>
@@ -594,7 +592,7 @@ Pas de bus</textarea>
               <?php $eventDocuments = app_logistics_documents(read_json_file(app_data_path('logistics.json'))[$event['id']]['documents'] ?? null); ?>
               <?php if ($eventDocuments !== []): ?>
               <div class="admin-note-documents">
-                <p class="admin-note-subtitle">Documents annexes<?php if (app_can_manage_logistics($user)): ?> <a class="page-switch" href="<?= app_escape(app_logistics_tab_url($event['id'], 'documents')) ?>">Gérer</a><?php endif; ?></p>
+                <p class="admin-note-subtitle"><?= app_escape(__('Documents annexes')) ?><?php if (app_can_manage_logistics($user)): ?> <a class="page-switch" href="<?= app_escape(app_logistics_tab_url($event['id'], 'documents')) ?>"><?= app_escape(__('Gérer')) ?></a><?php endif; ?></p>
                 <ul>
                   <?php foreach ($eventDocuments as $document): ?>
                   <li><a href="<?= app_escape($document['url']) ?>" target="_blank" rel="noopener noreferrer"><?= app_escape($document['label']) ?> <span aria-hidden="true">↗</span></a> <span class="log-sub"><?= app_escape((string) parse_url($document['url'], PHP_URL_HOST)) ?></span></li>
@@ -602,7 +600,7 @@ Pas de bus</textarea>
                 </ul>
               </div>
               <?php elseif (app_can_manage_logistics($user)): ?>
-              <p class="admin-note-documents muted-copy">Aucun document annexe. <a class="page-switch" href="<?= app_escape(app_logistics_tab_url($event['id'], 'documents')) ?>">Ajouter un document</a></p>
+              <p class="admin-note-documents muted-copy"><?= app_escape(__('Aucun document annexe.')) ?> <a class="page-switch" href="<?= app_escape(app_logistics_tab_url($event['id'], 'documents')) ?>"><?= app_escape(__('Ajouter un document')) ?></a></p>
               <?php endif; ?>
           </div>
           <?php endif; ?>
@@ -618,9 +616,9 @@ Pas de bus</textarea>
             <input type="hidden" name="event_id" value="<?= app_escape($event['id']) ?>">
             <input type="hidden" name="return_page" value="event">
             <input type="hidden" name="section" value="">
-            <span class="attendance-label">Ma réponse</span>
-            <div class="attendance-options" role="group" aria-label="Votre réponse à <?= app_escape($event['title']) ?>">
-              <?php foreach (ATTENDANCE_RESPONSES as $response => $label): ?>
+            <span class="attendance-label"><?= app_escape(__('Ma réponse')) ?></span>
+            <div class="attendance-options" role="group" aria-label="<?= app_escape(__('Votre réponse à {title}', ['title' => $event['title']])) ?>">
+              <?php foreach (app_attendance_responses() as $response => $label): ?>
               <button class="attendance-option attendance-<?= app_escape($response) ?><?= $myResponse === $response ? ' is-selected' : '' ?>" type="submit" name="response" value="<?= app_escape($response) ?>" aria-pressed="<?= $myResponse === $response ? 'true' : 'false' ?>"<?= $attendanceLocked ? ' disabled title="Date terminée, annulée ou refusée : la présence ne peut plus être indiquée"' : '' ?>><?= app_escape($label) ?></button>
               <?php endforeach; ?>
             </div>
@@ -629,14 +627,14 @@ Pas de bus</textarea>
 
           <?php if ($responsesBySection !== []): ?>
           <div class="detail-responses">
-            <h2 class="detail-heading">Réponses par sous-section</h2>
+            <h2 class="detail-heading"><?= app_escape(__('Réponses par sous-section')) ?></h2>
             <div class="log-scroll">
               <table class="log-table">
                 <thead>
                   <tr>
-                    <th scope="col">Sous-section</th>
+                    <th scope="col"><?= app_escape(__('Sous-section')) ?></th>
                     <?php // Each answer with its total in brackets: every member once, whatever their sub-sections. ?>
-                    <?php foreach (ATTENDANCE_RESPONSES + [ATTENDANCE_NO_RESPONSE => ATTENDANCE_NO_RESPONSE_LABEL] as $response => $label): ?>
+                    <?php foreach (app_attendance_responses() + [ATTENDANCE_NO_RESPONSE => app_no_response_label()] as $response => $label): ?>
                     <th scope="col"><?= app_escape($label) ?> <span class="response-total">(<?= count($responseTotals[$response]) ?>)</span></th>
                     <?php endforeach; ?>
                   </tr>
@@ -657,21 +655,21 @@ Pas de bus</textarea>
               </table>
             </div>
             <?php if (count($responsesBySection) > 1): ?>
-            <p class="field-help">Le nombre entre parenthèses compte chaque membre une seule fois, même s’il fait partie de plusieurs sous-sections de la date.</p>
+            <p class="field-help"><?= app_escape(__('Le nombre entre parenthèses compte chaque membre une seule fois, même s’il fait partie de plusieurs sous-sections de la date.')) ?></p>
             <?php endif; ?>
           </div>
           <?php endif; ?>
         </section>
         <?php else: ?>
-        <section class="management-panel detail-panel has-tabs" aria-label="Journal d’audit de la date">
+        <section class="management-panel detail-panel has-tabs" aria-label="<?= app_escape(__('Journal d’audit de la date')) ?>">
           <div class="detail-panel-heading">
-            <h2 class="detail-heading">Journal d’audit de la date</h2>
+            <h2 class="detail-heading"><?= app_escape(__('Journal d’audit de la date')) ?></h2>
             <?php if ($logEntries !== []): ?>
-            <a class="section-note page-switch" href="attendance-log.php?<?= app_escape(http_build_query(['event' => $event['id'], 'format' => 'csv'])) ?>">Exporter en CSV <span aria-hidden="true">↓</span></a>
+            <a class="section-note page-switch" href="attendance-log.php?<?= app_escape(http_build_query(['event' => $event['id'], 'format' => 'csv'])) ?>"><?= app_escape(__('Exporter en CSV')) ?> <span aria-hidden="true">↓</span></a>
             <?php endif; ?>
           </div>
           <?php if ($logEntries === []): ?>
-          <p class="muted-copy">Aucune saisie enregistrée pour cette date. Les réponses données avant la mise en place du journal n’y figurent pas.</p>
+          <p class="muted-copy"><?= app_escape(__('Aucune saisie enregistrée pour cette date. Les réponses données avant la mise en place du journal n’y figurent pas.')) ?></p>
           <?php else: ?>
           <?php app_render_attendance_log_table($logEntries, false); ?>
           <?php endif; ?>

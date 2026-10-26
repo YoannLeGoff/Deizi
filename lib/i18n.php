@@ -52,10 +52,13 @@ function app_browser_language(): ?string
     return $best;
 }
 
-// Language of the current page (computed once per request).
-function app_locale(): string
+// Language of the current page (computed once per request), or the one set by app_set_locale().
+function app_locale(?string $set = null): string
 {
     static $locale = null;
+    if ($set !== null) {
+        return $locale = $set;
+    }
     if ($locale !== null) {
         return $locale;
     }
@@ -67,6 +70,13 @@ function app_locale(): string
         return $locale = $browser;
     }
     return $locale = app_site_language();
+}
+
+// Language of a page made for a given member without session (iCal feed of their link): theirs,
+// otherwise the default language of the site.
+function app_set_locale_for(array $user): void
+{
+    app_locale(app_is_language($user['language'] ?? null) ? $user['language'] : app_site_language());
 }
 
 // Translations of a language: "French text" => "translated text".
@@ -119,9 +129,74 @@ function app_month_name(int $month, bool $capital = false): string
     return $capital ? app_ucfirst($name) : $name;
 }
 
+const SHORT_MONTH_NAMES = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
+
+function app_month_short(int $month): string
+{
+    return __(SHORT_MONTH_NAMES[$month] ?? '');
+}
+
+// Time of day: "14h30" in French, "14:30" otherwise.
+function app_time(DateTimeInterface $date): string
+{
+    return $date->format(app_locale() === 'fr' ? 'H\hi' : 'H:i');
+}
+
+// "Dimanche 8 novembre 2026" in the language of the page ({weekday} {day} {month} {year}, an
+// order each language sets); without the weekday or the year when asked. French writes "1er".
+function app_long_date(DateTimeInterface $date, bool $weekday = true, bool $year = true, bool $capital = true): string
+{
+    $day = (int) $date->format('j');
+    $values = [
+        'weekday' => app_weekday_name((int) $date->format('N'), $capital),
+        'day' => app_locale() === 'fr' && $day === 1 ? '1er' : (string) $day,
+        'month' => app_month_name((int) $date->format('n')),
+        'year' => $date->format('Y'),
+    ];
+    if ($weekday && $year) {
+        return __('{weekday} {day} {month} {year}', $values);
+    }
+    if ($weekday) {
+        return __('{weekday} {day} {month}', $values);
+    }
+    return $year ? __('{day} {month} {year}', $values) : __('{day} {month}', $values);
+}
+
 function app_ucfirst(string $text): string
 {
     return function_exists('mb_strtoupper') ? mb_strtoupper(mb_substr($text, 0, 1)) . mb_substr($text, 1) : ucfirst($text);
+}
+
+// Fixed lists of labels, translated (same keys as the constants, which keep the French labels and
+// stay used for validation): statuses of the dates, attendance answers and filters, roles.
+function app_translated(array $labels): array
+{
+    return array_map(static fn (string $label): string => __($label), $labels);
+}
+
+function app_statuses(): array
+{
+    return app_translated(EVENT_STATUSES);
+}
+
+function app_attendance_responses(): array
+{
+    return app_translated(ATTENDANCE_RESPONSES);
+}
+
+function app_attendance_filters(): array
+{
+    return app_translated(ATTENDANCE_FILTERS);
+}
+
+function app_no_response_label(): string
+{
+    return __(ATTENDANCE_NO_RESPONSE_LABEL);
+}
+
+function app_roles(): array
+{
+    return app_translated(USER_ROLES);
 }
 
 // Texts used by the scripts (menu.js…), given to them in the language of the page.

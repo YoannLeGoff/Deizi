@@ -192,9 +192,9 @@ function app_poll_hidden_reason(array $event, array $poll): ?string
 {
     $status = is_string($event['status'] ?? null) ? $event['status'] : '';
     if (in_array($status, POLL_HIDDEN_STATUSES, true)) {
-        return 'date au statut « ' . EVENT_STATUSES[$status] . ' »';
+        return __('date au statut « {status} »', ['status' => app_statuses()[$status]]);
     }
-    return $poll['hidden'] ? 'masqué temporairement' : null;
+    return $poll['hidden'] ? __('masqué temporairement') : null;
 }
 
 // Polls of a date shown to $user: managers, organizers and administrators see the hidden ones too.

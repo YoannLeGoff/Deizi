@@ -7,7 +7,7 @@ $user = app_require_login();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('Méthode non autorisée.'));
 }
 
 app_verify_csrf();
@@ -16,12 +16,12 @@ $pollId = $_POST['poll_id'] ?? '';
 $action = $_POST['action'] ?? '';
 if (!is_string($eventId) || $eventId === '' || !is_string($pollId) || !in_array($action, ['respond', 'respond_for', 'create', 'update', 'toggle', 'hide', 'delete'], true)) {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('Demande invalide.'));
 }
 $isManager = in_array($user['role'], EVENT_MANAGER_ROLES, true);
 if ($action !== 'respond' && !$isManager) {
     http_response_code(403);
-    exit('Seuls les managers, organisateurs et administrateurs gèrent les sondages.');
+    exit(__('Seuls les managers, organisateurs et administrateurs gèrent les sondages.'));
 }
 
 $question = app_clean_line($_POST['question'] ?? '', POLL_QUESTION_MAX_LENGTH);
@@ -48,7 +48,7 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
         }
         $polls = app_event_polls($event);
         if ($action !== 'create' && !isset($polls[$pollId])) {
-            $error = 'Ce sondage n’existe plus.';
+            $error = __('Ce sondage n’existe plus.');
             $tab = 'details';
             return $events;
         }
@@ -56,17 +56,17 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
         switch ($action) {
             case 'respond':
                 if (!app_user_concerned_by_event($user, $event)) {
-                    $error = 'Ce sondage ne concerne pas vos sections.';
+                    $error = __('Ce sondage ne concerne pas vos sections.');
                 } elseif ($polls[$pollId]['closed']) {
-                    $error = 'Ce sondage est clos : les réponses ne sont plus modifiables.';
+                    $error = __('Ce sondage est clos : les réponses ne sont plus modifiables.');
                 } elseif (app_poll_hidden_reason($event, $polls[$pollId]) !== null) {
-                    $error = 'Ce sondage est masqué : les réponses ne sont pas possibles pour le moment.';
+                    $error = __('Ce sondage est masqué : les réponses ne sont pas possibles pour le moment.');
                 } elseif (!isset($polls[$pollId]['options'][$optionId])) {
-                    $error = 'Cette réponse n’existe plus.';
+                    $error = __('Cette réponse n’existe plus.');
                 } else {
                     $polls[$pollId]['responses'][$user['id']] = $optionId;
                     unset($polls[$pollId]['entered_by'][$user['id']]);
-                    $message = 'Votre réponse a été enregistrée : ' . $polls[$pollId]['options'][$optionId] . '.';
+                    $message = __('Votre réponse a été enregistrée : {answer}.', ['answer' => $polls[$pollId]['options'][$optionId]]);
                 }
                 break;
 
@@ -80,12 +80,12 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
                     }
                 }
                 if ($target === null) {
-                    $error = 'Ce membre n’est pas concerné par la date ou ne fait pas partie de votre périmètre.';
+                    $error = __('Ce membre n’est pas concerné par la date ou ne fait pas partie de votre périmètre.');
                 } elseif ($optionId === '') {
                     unset($polls[$pollId]['responses'][$memberId], $polls[$pollId]['entered_by'][$memberId]);
-                    $message = 'La réponse de ' . $target['username'] . ' a été effacée.';
+                    $message = __('La réponse de {name} a été effacée.', ['name' => $target['username']]);
                 } elseif (!isset($polls[$pollId]['options'][$optionId])) {
-                    $error = 'Cette réponse n’existe plus.';
+                    $error = __('Cette réponse n’existe plus.');
                 } else {
                     $polls[$pollId]['responses'][$memberId] = $optionId;
                     if ($memberId === $user['id']) {
@@ -93,7 +93,7 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
                     } else {
                         $polls[$pollId]['entered_by'][$memberId] = $author;
                     }
-                    $message = 'Réponse enregistrée pour ' . $target['username'] . ' : ' . $polls[$pollId]['options'][$optionId] . '.';
+                    $message = __('Réponse enregistrée pour {name} : {answer}.', ['name' => $target['username'], 'answer' => $polls[$pollId]['options'][$optionId]]);
                 }
                 break;
 
@@ -101,14 +101,14 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
             case 'update':
                 $options = app_poll_options_from_text($optionsInput, $action === 'update' ? $polls[$pollId]['options'] : []);
                 if ($question === '' || count($options) < 2) {
-                    $error = 'Indiquez une question et au moins deux réponses possibles (une par ligne).';
+                    $error = __('Indiquez une question et au moins deux réponses possibles (une par ligne).');
                     $tab = $action === 'create' ? 'nouveau-sondage' : $tab;
                     break;
                 }
                 if ($action === 'create') {
                     $pollId = 'p' . bin2hex(random_bytes(4));
                     $polls[$pollId] = ['id' => $pollId, 'question' => $question, 'description' => $description, 'user_info' => $userInfo, 'options' => $options, 'closed' => false, 'hidden' => false, 'responses' => [], 'entered_by' => []];
-                    $message = 'Le sondage a été créé.';
+                    $message = __('Le sondage a été créé.');
                 } else {
                     $polls[$pollId]['question'] = $question;
                     $polls[$pollId]['description'] = $description;
@@ -117,24 +117,24 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
                     // Answers to removed options are dropped.
                     $polls[$pollId]['responses'] = array_filter($polls[$pollId]['responses'], static fn (string $answer): bool => isset($options[$answer]));
                     $polls[$pollId]['entered_by'] = array_intersect_key($polls[$pollId]['entered_by'], $polls[$pollId]['responses']);
-                    $message = 'Le sondage a été mis à jour.';
+                    $message = __('Le sondage a été mis à jour.');
                 }
                 $tab = 'sondage-' . $pollId;
                 break;
 
             case 'toggle':
                 $polls[$pollId]['closed'] = !$polls[$pollId]['closed'];
-                $message = $polls[$pollId]['closed'] ? 'Le sondage est clos.' : 'Le sondage est rouvert.';
+                $message = $polls[$pollId]['closed'] ? __('Le sondage est clos.') : __('Le sondage est rouvert.');
                 break;
 
             case 'hide':
                 $polls[$pollId]['hidden'] = !$polls[$pollId]['hidden'];
-                $message = $polls[$pollId]['hidden'] ? 'Le sondage est masqué aux membres.' : 'Le sondage est de nouveau visible par les membres.';
+                $message = $polls[$pollId]['hidden'] ? __('Le sondage est masqué aux membres.') : __('Le sondage est de nouveau visible par les membres.');
                 break;
 
             case 'delete':
                 unset($polls[$pollId]);
-                $message = 'Le sondage a été supprimé.';
+                $message = __('Le sondage a été supprimé.');
                 $tab = 'details';
                 break;
         }
@@ -149,11 +149,11 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
         return $events;
     }
     unset($event);
-    $error = 'Cette date n’existe plus.';
+    $error = __('Cette date n’existe plus.');
     return $events;
 });
 
-if ($error === 'Cette date n’existe plus.') {
+if ($error === __('Cette date n’existe plus.')) {
     app_flash($error, 'error');
     app_redirect('index.php');
 }

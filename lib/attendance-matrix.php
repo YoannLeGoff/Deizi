@@ -337,7 +337,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                   <?php
                       $fullDate = $event['date']->format('d/m/Y') . ($event['end_date'] !== null ? ' au ' . $event['end_date']->format('d/m/Y') : '');
                   ?>
-                  <th scope="col" class="matrix-date status-<?= app_escape($event['status']) ?>" title="<?= app_escape($event['title'] . ' — ' . $fullDate . ' — ' . EVENT_STATUSES[$event['status']]) ?>">
+                  <th scope="col" class="matrix-date status-<?= app_escape($event['status']) ?>" title="<?= app_escape($event['title'] . ' — ' . $fullDate . ' — ' . app_statuses()[$event['status']]) ?>">
                     <span class="matrix-date-weekday"><?= app_escape($weekdayNames[(int) $event['date']->format('N')]) ?></span>
                     <span class="matrix-date-day"><?= app_escape($event['date']->format('j')) ?> <?= app_escape($monthNames[(int) $event['date']->format('n')]) ?></span>
                     <a class="matrix-date-title" href="event.php?id=<?= rawurlencode($event['id']) ?>"><?= app_escape($event['title']) ?></a>
@@ -372,7 +372,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                 <tr>
                   <th scope="row" class="matrix-name">
                     <?= app_escape($member['username']) ?>
-                    <?php if ($member['role'] !== 'musician'): ?><span class="matrix-role"><?= app_escape(USER_ROLES[$member['role']]) ?></span><?php endif; ?>
+                    <?php if ($member['role'] !== 'musician'): ?><span class="matrix-role"><?= app_escape(app_roles()[$member['role']]) ?></span><?php endif; ?>
                   </th>
                   <?php foreach ($events as $event): ?>
                   <?php if (in_array($child, $event['leaves'], true)): ?>
@@ -386,11 +386,11 @@ function app_matrix_render(array $manager, array $events, array $members, string
                   ?>
                   <?php // Finished, cancelled or refused date: the answer is shown but can no longer be changed. ?>
                   <?php $isLocked = in_array($event['status'], ATTENDANCE_LOCKED_STATUSES, true); ?>
-                  <td class="matrix-cell<?= $isProxy ? ' is-proxy' : '' ?><?= $isLocked ? ' is-locked' : '' ?>" title="<?= app_escape(($response === '' ? ATTENDANCE_NO_RESPONSE_LABEL : ATTENDANCE_RESPONSES[$response]) . ' — ' . $audit) ?>">
+                  <td class="matrix-cell<?= $isProxy ? ' is-proxy' : '' ?><?= $isLocked ? ' is-locked' : '' ?>" title="<?= app_escape(($response === '' ? app_no_response_label() : app_attendance_responses()[$response]) . ' — ' . $audit) ?>">
                     <label class="sr-only" for="<?= app_escape($fieldId) ?>"><?= app_escape($cellLabel) ?></label>
                     <select class="matrix-select"<?= $isLocked ? ' disabled' : '' ?> id="<?= app_escape($fieldId) ?>" name="attendance[<?= app_escape($event['id']) ?>][<?= app_escape($member['id']) ?>]" data-original="<?= app_escape($response) ?>" data-event="<?= app_escape($event['id']) ?>" data-member="<?= app_escape($member['id']) ?>" data-subsection="<?= app_escape($child) ?>" data-label="<?= app_escape($cellLabel) ?>" data-audit="<?= app_escape($audit) ?>">
-                      <option value=""<?= $response === '' ? ' selected' : '' ?>><?= app_escape(ATTENDANCE_NO_RESPONSE_LABEL) ?></option>
-                      <?php foreach (ATTENDANCE_RESPONSES as $value => $label): ?>
+                      <option value=""<?= $response === '' ? ' selected' : '' ?>><?= app_escape(app_no_response_label()) ?></option>
+                      <?php foreach (app_attendance_responses() as $value => $label): ?>
                       <option value="<?= app_escape($value) ?>"<?= $response === $value ? ' selected' : '' ?>><?= app_escape($label) ?></option>
                       <?php endforeach; ?>
                     </select>

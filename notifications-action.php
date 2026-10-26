@@ -9,7 +9,7 @@ $user = app_require_login();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('Méthode non autorisée.'));
 }
 app_verify_csrf();
 $action = $_POST['action'] ?? '';

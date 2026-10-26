@@ -179,7 +179,7 @@ function app_user_title(array $user): string
 function app_user_role_label(array $user): string
 {
     $title = app_user_title($user);
-    return $title !== '' ? $title : (USER_ROLES[$user['role'] ?? ''] ?? 'Utilisateur');
+    return $title !== '' ? $title : (app_roles()[$user['role'] ?? ''] ?? 'Utilisateur');
 }
 
 // "Responsable de section": the member listed first in a sub-section (one per sub-section),
@@ -972,6 +972,7 @@ function app_event_log_value(array $event, string $field): string
 {
     $value = $event[$field] ?? null;
     return match ($field) {
+        // Stored in the journal: the French label, translated when shown.
         'status' => EVENT_STATUSES[is_string($value) && isset(EVENT_STATUSES[$value]) ? $value : 'pending'],
         'date', 'end_date' => ($date = app_parse_date($value)) !== null ? $date->format('d/m/Y') : '',
         'all_day', 'tutti', 'reserved', 'roadmap_disabled' => $value === true ? 'Oui' : 'Non',
@@ -1327,7 +1328,7 @@ function app_event_time_range(array $event): string
     $start = is_string($event['time'] ?? null) ? trim($event['time']) : '';
     $end = app_event_end_time($event);
     if ($start === '') {
-        return $end !== '' ? 'Jusqu’à ' . $end : '';
+        return $end !== '' ? __('Jusqu’à {time}', ['time' => $end]) : '';
     }
     return $end !== '' ? $start . ' – ' . $end : $start;
 }
@@ -1336,9 +1337,9 @@ function app_attendance_response_label(mixed $response): string
 {
     if ($response === ATTENDANCE_NO_RESPONSE) {
         // Answer withdrawn by a manager in the attendance matrix.
-        return ATTENDANCE_NO_RESPONSE_LABEL;
+        return app_no_response_label();
     }
-    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? ATTENDANCE_RESPONSES[$response] : 'Aucune réponse';
+    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? app_attendance_responses()[$response] : 'Aucune réponse';
 }
 
 function app_render_attendance_log_table(array $entries, bool $withEvent, array $existingEventIds = []): void
@@ -1738,8 +1739,8 @@ function app_header(string $title, ?array $user = null): void
     <?php if ($impersonator !== null): ?>
     <div class="impersonation-banner" role="status">
       <p>
-        <?= __('{admin} agit en tant que {member} ({role}).', ['admin' => '<strong>' . app_escape((string) $impersonator['username']) . '</strong>', 'member' => '<strong>' . app_escape((string) $user['username']) . '</strong>', 'role' => app_escape(__(USER_ROLES[$user['role']] ?? ''))]) ?>
-        <?= app_escape(__('Les réponses saisies sont enregistrées au nom de « {name} ».', ['name' => $user['username'] . '-i-' . $impersonator['username']])) ?>
+        <?= __('{admin} agit en tant que {member} ({role}).', ['admin' => '<strong>' . app_escape((string) $impersonator['username']) . '</strong>', 'member' => '<strong>' . app_escape((string) $user['username']) . '</strong>', 'role' => app_escape(__(app_roles()[$user['role']] ?? ''))]) ?>
+        <?= app_escape(__('Les réponses saisies sont enregistrées au nom de « {name} ».', ['name' => $user['username'] . '-i-' . $impersonator['username']])) ?>
       </p>
       <form method="post" action="impersonate-action.php">
         <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">

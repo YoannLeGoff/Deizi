@@ -10,7 +10,7 @@ $user = app_require_login();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('Méthode non autorisée.'));
 }
 app_verify_csrf();
 $action = $_POST['action'] ?? '';
@@ -27,7 +27,7 @@ foreach (read_json_file(app_data_path('users.json')) as $account) {
 // Not while an administrator is logged in as a member.
 if ($target === null || !in_array($action, ['upload', 'remove'], true) || !app_can_edit_photo($user, $target) || app_impersonator() !== null) {
     http_response_code(403);
-    exit('Vous ne pouvez pas modifier cette photo.');
+    exit(__('Vous ne pouvez pas modifier cette photo.'));
 }
 
 $newPhoto = null;
@@ -39,7 +39,7 @@ if ($action === 'upload') {
         app_redirect($return);
     }
     if ($newPhoto === null) {
-        app_flash('Choisissez une photo.', 'error');
+        app_flash(__('Choisissez une photo.'), 'error');
         app_redirect($return);
     }
 }
@@ -66,5 +66,5 @@ if ($newPhoto !== null || $previous !== null) {
     app_attendance_log_append([app_account_log_entry($target, $newPhoto === null ? 'photo_remove' : ($previous === null ? 'photo_add' : 'photo_change'), '', '', $user)]);
 }
 $own = $targetId === (string) $user['id'];
-app_flash($newPhoto !== null ? ($own ? 'Votre photo a été enregistrée.' : 'La photo a été enregistrée.') : ($own ? 'Votre photo a été retirée.' : 'La photo a été retirée.'));
+app_flash($newPhoto !== null ? ($own ? __('Votre photo a été enregistrée.') : __('La photo a été enregistrée.')) : ($own ? __('Votre photo a été retirée.') : __('La photo a été retirée.')));
 app_redirect($return);

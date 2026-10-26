@@ -101,7 +101,7 @@ app_header('Matrice des droits', $user);
         </div>
         <?php app_settings_nav('membres', 'rights.php', $user); ?>
 
-        <p class="accounts-help rights-help">Ce que chaque rôle peut faire dans l’application. Le <strong>périmètre</strong> d’un manager correspond aux sections qu’il gère, définies sur sa fiche de compte. Votre rôle : <strong><?= app_escape(USER_ROLES[$user['role']] ?? $user['role']) ?></strong>.</p>
+        <p class="accounts-help rights-help">Ce que chaque rôle peut faire dans l’application. Le <strong>périmètre</strong> d’un manager correspond aux sections qu’il gère, définies sur sa fiche de compte. Votre rôle : <strong><?= app_escape(app_roles()[$user['role']] ?? $user['role']) ?></strong>.</p>
 
         <section class="management-panel">
           <div class="log-scroll">
@@ -110,7 +110,7 @@ app_header('Matrice des droits', $user);
                 <tr>
                   <th scope="col">Action</th>
                   <?php foreach ($roleOrder as $role): ?>
-                  <th scope="col"<?= $role === $user['role'] ? ' class="is-current"' : '' ?>><?= app_escape(USER_ROLES[$role]) ?></th>
+                  <th scope="col"<?= $role === $user['role'] ? ' class="is-current"' : '' ?>><?= app_escape(app_roles()[$role]) ?></th>
                   <?php endforeach; ?>
                 </tr>
               </thead>

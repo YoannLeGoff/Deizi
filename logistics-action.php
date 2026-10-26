@@ -102,7 +102,7 @@ if ($action === 'save_status') {
         return $logistics;
     });
     [$code, $label] = $logisticsStatuses[$status];
-    app_flash('Statut logistique' . "\u{00A0}" . ': ' . $code . ' · ' . $label . ($changed ? ' — statut de la date' . "\u{00A0}" . ': ' . EVENT_STATUSES[$eventStatus] . '.' : '.'));
+    app_flash('Statut logistique' . "\u{00A0}" . ': ' . $code . ' · ' . $label . ($changed ? ' — statut de la date' . "\u{00A0}" . ': ' . app_statuses()[$eventStatus] . '.' : '.'));
     app_redirect($returnUrl);
 }
 

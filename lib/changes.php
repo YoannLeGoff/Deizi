@@ -136,10 +136,10 @@ function app_change_badge(?array $notice): string
         return '';
     }
     if ($notice['type'] === 'new') {
-        $title = 'Nouvelle date depuis votre dernière visite';
-        return '<span class="change-badge is-new" title="' . app_escape($title) . '">Nouveau<span class="sr-only"> — ' . app_escape($title) . '</span></span>';
+        $title = __('Nouvelle date depuis votre dernière visite');
+        return '<span class="change-badge is-new" title="' . app_escape($title) . '">' . app_escape(__('Nouveau')) . '<span class="sr-only"> — ' . app_escape($title) . '</span></span>';
     }
-    $title = 'Modifié depuis votre dernière consultation : ' . implode(', ', $notice['fields']);
+    $title = __('Modifié depuis votre dernière consultation : {fields}', ['fields' => implode(', ', array_map('__', $notice['fields']))]);
     return '<sup class="change-dot" title="' . app_escape($title) . '"><span class="sr-only">' . app_escape($title) . '</span></sup>';
 }
 

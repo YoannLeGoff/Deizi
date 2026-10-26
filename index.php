@@ -10,8 +10,10 @@ if ($isCalendarRequest && is_string($calendarTokenInput) && $calendarTokenInput 
     if ($user === null) {
         http_response_code(404);
         header('Content-Type: text/plain; charset=utf-8');
-        exit('Lien de calendrier invalide ou renouvelé.');
+        exit(__('Lien de calendrier invalide ou renouvelé.'));
     }
+    // No session for a calendar application: the language of the owner of the link.
+    app_set_locale_for($user);
 } else {
     $user = app_require_login();
 }
@@ -34,8 +36,6 @@ $activeSection = is_string($requestedSection) && ($requestedSection === 'Toutes'
     : $defaultSection;
 $timezone = new DateTimeZone('Europe/Paris');
 $today = new DateTimeImmutable('today', $timezone);
-$weekdayNames = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-$monthNames = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 $restrictSections = $user['role'] === 'musician';
 $restrictedSections = app_expand_sections($userSections);
 $allEvents = [];
@@ -259,22 +259,22 @@ if ($isCalendarRequest) {
 
         $description = [];
         if (!$event['all_day'] && app_event_time_range($event) !== '') {
-            $description[] = 'Horaire : ' . app_event_time_range($event);
+            $description[] = __('Horaire : {time}', ['time' => app_event_time_range($event)]);
         }
         if ($eventEndDate instanceof DateTimeImmutable) {
-            $description[] = 'Date de fin : ' . $eventEndDate->format('d/m/Y');
+            $description[] = __('Date de fin : {date}', ['date' => $eventEndDate->format('d/m/Y')]);
         }
         if ($event['sections'] !== []) {
-            $description[] = 'Sections : ' . implode(', ', array_map(
+            $description[] = __('Sections : {sections}', ['sections' => implode(', ', array_map(
                 static fn (string $section): string => app_section_labels()[$section] ?? $section,
                 $event['sections']
-            ));
+            ))]);
         }
-        $description[] = 'Statut : ' . EVENT_STATUSES[$event['status']];
+        $description[] = __('Statut : {status}', ['status' => app_statuses()[$event['status']]]);
         $comment = app_event_comment($event);
         if ($comment !== '') {
             $description[] = '';
-            $description[] = 'Commentaire :';
+            $description[] = __('Commentaire :');
             $description[] = $comment;
         }
         // Roadmap details, with the same visibility as the roadmap tab of the date: managers and
@@ -283,18 +283,18 @@ if ($isCalendarRequest) {
             && (in_array($user['role'], EVENT_MANAGER_ROLES, true) || $event['status'] === 'confirmed');
         if ($canSeeRoadmap) {
             $calendarRoadmap = app_event_roadmap($event);
-            foreach (['penn_notes' => 'Note des Penn', 'notes' => 'Notes'] as $field => $label) {
+            foreach (['penn_notes' => __('Note des Penn'), 'notes' => __('Notes')] as $field => $label) {
                 $text = trim((string) $calendarRoadmap[$field]);
                 if ($text !== '') {
                     $description[] = '';
-                    $description[] = $label . ' :';
+                    $description[] = __('{label} :', ['label' => $label]);
                     $description[] = $text;
                 }
             }
             $shareToken = app_roadmap_share_token($event);
             if ($shareToken !== null) {
                 $description[] = '';
-                $description[] = 'Feuille de route : ' . app_roadmap_share_url($shareToken);
+                $description[] = __('Feuille de route : {url}', ['url' => app_roadmap_share_url($shareToken)]);
             }
         }
         // Polls of the date shown to the members, with the state for this account (to answer, its
@@ -303,14 +303,14 @@ if ($isCalendarRequest) {
         if ($calendarPolls !== []) {
             $concerned = app_user_concerned_by_event($user, $event);
             $description[] = '';
-            $description[] = count($calendarPolls) > 1 ? 'Sondages :' : 'Sondage :';
+            $description[] = count($calendarPolls) > 1 ? __('Sondages :') : __('Sondage :');
             foreach ($calendarPolls as $poll) {
                 $answer = $poll['responses'][$user['id']] ?? null;
                 $state = match (true) {
-                    $answer !== null => 'votre réponse : ' . $poll['options'][$answer],
-                    $poll['closed'] => 'clos',
-                    $concerned => 'à remplir',
-                    default => 'ouvert',
+                    $answer !== null => __('votre réponse : {answer}', ['answer' => $poll['options'][$answer]]),
+                    $poll['closed'] => __('clos'),
+                    $concerned => __('à remplir'),
+                    default => __('ouvert'),
                 };
                 $description[] = '- ' . $poll['question'] . ' (' . $state . ')';
             }
@@ -318,7 +318,7 @@ if ($isCalendarRequest) {
         // Link to the page of the date (polls, attendance, details; opening it needs to be logged in).
         if (is_string($event['id'] ?? null) && $event['id'] !== '') {
             $description[] = '';
-            $description[] = ($calendarPolls !== [] ? 'Répondre et voir la date dans ' : 'Voir la date dans ') . app_site_nickname() . ' : ' . app_absolute_url('event.php?id=' . rawurlencode($event['id']));
+            $description[] = ($calendarPolls !== [] ? __('Répondre et voir la date dans {app} : {url}', ['app' => app_site_nickname(), 'url' => app_absolute_url('event.php?id=' . rawurlencode($event['id']))]) : __('Voir la date dans {app} : {url}', ['app' => app_site_nickname(), 'url' => app_absolute_url('event.php?id=' . rawurlencode($event['id']))]));
         }
         if ($description !== []) {
             $calendarLines[] = 'DESCRIPTION:' . escapeIcalText(implode("\n", $description));
@@ -378,7 +378,7 @@ foreach ($homeAnnouncements !== [] ? read_json_file(app_data_path('users.json'))
 
 // "Nouveau" / "Modifié" labels since the member last opened each date.
 $seenState = app_seen_state($user);
-$attendanceOptions = ATTENDANCE_RESPONSES;
+$attendanceOptions = app_attendance_responses();
 $showAttendanceSummary = in_array($user['role'], EVENT_MANAGER_ROLES, true);
 $userLeafSections = app_expand_sections($userSections);
 $members = [];
@@ -403,7 +403,7 @@ function announcementCard(array $announcement, array $user, array $authors, bool
         <?php // Order: "Annonce · author", title, photo, description, then the link. ?>
         <article class="announcement" id="annonce-<?= app_escape($announcement['id']) ?>">
           <div class="announcement-content">
-            <p class="announcement-eyebrow">Annonce<?php if (($authors[$announcement['author']] ?? '') !== ''): ?> · <?= app_escape($authors[$announcement['author']]) ?><?php endif; ?></p>
+            <p class="announcement-eyebrow"><?= app_escape(__('Annonce')) ?><?php if (($authors[$announcement['author']] ?? '') !== ''): ?> · <?= app_escape($authors[$announcement['author']]) ?><?php endif; ?></p>
             <h2><?= app_escape($announcement['title']) ?></h2>
             <?php if ($announcement['image'] !== null): ?>
             <a class="announcement-image" href="<?= app_escape(app_announcement_image_url($announcement)) ?>" target="_blank" rel="noopener"><img src="<?= app_escape(app_announcement_image_url($announcement)) ?>" alt=""></a>
@@ -412,10 +412,10 @@ function announcementCard(array $announcement, array $user, array $authors, bool
             <p class="announcement-body"><?= implode('<br>', array_map('app_linkify', app_text_lines($announcement['body']))) ?></p>
             <?php endif; ?>
             <?php if (app_is_announcement_author($announcement, $user)): ?>
-            <p class="announcement-audience">Votre annonce · visible par : <?= app_escape(app_announcement_audience($announcement)) ?><?php if (app_can_edit_announcement($user, $announcement)): ?> · <a href="announcements.php?modifier=<?= rawurlencode($announcement['id']) ?>">Modifier</a><?php endif; ?></p>
+            <p class="announcement-audience"><?= app_escape(__('Votre annonce · visible par : {audience}', ['audience' => app_announcement_audience($announcement)])) ?><?php if (app_can_edit_announcement($user, $announcement)): ?> · <a href="announcements.php?modifier=<?= rawurlencode($announcement['id']) ?>"><?= app_escape(__('Modifier')) ?></a><?php endif; ?></p>
             <?php endif; ?>
             <?php if ($announcement['link_url'] !== ''): ?>
-            <a class="primary-button compact-button announcement-link" href="<?= app_escape($announcement['link_url']) ?>" target="_blank" rel="noopener noreferrer"><?= app_escape($announcement['link_label'] !== '' ? $announcement['link_label'] : 'Ouvrir le lien') ?> <span aria-hidden="true">↗</span></a>
+            <a class="primary-button compact-button announcement-link" href="<?= app_escape($announcement['link_url']) ?>" target="_blank" rel="noopener noreferrer"><?= app_escape($announcement['link_label'] !== '' ? $announcement['link_label'] : __('Ouvrir le lien')) ?> <span aria-hidden="true">↗</span></a>
             <?php endif; ?>
           </div>
           <?php if ($canHide): ?>
@@ -423,22 +423,22 @@ function announcementCard(array $announcement, array $user, array $authors, bool
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="dismiss">
             <input type="hidden" name="id" value="<?= app_escape($announcement['id']) ?>">
-            <button class="text-button" type="submit" title="Ranger cette annonce dans « Toutes les annonces »">Masquer <span aria-hidden="true">×</span></button>
+            <button class="text-button" type="submit" title="<?= app_escape(__('Ranger cette annonce dans « Toutes les annonces »')) ?>"><?= app_escape(__('Masquer')) ?> <span aria-hidden="true">×</span></button>
           </form>
           <?php endif; ?>
         </article>
 <?php
 }
 ?>
-<?php app_header($showAllEvents ? 'Agenda complet' : 'Mes prochains rendez-vous', $user); ?>
+<?php app_header($showAllEvents ? __('Agenda complet') : __('Mes prochains rendez-vous'), $user); ?>
       <?php if ($featuredAnnouncement !== null || $showAllAnnouncements): ?>
-      <section class="announcements" id="annonces" aria-label="Annonces">
+      <section class="announcements" id="annonces" aria-label="<?= app_escape(__('Annonces')) ?>">
         <?php if ($featuredAnnouncement !== null): ?>
         <?php announcementCard($featuredAnnouncement, $user, $announcementAuthors, true); ?>
         <?php endif; ?>
         <?php if ($foldedAnnouncements !== []): ?>
         <details class="announcements-more"<?= $showAllAnnouncements ? ' open' : '' ?>>
-          <summary><?= $featuredAnnouncement !== null ? 'Autres annonces' : 'Toutes les annonces' ?> (<?= count($foldedAnnouncements) ?>)</summary>
+          <summary><?= $featuredAnnouncement !== null ? __('Autres annonces') : __('Toutes les annonces') ?> (<?= count($foldedAnnouncements) ?>)</summary>
           <?php foreach ($foldedAnnouncements as $announcement): ?>
           <?php announcementCard($announcement, $user, $announcementAuthors, false); ?>
           <?php endforeach; ?>
@@ -448,7 +448,7 @@ function announcementCard(array $announcement, array $user, array $authors, bool
       <?php endif; ?>
       <section class="agenda-section" id="agenda" aria-labelledby="agenda-title">
         <div class="agenda-topline">
-          <p class="eyebrow"><span class="eyebrow-line"></span> <?= $showAllEvents ? 'AGENDA DU GROUPE' : 'À VOS AGENDAS' ?></p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape($showAllEvents ? __('AGENDA DU GROUPE') : __('À VOS AGENDAS')) ?></p>
           <div class="agenda-topline-end">
           <?php
               $isManagerView = in_array($user['role'], EVENT_MANAGER_ROLES, true);
@@ -458,21 +458,21 @@ function announcementCard(array $announcement, array $user, array $authors, bool
               $otherViewUrl = ($showAllEvents ? 'index.php' : 'agenda.php') . ($otherViewQuery !== [] ? '?' . http_build_query($otherViewQuery, '', '&', PHP_QUERY_RFC3986) : '');
               // Shortcut to add a date (managers and administrators), then the other agenda view.
               app_page_links([
-                  $isManagerView ? ['Ajouter une date', 'manage-events.php?onglet=ajouter'] : null,
+                  $isManagerView ? [__('Ajouter une date'), 'manage-events.php?onglet=ajouter'] : null,
                   !$showAllEvents && $featuredAnnouncement === null && $foldedAnnouncements !== [] && !$showAllAnnouncements ? ['Annonces (' . count($foldedAnnouncements) . ')', 'index.php?annonces=1#annonces'] : null,
-                  $showAllEvents ? ['Mes prochains rendez-vous', $otherViewUrl] : ['Agenda complet', $otherViewUrl],
+                  $showAllEvents ? [__('Mes prochains rendez-vous'), $otherViewUrl] : [__('Agenda complet'), $otherViewUrl],
               ]);
           ?>
           </div>
         </div>
         <div class="section-heading agenda-heading">
           <div>
-            <h2 id="agenda-title"><?= app_escape($showAllEvents ? trim('Tous les événements ' . app_site_identity()['association']) : 'Mes prochains rendez-vous') ?><span class="heading-dot">.</span></h2>
+            <h2 id="agenda-title"><?= app_escape($showAllEvents ? trim(__('Tous les événements {association}', ['association' => app_site_identity()['association']])) : __('Mes prochains rendez-vous')) ?><span class="heading-dot">.</span></h2>
           </div>
           <div class="page-actions">
             <a class="ical-link" href="<?= app_escape($calendarUrl) ?>">
-              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="S’abonner au calendrier iCal">
-                <title>S’abonner au calendrier (iCal)</title>
+              <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="24" height="24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" role="img" aria-label="<?= app_escape(__('S’abonner au calendrier iCal')) ?>">
+                <title><?= app_escape(__('S’abonner au calendrier (iCal)')) ?></title>
                 <path d="M12 21H5a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2v6"/>
                 <path d="M8 2v4M16 2v4M3 10h18"/>
                 <path d="M7 14h.01M11 14h.01M15 14h.01M7 17.5h.01"/>
@@ -486,43 +486,43 @@ function announcementCard(array $announcement, array $user, array $authors, bool
             // Filters folded in an accordion, open while a filter other than the default one is
             // active; its title sums up what is shown.
             $activeFilters = array_filter([
-                $presenceFilter !== null ? ATTENDANCE_FILTERS[$presenceFilter] : null,
-                $activeSection === 'Toutes' ? 'Toutes les sections' : ($sectionLabels[$activeSection] ?? null),
+                $presenceFilter !== null ? app_attendance_filters()[$presenceFilter] : null,
+                $activeSection === 'Toutes' ? __('Toutes les sections') : ($sectionLabels[$activeSection] ?? null),
             ]);
             $filtersOpen = $presenceFilter !== null || $activeSection !== $defaultSection;
         ?>
         <details class="filters-accordion"<?= $filtersOpen ? ' open' : '' ?>>
           <summary>
-            <span class="filters-accordion-title">Filtres</span>
+            <span class="filters-accordion-title"><?= app_escape(__('Filtres')) ?></span>
             <span class="filters-accordion-summary"><?= app_escape(implode(' · ', $activeFilters)) ?></span>
           </summary>
-        <nav class="filters" aria-label="Filtrer les dates">
+        <nav class="filters" aria-label="<?= app_escape(__('Filtrer les dates')) ?>">
           <div class="filter-rows">
           <?php if ($canFilterPresence): ?>
-          <div class="response-filters" role="group" aria-label="Filtrer selon mes réponses">
-            <span class="filter-row-label">Mes réponses</span>
-            <?php foreach (ATTENDANCE_FILTERS as $response => $label): ?>
+          <div class="response-filters" role="group" aria-label="<?= app_escape(__('Filtrer selon mes réponses')) ?>">
+            <span class="filter-row-label"><?= app_escape(__('Mes réponses')) ?></span>
+            <?php foreach (app_attendance_filters() as $response => $label): ?>
             <?php $isActive = $presenceFilter === $response; ?>
-            <a class="filter-button filter-response filter-response-<?= $response ?><?= $isActive ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl($activeSection, $isActive ? null : $response)) ?>" aria-pressed="<?= $isActive ? 'true' : 'false' ?>" title="<?= $isActive ? 'Afficher toutes les dates' : ($response === ATTENDANCE_NO_RESPONSE ? 'N’afficher que les dates auxquelles je n’ai pas encore répondu' : 'N’afficher que les dates où ma réponse est « ' . $label . ' »') ?>"><?= app_escape($label) ?></a>
+            <a class="filter-button filter-response filter-response-<?= $response ?><?= $isActive ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl($activeSection, $isActive ? null : $response)) ?>" aria-pressed="<?= $isActive ? 'true' : 'false' ?>" title="<?= app_escape($isActive ? __('Afficher toutes les dates') : ($response === ATTENDANCE_NO_RESPONSE ? __('N’afficher que les dates auxquelles je n’ai pas encore répondu') : __('N’afficher que les dates où ma réponse est « {answer} »', ['answer' => $label]))) ?>"><?= app_escape($label) ?></a>
             <?php endforeach; ?>
           </div>
           <?php endif; ?>
           <?php if ($showAllEvents && count($availableYears) > 1): ?>
-          <div class="response-filters year-filters" role="group" aria-label="Filtrer par année">
-            <span class="filter-row-label">Années</span>
+          <div class="response-filters year-filters" role="group" aria-label="<?= app_escape(__('Filtrer par année')) ?>">
+            <span class="filter-row-label"><?= app_escape(__('Années')) ?></span>
             <?php foreach ($availableYears as $year): ?>
             <?php
                 $isActive = in_array($year, $selectedYears, true);
                 $toggledYears = $isActive ? array_values(array_diff($selectedYears, [$year])) : [...$selectedYears, $year];
             ?>
-            <a class="filter-button filter-year<?= $isActive ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl($activeSection, false, $toggledYears)) ?>" aria-pressed="<?= $isActive ? 'true' : 'false' ?>" title="<?= $isActive ? 'Retirer ' . $year : 'Ajouter ' . $year ?>"><?= $year ?></a>
+            <a class="filter-button filter-year<?= $isActive ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl($activeSection, false, $toggledYears)) ?>" aria-pressed="<?= $isActive ? 'true' : 'false' ?>" title="<?= app_escape($isActive ? __('Retirer {year}', ['year' => $year]) : __('Ajouter {year}', ['year' => $year])) ?>"><?= $year ?></a>
             <?php endforeach; ?>
           </div>
           <?php endif; ?>
           <?php // An artist with a single sub-section as only choice already sees just their dates: no filter needed. ?>
           <?php if ($user['role'] !== 'musician' || count($availableSections) > 1): ?>
           <div class="section-filters">
-            <a class="filter-button filter-all<?= $activeSection === 'Toutes' ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl('Toutes')) ?>"<?= $activeSection === 'Toutes' ? ' aria-current="page"' : '' ?>>Toutes les sections</a>
+            <a class="filter-button filter-all<?= $activeSection === 'Toutes' ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl('Toutes')) ?>"<?= $activeSection === 'Toutes' ? ' aria-current="page"' : '' ?>><?= app_escape(__('Toutes les sections')) ?></a>
             <?php // Sections unchecked under "Filtres" in Configuration > Sections are not offered (the active one stays). ?>
             <?php foreach (array_filter($availableSections, static fn (string $section): bool => $section === $activeSection || app_section_shown($section, 'filters')) as $section): ?>
             <a class="filter-button<?= isset(app_section_tree()[$section]) ? ' filter-branch' : ' filter-child' ?><?= $activeSection === $section ? ' is-active' : '' ?>" href="<?= app_escape(sectionUrl($section)) ?>"<?= $activeSection === $section ? ' aria-current="page"' : '' ?>><?= app_escape($sectionLabels[$section]) ?></a>
@@ -539,8 +539,8 @@ function announcementCard(array $announcement, array $user, array $authors, bool
           <?php
               $date = $event['date_object'];
               $eventEndDate = $event['end_date_object'] ?? null;
-              $weekday = $weekdayNames[(int) $date->format('N')];
-              $month = $monthNames[(int) $date->format('n')];
+              $weekday = app_weekday_name((int) $date->format('N'));
+              $month = app_month_short((int) $date->format('n'));
               $eventResponses = isset($event['attendance']) && is_array($event['attendance']) ? $event['attendance'] : [];
               // No answer selected while the member has not answered.
               $attendance = app_attendance_response($eventResponses, (string) $user['id']);
@@ -559,27 +559,27 @@ function announcementCard(array $announcement, array $user, array $authors, bool
                   && array_intersect($event['sections'], $userLeafSections) !== [];
           ?>
           <article class="event-card status-<?= app_escape($event['status']) ?>"<?= $eventId !== '' ? ' id="event-' . app_escape($eventId) . '"' : '' ?>>
-            <span class="status-badge event-status status-badge-<?= app_escape($event['status']) ?>"><?= app_escape(EVENT_STATUSES[$event['status']]) ?></span>
-            <div class="event-date" aria-label="<?= app_escape($weekday . ' ' . $date->format('j') . ' ' . $month) ?>">
+            <span class="status-badge event-status status-badge-<?= app_escape($event['status']) ?>"><?= app_escape(app_statuses()[$event['status']]) ?></span>
+            <div class="event-date" aria-label="<?= app_escape(app_long_date($date, true, false, false)) ?>">
               <span class="date-day"><?= app_escape($date->format('d')) ?></span>
               <span class="date-month"><?= app_escape($month) ?></span>
             </div>
             <div class="event-details">
               <p class="event-weekday"><?= app_escape($weekday) ?></p>
               <h3><?php if ($eventId !== ''): ?><a class="event-title-link" href="event.php?id=<?= rawurlencode($eventId) ?>"><?= app_escape($event['title']) ?></a><?php else: ?><?= app_escape($event['title']) ?><?php endif; ?><?= app_change_badge(app_event_change_notice($event, $user, $seenState)) ?></h3>
-              <div class="event-sections" aria-label="Sections concernées">
+              <div class="event-sections" aria-label="<?= app_escape(__('Sections concernées')) ?>">
                 <?php foreach (app_section_display_items($event['all_sections']) as $eventSection): ?>
                 <span class="section-tag <?= app_escape(app_section_css_class($eventSection)) ?>"><?= app_escape($sectionLabels[$eventSection]) ?></span>
                 <?php endforeach; ?>
               </div>
               <div class="event-metadata">
                 <?php if ($event['all_day']): ?>
-                <span>Journée entière</span>
+                <span><?= app_escape(__('Journée entière')) ?></span>
                 <?php elseif (app_event_time_range($event) !== ''): ?>
                 <span>◷ <?= app_escape(app_event_time_range($event)) ?></span>
                 <?php endif; ?>
                 <?php if ($eventEndDate instanceof DateTimeImmutable): ?>
-                <span>Jusqu’au <?= app_escape($eventEndDate->format('d/m/Y')) ?></span>
+                <span><?= app_escape(__('Jusqu’au {date}', ['date' => $eventEndDate->format('d/m/Y')])) ?></span>
                 <?php endif; ?>
                 <?php if (isset($event['location']) && is_string($event['location']) && $event['location'] !== ''): ?>
                 <span>⌖ <?= app_escape($event['location']) ?></span>
@@ -595,8 +595,8 @@ function announcementCard(array $announcement, array $user, array $authors, bool
               <input type="hidden" name="section" value="<?= app_escape($activeSection) ?>">
               <?php if ($presenceFilter !== null): ?><input type="hidden" name="presence" value="<?= app_escape($presenceFilter) ?>"><?php endif; ?>
               <?php if ($showAllEvents && $selectedYears !== $defaultYears): ?><input type="hidden" name="annees" value="<?= app_escape(implode(',', $selectedYears)) ?>"><?php endif; ?>
-              <span class="attendance-label">Ma réponse</span>
-              <div class="attendance-options" role="group" aria-label="Votre réponse à <?= app_escape($event['title']) ?>">
+              <span class="attendance-label"><?= app_escape(__('Ma réponse')) ?></span>
+              <div class="attendance-options" role="group" aria-label="<?= app_escape(__('Votre réponse à {title}', ['title' => $event['title']])) ?>">
                 <?php foreach ($attendanceOptions as $response => $label): ?>
                 <button class="attendance-option attendance-<?= app_escape($response) ?><?= $attendance === $response ? ' is-selected' : '' ?>" type="submit" name="response" value="<?= app_escape($response) ?>" aria-pressed="<?= $attendance === $response ? 'true' : 'false' ?>"><?= app_escape($label) ?></button>
                 <?php endforeach; ?>
@@ -607,12 +607,12 @@ function announcementCard(array $announcement, array $user, array $authors, bool
             <?php if ($pendingPolls !== []): ?>
             <p class="event-polls-pending">
               <span class="poll-pending-dot" aria-hidden="true"></span>
-              <a href="event.php?id=<?= rawurlencode($eventId) ?>&amp;tab=sondage-<?= rawurlencode($pendingPolls[0]['id']) ?>"><?= count($pendingPolls) ?> sondage<?= count($pendingPolls) > 1 ? 's' : '' ?> à remplir : <?= app_escape($pendingPolls[0]['question']) ?><?= count($pendingPolls) > 1 ? '…' : '' ?> <span aria-hidden="true">→</span></a>
+              <a href="event.php?id=<?= rawurlencode($eventId) ?>&amp;tab=sondage-<?= rawurlencode($pendingPolls[0]['id']) ?>"><?= app_escape(__n('{n} sondage à remplir : {question}', '{n} sondages à remplir : {question}', count($pendingPolls), ['question' => $pendingPolls[0]['question']])) ?><?= count($pendingPolls) > 1 ? '…' : '' ?> <span aria-hidden="true">→</span></a>
             </p>
             <?php endif; ?>
             <?php if ($presentBySection !== []): ?>
             <p class="attendance-summary">
-              <span class="attendance-summary-label">Présents :</span>
+              <span class="attendance-summary-label"><?= app_escape(__('Présents :')) ?></span>
               <?php $separator = ''; ?>
               <?php foreach ($presentBySection as $leaf => $names): ?>
               <?= $separator ?><span class="attendance-section-count<?= $names === [] ? ' is-empty' : '' ?>"<?= $names !== [] ? ' title="' . app_escape(implode(', ', $names)) . '"' : '' ?>><?= app_escape($sectionLabels[$leaf]) ?> (<?= count($names) ?>)</span>
@@ -625,10 +625,10 @@ function announcementCard(array $announcement, array $user, array $authors, bool
             <?php if ($hasRoadmap || (in_array($user['role'], EVENT_MANAGER_ROLES, true) && $eventId !== '')): ?>
             <div class="event-card-actions">
               <?php if ($hasRoadmap): ?>
-              <a class="event-roadmap-link" href="event.php?id=<?= rawurlencode($eventId) ?>&amp;tab=feuille-de-route">Feuille de route <span aria-hidden="true">→</span></a>
+              <a class="event-roadmap-link" href="event.php?id=<?= rawurlencode($eventId) ?>&amp;tab=feuille-de-route"><?= app_escape(__('Feuille de route')) ?> <span aria-hidden="true">→</span></a>
               <?php endif; ?>
               <?php if ($event['can_edit'] && $eventId !== ''): ?>
-              <a class="event-edit-link" href="manage-events.php?edit=<?= rawurlencode($eventId) ?>" aria-label="Modifier : <?= app_escape($event['title']) ?>">Modifier</a>
+              <a class="event-edit-link" href="manage-events.php?edit=<?= rawurlencode($eventId) ?>" aria-label="<?= app_escape(__('Modifier : {title}', ['title' => $event['title']])) ?>"><?= app_escape(__('Modifier')) ?></a>
               <?php endif; ?>
             </div>
             <?php endif; ?>
@@ -636,30 +636,30 @@ function announcementCard(array $announcement, array $user, array $authors, bool
           <?php endforeach; ?>
         </div>
         <?php elseif ($showAllEvents && $listedEvents === [] && $allEvents !== []): ?>
-        <p class="no-filter-results"><?= $selectedYears === [] ? 'Sélectionnez au moins une année pour afficher des dates.' : 'Aucune date pour les années sélectionnées.' ?></p>
+        <p class="no-filter-results"><?= $selectedYears === [] ? __('Sélectionnez au moins une année pour afficher des dates.') : __('Aucune date pour les années sélectionnées.') ?></p>
         <?php elseif ($listedEvents === []): ?>
         <p class="empty-state">
           <span class="empty-icon" aria-hidden="true">✳</span>
-          <strong><?= $showAllEvents ? 'Aucun événement dans l’agenda pour le moment.' : 'Aucune date annoncée pour le moment.' ?></strong>
-          <span><?= $showAllEvents ? 'Les événements ajoutés à la liste apparaîtront ici.' : 'Les prochains rendez-vous apparaîtront ici. À très bientôt !' ?></span>
+          <strong><?= $showAllEvents ? __('Aucun événement dans l’agenda pour le moment.') : __('Aucune date annoncée pour le moment.') ?></strong>
+          <span><?= $showAllEvents ? __('Les événements ajoutés à la liste apparaîtront ici.') : __('Les prochains rendez-vous apparaîtront ici. À très bientôt !') ?></span>
         </p>
         <?php else: ?>
-        <p class="no-filter-results"><?= $presenceFilter === ATTENDANCE_NO_RESPONSE ? 'Vous avez répondu à toutes ces dates.' : ($presenceFilter !== null ? 'Aucune de ces dates n’a « ' . app_escape(ATTENDANCE_FILTERS[$presenceFilter]) . ' » comme réponse de votre part.' : 'Aucune date pour cette section pour le moment.') ?></p>
+        <p class="no-filter-results"><?= $presenceFilter === ATTENDANCE_NO_RESPONSE ? __('Vous avez répondu à toutes ces dates.') : ($presenceFilter !== null ? app_escape(__('Aucune de ces dates n’a « {answer} » comme réponse de votre part.', ['answer' => app_attendance_filters()[$presenceFilter]])) : __('Aucune date pour cette section pour le moment.')) ?></p>
         <?php endif; ?>
       </section>
 
       <?php // Proposal to install the application, shown by menu.js on phones only (see the install banner there). ?>
-      <aside class="install-banner" data-install-banner hidden aria-label="Installer l’application">
+      <aside class="install-banner" data-install-banner hidden aria-label="<?= app_escape(__('Installer l’application')) ?>">
         <img class="install-banner-icon" src="icon.php?size=180&amp;v=<?= app_escape(app_icon_version()) ?>" alt="">
         <div class="install-banner-text">
-          <strong>Installez <?= app_escape(app_site_nickname()) ?> sur votre téléphone</strong>
-          <span data-install-banner-android>Ouvrez l’agenda d’un geste, en plein écran, comme une application.</span>
-          <span data-install-banner-ios hidden>Touchez <b>Partager</b> <svg class="inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg> puis <b>Sur l’écran d’accueil</b>.</span>
-          <span data-install-banner-other hidden>Menu du navigateur, puis <b>Installer l’application</b> ou <b>Ajouter à l’écran d’accueil</b>.</span>
+          <strong><?= app_escape(__('Installez {app} sur votre téléphone', ['app' => app_site_nickname()])) ?></strong>
+          <span data-install-banner-android><?= app_escape(__('Ouvrez l’agenda d’un geste, en plein écran, comme une application.')) ?></span>
+          <span data-install-banner-ios hidden><?= __('Touchez {share} {icon} puis {home}.', ['share' => '<b>' . app_escape(__('Partager')) . '</b>', 'icon' => '<svg class="inline-icon" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4"/><path d="M6 11v9h12v-9"/></svg>', 'home' => '<b>' . app_escape(__('Sur l’écran d’accueil')) . '</b>']) ?></span>
+          <span data-install-banner-other hidden><?= __('Menu du navigateur, puis {install} ou {home}.', ['install' => '<b>' . app_escape(__('Installer l’application')) . '</b>', 'home' => '<b>' . app_escape(__('Ajouter à l’écran d’accueil')) . '</b>']) ?></span>
         </div>
         <div class="install-banner-actions">
-          <button class="primary-button compact-button" type="button" data-install-banner-button hidden>Installer</button>
-          <button class="text-button" type="button" data-install-banner-later>Plus tard</button>
+          <button class="primary-button compact-button" type="button" data-install-banner-button hidden><?= app_escape(__('Installer')) ?></button>
+          <button class="text-button" type="button" data-install-banner-later><?= app_escape(__('Plus tard')) ?></button>
         </div>
       </aside>
 <?php app_footer(); ?>

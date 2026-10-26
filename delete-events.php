@@ -84,7 +84,7 @@ app_header('Suppression des dates', $admin);
               <div>
                 <strong><a class="event-title-link" href="event.php?id=<?= rawurlencode($event['id']) ?>"><?= app_escape($title) ?></a></strong>
                 <span><?= $date !== null ? app_escape($date->format('d/m/Y')) : '' ?><?= !empty($event['end_date']) && ($endDate = app_parse_date($event['end_date'])) !== null ? ' – ' . app_escape($endDate->format('d/m/Y')) : '' ?> · <?= app_escape(implode(' · ', $details)) ?></span>
-                <span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(EVENT_STATUSES[$status]) ?></span>
+                <span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(app_statuses()[$status]) ?></span>
               </div>
               <div class="managed-event-actions">
                 <form method="post" action="delete-events.php" onsubmit="return confirm(<?= app_escape(json_encode($confirm, JSON_UNESCAPED_UNICODE)) ?>);">

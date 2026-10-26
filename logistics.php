@@ -17,7 +17,7 @@ $logisticsStatuses = app_logistics_statuses();
 $eventStatus = static fn (array $event): string => is_string($event['status'] ?? null) && isset(EVENT_STATUSES[$event['status']]) ? $event['status'] : 'pending';
 $weekdayNames = ['', 'Lun.', 'Mar.', 'Mer.', 'Jeu.', 'Ven.', 'Sam.', 'Dim.'];
 $formatDate = static fn (string $value): string => ($date = app_parse_date($value)) !== null ? $weekdayNames[(int) $date->format('N')] . ' ' . $date->format('d/m/Y') : '';
-$statusBadge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(EVENT_STATUSES[$status]) . '</span>';
+$statusBadge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(app_statuses()[$status]) . '</span>';
 
 $requestedEventId = $_GET['event'] ?? '';
 $event = null;
@@ -275,7 +275,7 @@ if ($event === null):
             <select id="logistics-status-filter" name="statut">
               <option value="">Tous les statuts</option>
               <?php foreach ($listStatuses as $statusKey => [$code, $label, $mapped]): ?>
-              <option value="<?= $statusKey ?>"<?= $statusFilter === $statusKey ? ' selected' : '' ?>><?= app_escape($code . ' · ' . $label . ' (' . EVENT_STATUSES[$mapped] . ')') ?></option>
+              <option value="<?= $statusKey ?>"<?= $statusFilter === $statusKey ? ' selected' : '' ?>><?= app_escape($code . ' · ' . $label . ' (' . app_statuses()[$mapped] . ')') ?></option>
               <?php endforeach; ?>
             </select>
             <label class="active-toggle logistics-reserved-toggle"><input type="checkbox" name="reservees" value="1"<?= $showReserved ? ' checked' : '' ?> onchange="this.form.submit()"> Inclure les dates réservées<?= $reservedHidden > 0 ? ' <span class="log-sub logistics-reserved-count">(' . $reservedHidden . ' masquée' . ($reservedHidden > 1 ? 's' : '') . ')</span>' : '' ?></label>
@@ -390,7 +390,7 @@ app_header('Logistique : ' . $event['title'], $user);
           <label for="logistics-status">Statut logistique</label>
           <select id="logistics-status" name="logistics_status">
             <?php foreach ($logisticsStatuses as $statusKey => [$code, $label, $mapped]): ?>
-            <option value="<?= $statusKey ?>"<?= $logisticsStatus === $statusKey ? ' selected' : '' ?>><?= app_escape($code . ' · ' . $label . ' → ' . EVENT_STATUSES[$mapped]) ?></option>
+            <option value="<?= $statusKey ?>"<?= $logisticsStatus === $statusKey ? ' selected' : '' ?>><?= app_escape($code . ' · ' . $label . ' → ' . app_statuses()[$mapped]) ?></option>
             <?php endforeach; ?>
           </select>
           <button class="primary-button compact-button" type="submit">Enregistrer le statut</button>

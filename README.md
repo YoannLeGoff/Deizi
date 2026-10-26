@@ -224,7 +224,7 @@ L'interface est prévue en **français**, **anglais**, **breton** et **espagnol*
 
 **Traduire** : `php tools/i18n-check.php` compte, pour chaque langue, les textes traduits, manquants et inutilisés (liste des premiers manquants) ; `php tools/i18n-check.php --keys` donne tous les textes à traduire. L'outil ne fonctionne qu'en ligne de commande. Les traductions bretonnes sont à relire par un brittophone.
 
-Avancement : socle, en-tête, menu, cloche, pied de page, connexion et Mon compte sont traduits ; les autres pages restent en français pour l'instant.
+Avancement : traduits — socle, en-tête, menu, cloche, pied de page, connexion, Mon compte ; pages des membres (accueil et agenda complet, flux iCal dans la langue du membre, page d’une date avec présences, sondages et feuille de route, feuille de route partagée, trombinoscope, photos, page Mises à jour hors historique des nouveautés) et leurs messages. Restent en français : vues avancées, gestion des dates, tableau de présence, annonces, comptes, journal d’audit, logistique, configuration, notifications push et historique des nouveautés (`lib/changelog.php`). Les contenus saisis par l’association (titres et lieux des dates, annonces, texte de présentation, noms des sections) ne sont pas traduits. Les libellés fixes passent par `app_statuses()`, `app_attendance_responses()`, `app_attendance_filters()`, `app_roles()` ; les dates par `app_long_date()`, `app_month_short()` et `app_time()` ; les valeurs enregistrées (journal) restent en français et sont traduites à l’affichage.
 
 ## Sécurité et publication
 

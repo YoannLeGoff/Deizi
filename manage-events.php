@@ -129,7 +129,7 @@ app_header('Gestion des dates', $user);
             <input id="event-title" name="title" required maxlength="200" value="<?= app_escape((string) ($editing['title'] ?? '')) ?>">
             <label for="event-status">Statut *</label>
             <select id="event-status" name="status" required>
-              <?php foreach (EVENT_STATUSES as $status => $label): ?>
+              <?php foreach (app_statuses() as $status => $label): ?>
               <option value="<?= app_escape($status) ?>"<?= $eventStatus === $status ? ' selected' : '' ?>><?= app_escape($label) ?></option>
               <?php endforeach; ?>
             </select>
@@ -403,7 +403,7 @@ app_header('Gestion des dates', $user);
                 <strong><?php if (is_string($event['id'] ?? null)): ?><a class="event-title-link" href="event.php?id=<?= rawurlencode($event['id']) ?>"><?= app_escape((string) ($event['title'] ?? 'Événement sans titre')) ?></a><?php else: ?><?= app_escape((string) ($event['title'] ?? 'Événement sans titre')) ?><?php endif; ?></strong>
                 <span><?= app_escape((string) ($event['date'] ?? '')) ?><?= !empty($event['end_date']) ? ' – ' . app_escape((string) $event['end_date']) : '' ?><?= ($event['all_day'] ?? false) === true ? ' · Journée entière' : (app_event_time_range($event) !== '' ? ' · ' . app_escape(app_event_time_range($event)) : '') ?></span>
                 <?php $eventStatus = isset($event['status']) && is_string($event['status']) && isset(EVENT_STATUSES[$event['status']]) ? $event['status'] : 'pending'; ?>
-                <span class="status-badge status-badge-<?= app_escape($eventStatus) ?>"><?= app_escape(EVENT_STATUSES[$eventStatus]) ?></span>
+                <span class="status-badge status-badge-<?= app_escape($eventStatus) ?>"><?= app_escape(app_statuses()[$eventStatus]) ?></span>
                 <?php $eventSections = isset($event['sections']) && is_array($event['sections']) ? app_section_display_items(array_filter($event['sections'], 'is_string')) : []; ?>
                 <?php if ($eventSections !== [] || app_event_is_reserved($event)): ?>
                 <span class="managed-event-sections">

@@ -75,7 +75,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         foreach (STATUS_DEFAULT_PALETTES as $status => ['bg' => $default]) {
             $color = app_normalize_hex_color($posted[$status] ?? null);
             if ($color === null) {
-                app_flash('Couleur invalide pour le statut « ' . EVENT_STATUSES[$status] . ' ».', 'error');
+                app_flash('Couleur invalide pour le statut « ' . app_statuses()[$status] . ' ».', 'error');
                 app_redirect('status-settings.php');
             }
             if ($color !== $default) {
@@ -154,7 +154,7 @@ app_header('Statuts', $admin);
                   </tr>
                 </thead>
                 <tbody>
-                  <?php foreach (EVENT_STATUSES as $status => $label): ?>
+                  <?php foreach (app_statuses() as $status => $label): ?>
                   <?php
                       $default = STATUS_DEFAULT_PALETTES[$status]['bg'];
                       $color = $customColors[$status] ?? $default;
@@ -219,7 +219,7 @@ app_header('Statuts', $admin);
                     <td>
                       <select name="logistics[<?= $index ?>][status]" aria-label="Statut de la date">
                         <?php if ($row === null): ?><option value="">—</option><?php endif; ?>
-                        <?php foreach (EVENT_STATUSES as $eventStatus => $eventLabel): ?>
+                        <?php foreach (app_statuses() as $eventStatus => $eventLabel): ?>
                         <option value="<?= $eventStatus ?>"<?= ($row['status'] ?? '') === $eventStatus ? ' selected' : '' ?>><?= app_escape($eventLabel) ?></option>
                         <?php endforeach; ?>
                       </select>

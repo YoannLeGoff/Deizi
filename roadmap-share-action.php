@@ -7,7 +7,7 @@ $user = app_require_roles(EVENT_MANAGER_ROLES);
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('Méthode non autorisée.'));
 }
 
 app_verify_csrf();
@@ -15,7 +15,7 @@ $eventId = $_POST['event_id'] ?? '';
 $action = $_POST['action'] ?? '';
 if (!is_string($eventId) || $eventId === '' || !in_array($action, ['create', 'renew', 'revoke'], true)) {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('Demande invalide.'));
 }
 
 $found = false;
@@ -37,12 +37,12 @@ update_json_file(app_data_path('events.json'), static function (array $events) u
 });
 
 if (!$found) {
-    app_flash('Cette date n’existe plus.', 'error');
+    app_flash(__('Cette date n’existe plus.'), 'error');
     app_redirect('index.php');
 }
 app_flash([
-    'create' => 'Le lien public de la feuille de route a été créé.',
-    'renew' => 'Un nouveau lien public a été créé ; l’ancien ne fonctionne plus.',
-    'revoke' => 'Le lien public a été désactivé.',
+    'create' => __('Le lien public de la feuille de route a été créé.'),
+    'renew' => __('Un nouveau lien public a été créé ; l’ancien ne fonctionne plus.'),
+    'revoke' => __('Le lien public a été désactivé.'),
 ][$action]);
 app_redirect('event.php?id=' . rawurlencode($eventId) . '&tab=feuille-de-route');

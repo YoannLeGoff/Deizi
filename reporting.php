@@ -236,7 +236,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
             <fieldset class="report-filter-row">
               <legend class="report-filter-label">Statut :</legend>
               <div class="report-filter-options">
-                <?php foreach (EVENT_STATUSES as $status => $label): ?>
+                <?php foreach (app_statuses() as $status => $label): ?>
                 <label class="section-assignment-option"><input type="checkbox" name="statut[]" value="<?= $status ?>"<?= in_array($status, $selectedStatuses, true) ? ' checked' : '' ?>> <span class="planning-dot planning-dot-<?= $status ?>" aria-hidden="true"></span><?= app_escape($label) ?></label>
                 <?php endforeach; ?>
               </div>
@@ -287,7 +287,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
           <div class="planning-summary">
             <p><strong><?= $totalEvents ?></strong> date<?= $totalEvents > 1 ? 's' : '' ?> affichée<?= $totalEvents > 1 ? 's' : '' ?> sur la période <?= app_escape($periodLabel) ?> · <?= app_escape($sectionSummary) ?></p>
             <ul class="planning-legend" aria-label="Légende des statuts">
-              <?php foreach (EVENT_STATUSES as $status => $label): ?>
+              <?php foreach (app_statuses() as $status => $label): ?>
               <li class="<?= in_array($status, $selectedStatuses, true) ? '' : 'is-hidden-status' ?>"<?= in_array($status, $selectedStatuses, true) ? '' : ' title="Masqué par le filtre"' ?>><span class="planning-dot planning-dot-<?= $status ?>" aria-hidden="true"></span><?= app_escape($label) ?> <span class="planning-legend-count"><?= $statusCounts[$status] ?></span></li>
               <?php endforeach; ?>
             </ul>
@@ -336,7 +336,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
                       <?php endif; ?>
                     </div>
                   </td>
-                  <td><span class="status-badge status-badge-<?= $item['status'] ?>"><?= app_escape(EVENT_STATUSES[$item['status']]) ?></span></td>
+                  <td><span class="status-badge status-badge-<?= $item['status'] ?>"><?= app_escape(app_statuses()[$item['status']]) ?></span></td>
                 </tr>
               <?php endforeach; ?>
               </tbody>
@@ -410,9 +410,9 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
                       <?php foreach ($dayEvents as $item): ?>
                       <?php [$tag, $href] = $item['linked'] ? ['a', ' href="event.php?id=' . rawurlencode($item['id']) . '"'] : ['span', '']; ?>
                       <?php if ($item['first']): ?>
-                      <<?= $tag ?> class="semester-event status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' — ' . EVENT_STATUSES[$item['status']]) ?>"><?= app_escape($item['label']) ?></<?= $tag ?>>
+                      <<?= $tag ?> class="semester-event status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' — ' . app_statuses()[$item['status']]) ?>"><?= app_escape($item['label']) ?></<?= $tag ?>>
                       <?php else: ?>
-                      <<?= $tag ?> class="semester-event semester-continued status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' (suite) — ' . EVENT_STATUSES[$item['status']]) ?>"><span class="sr-only"><?= app_escape($item['title']) ?> (suite)</span></<?= $tag ?>>
+                      <<?= $tag ?> class="semester-event semester-continued status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' (suite) — ' . app_statuses()[$item['status']]) ?>"><span class="sr-only"><?= app_escape($item['title']) ?> (suite)</span></<?= $tag ?>>
                       <?php endif; ?>
                       <?php endforeach; ?>
                     </td>
