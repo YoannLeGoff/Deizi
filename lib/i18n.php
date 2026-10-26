@@ -6,6 +6,7 @@ declare(strict_types=1);
 // without translation is shown in French. Placeholders are written {name} and given to __().
 // The language of a page: the member's own choice (Mon compte), otherwise the default language of
 // the site (Identité du site); before logging in, the language of the browser when available.
+// Languages of the code (lang/<code>.php); others are created in Configuration > Langues.
 const LANGUAGES = [
     'fr' => 'Français',
     'en' => 'English',
@@ -13,10 +14,58 @@ const LANGUAGES = [
     'es' => 'Español',
 ];
 const DEFAULT_LANGUAGE = 'fr';
+// Code of a language: "fr-ca", "en-us", "br-gwened"…
+const LANGUAGE_CODE_PATTERN = '/^[a-z]{2,3}(-[a-z0-9]{2,8})?$/';
+const LANGUAGE_NAME_MAX_LENGTH = 40;
+
+// Languages created in Configuration > Langues (settings.json, "languages"): code => [name, base],
+// each based on an existing language, whose translations it takes until it changes them.
+function app_custom_languages(bool $refresh = false): array
+{
+    static $languages = null;
+    if ($languages !== null && !$refresh) {
+        return $languages;
+    }
+    $stored = read_json_file(app_data_path('settings.json'))['languages'] ?? [];
+    $languages = [];
+    foreach (is_array($stored) ? $stored : [] as $code => $language) {
+        if (is_string($code) && preg_match(LANGUAGE_CODE_PATTERN, $code) === 1 && !isset(LANGUAGES[$code])
+            && is_string($language['name'] ?? null) && trim($language['name']) !== '' && is_string($language['base'] ?? null)) {
+            $languages[$code] = ['name' => trim($language['name']), 'base' => $language['base']];
+        }
+    }
+    // A language whose chain of bases does not end on a language of the code is left out.
+    foreach (array_keys($languages) as $code) {
+        $current = $code;
+        for ($depth = 0; isset($languages[$current]) && $depth < 10; $depth++) {
+            $current = $languages[$current]['base'];
+        }
+        if (!isset(LANGUAGES[$current])) {
+            unset($languages[$code]);
+        }
+    }
+    return $languages;
+}
+
+// Every language: code => name (those of the code, then those created).
+function app_languages(): array
+{
+    return LANGUAGES + array_map(static fn (array $language): string => $language['name'], app_custom_languages());
+}
 
 function app_is_language(mixed $code): bool
 {
-    return is_string($code) && isset(LANGUAGES[$code]);
+    return is_string($code) && isset(app_languages()[$code]);
+}
+
+// Language of the code a language comes from ("fr" for "fr-ca"): it sets how dates are written.
+function app_language_root(string $code): string
+{
+    $custom = app_custom_languages();
+    for ($depth = 0; isset($custom[$code]) && $depth < 10; $depth++) {
+        $code = $custom[$code]['base'];
+    }
+    return isset(LANGUAGES[$code]) ? $code : DEFAULT_LANGUAGE;
 }
 
 // Default language of the site, set in Configuration > Identité du site.
@@ -26,7 +75,8 @@ function app_site_language(): string
     return app_is_language($language) ? $language : DEFAULT_LANGUAGE;
 }
 
-// Preferred language of the browser among LANGUAGES ("Accept-Language"), or null.
+// Preferred language of the browser among the languages ("Accept-Language"), or null: the exact
+// one ("fr-CA" for "fr-ca") first, otherwise the main one ("fr").
 function app_browser_language(): ?string
 {
     $header = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? '';
@@ -37,16 +87,19 @@ function app_browser_language(): ?string
     $bestWeight = 0.0;
     foreach (explode(',', $header) as $part) {
         $pieces = explode(';', trim($part));
-        $code = strtolower(substr(trim($pieces[0]), 0, 2));
+        $tag = strtolower(trim($pieces[0]));
         $weight = 1.0;
         foreach (array_slice($pieces, 1) as $parameter) {
             if (str_starts_with(trim($parameter), 'q=')) {
                 $weight = (float) substr(trim($parameter), 2);
             }
         }
-        if (app_is_language($code) && $weight > $bestWeight) {
-            $best = $code;
-            $bestWeight = $weight;
+        // The exact language weighs a little more than its main one given with the same weight.
+        foreach ([[$tag, $weight + 0.001], [explode('-', $tag)[0], $weight]] as [$code, $score]) {
+            if (app_is_language($code) && $score > $bestWeight) {
+                $best = $code;
+                $bestWeight = $score;
+            }
         }
     }
     return $best;
@@ -79,19 +132,31 @@ function app_set_locale_for(array $user): void
     app_locale(app_is_language($user['language'] ?? null) ? $user['language'] : app_site_language());
 }
 
-// Translations of a language: "French text" => "translated text", those of the code
-// (lang/<code>.php) with the corrections made in Configuration > Langues
-// (data/translations-<code>.json) over them.
+// Translations of a language: "French text" => "translated text": those of the code
+// (lang/<code>.php), or for a created language those of its base, with the corrections made in
+// Configuration > Langues (data/translations-<code>.json) over them.
 function app_translations(string $language, bool $refresh = false): array
 {
     static $loaded = [];
     if (!isset($loaded[$language]) || $refresh) {
-        $file = dirname(__DIR__) . '/lang/' . $language . '.php';
-        $translations = $language !== DEFAULT_LANGUAGE && is_file($file) ? require $file : [];
-        $overrides = $language !== DEFAULT_LANGUAGE && isset(LANGUAGES[$language]) ? read_json_file(app_data_path('translations-' . $language . '.json')) : [];
-        $loaded[$language] = array_merge(is_array($translations) ? $translations : [], array_filter($overrides, 'is_string'));
+        $inherited = app_inherited_translations($language);
+        $overrides = $language !== DEFAULT_LANGUAGE && app_is_language($language) ? read_json_file(app_data_path('translations-' . $language . '.json')) : [];
+        $loaded[$language] = array_merge($inherited, array_filter($overrides, static fn (mixed $value): bool => is_string($value) && $value !== ''));
     }
     return $loaded[$language];
+}
+
+// Translations a language starts from: lang/<code>.php for a language of the code, the
+// translations of its base for a created language (none when the base is French).
+function app_inherited_translations(string $language): array
+{
+    $custom = app_custom_languages();
+    if (isset($custom[$language])) {
+        return $custom[$language]['base'] === DEFAULT_LANGUAGE ? [] : app_translations($custom[$language]['base']);
+    }
+    $file = dirname(__DIR__) . '/lang/' . $language . '.php';
+    $translations = $language !== DEFAULT_LANGUAGE && isset(LANGUAGES[$language]) && is_file($file) ? require $file : [];
+    return is_array($translations) ? $translations : [];
 }
 
 // $text (French) in the language of the page, with its {placeholders} replaced by $values.
@@ -142,7 +207,7 @@ function app_month_short(int $month): string
 // Time of day: "14h30" in French, "14:30" otherwise.
 function app_time(DateTimeInterface $date): string
 {
-    return $date->format(app_locale() === 'fr' ? 'H\hi' : 'H:i');
+    return $date->format(app_language_root(app_locale()) === 'fr' ? 'H\hi' : 'H:i');
 }
 
 // "Dimanche 8 novembre 2026" in the language of the page ({weekday} {day} {month} {year}, an
@@ -152,7 +217,7 @@ function app_long_date(DateTimeInterface $date, bool $weekday = true, bool $year
     $day = (int) $date->format('j');
     $values = [
         'weekday' => app_weekday_name((int) $date->format('N'), $capital),
-        'day' => app_locale() === 'fr' && $day === 1 ? '1er' : (string) $day,
+        'day' => app_language_root(app_locale()) === 'fr' && $day === 1 ? '1er' : (string) $day,
         'month' => app_month_name((int) $date->format('n')),
         'year' => $date->format('Y'),
     ];

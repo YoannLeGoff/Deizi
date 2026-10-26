@@ -161,8 +161,8 @@ app_header('Mon compte', $user);
             <input type="hidden" name="action" value="language">
             <label for="account-language"><?= app_escape(__('Langue de l’application')) ?></label>
             <select id="account-language" name="language">
-              <option value=""><?= app_escape(__('Langue du site ({language})', ['language' => LANGUAGES[app_site_language()]])) ?></option>
-              <?php foreach (LANGUAGES as $code => $name): ?>
+              <option value=""><?= app_escape(__('Langue du site ({language})', ['language' => app_languages()[app_site_language()]])) ?></option>
+              <?php foreach (app_languages() as $code => $name): ?>
               <option value="<?= $code ?>" lang="<?= $code ?>"<?= ($user['language'] ?? '') === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
               <?php endforeach; ?>
             </select>

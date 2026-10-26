@@ -76,18 +76,25 @@ function app_translation_id(string $text): string
     return substr(hash('sha256', $text), 0, 12);
 }
 
-// Translations shipped with the code (lang/<code>.php), without the corrections of this installation.
+// Translations a language starts from, without its own corrections: lang/<code>.php, or those
+// of its base for a created language.
 function app_code_translations(string $language): array
 {
-    $file = dirname(__DIR__) . '/lang/' . $language . '.php';
-    $translations = $language !== DEFAULT_LANGUAGE && is_file($file) ? require $file : [];
-    return is_array($translations) ? $translations : [];
+    return app_inherited_translations($language);
+}
+
+// Translation a text has before the corrections of $language: inherited, otherwise the French
+// text itself for a language coming from French ("fr-ca"), otherwise "" (to translate).
+function app_inherited_translation(string $language, string $french): string
+{
+    $inherited = app_code_translations($language)[$french] ?? '';
+    return $inherited !== '' ? $inherited : (app_language_root($language) === DEFAULT_LANGUAGE ? $french : '');
 }
 
 // Corrections of this installation (data/translations-<code>.json).
 function app_translation_overrides(string $language): array
 {
-    if (!isset(LANGUAGES[$language]) || $language === DEFAULT_LANGUAGE) {
+    if (!app_is_language($language) || $language === DEFAULT_LANGUAGE) {
         return [];
     }
     $stored = read_json_file(app_data_path('translations-' . $language . '.json'));
@@ -120,7 +127,6 @@ function app_translation_error(string $french, string $translation): ?string
 // removes the correction). Returns [saved, unchanged, refused (text => reason)].
 function app_save_translations(string $language, array $changes): array
 {
-    $code = app_code_translations($language);
     $saved = 0;
     $unchanged = 0;
     $refused = [];
@@ -131,7 +137,7 @@ function app_save_translations(string $language, array $changes): array
             $refused[$french] = $error;
             continue;
         }
-        $valid[$french] = $translation === ($code[$french] ?? null) ? '' : $translation;
+        $valid[$french] = $translation === app_inherited_translation($language, $french) ? '' : $translation;
     }
     update_json_file(app_data_path('translations-' . $language . '.json'), static function (array $stored) use ($valid, &$saved, &$unchanged): array {
         foreach ($valid as $french => $translation) {
@@ -158,7 +164,7 @@ function app_translation_php(string $language): string
 {
     $translations = app_translations($language);
     $quote = static fn (string $text): string => "'" . strtr($text, ['\\' => '\\\\', "'" => "\\'"]) . "'";
-    $lines = ['<?php', 'declare(strict_types=1);', '', '// Translations into ' . LANGUAGES[$language] . ': "French text of the code" => "translation".', '// Exported from Configuration > Langues on ' . date('Y-m-d') . '; keep the {placeholders} unchanged.', 'return ['];
+    $lines = ['<?php', 'declare(strict_types=1);', '', '// Translations into ' . app_languages()[$language] . ': "French text of the code" => "translation".', '// Exported from Configuration > Langues on ' . date('Y-m-d') . '; keep the {placeholders} unchanged.', 'return ['];
     foreach (array_keys(app_i18n_keys()) as $french) {
         if (($translations[$french] ?? '') !== '') {
             $lines[] = '    ' . $quote($french) . ' => ' . $quote($translations[$french]) . ',';

@@ -100,7 +100,7 @@ app_header('Identité du site', $admin);
             <div class="form-stack">
               <label for="site-language"><?= app_escape(__('Langue par défaut du site')) ?></label>
               <select id="site-language" name="language">
-                <?php foreach (LANGUAGES as $code => $name): ?>
+                <?php foreach (app_languages() as $code => $name): ?>
                 <option value="<?= $code ?>" lang="<?= $code ?>"<?= app_site_language() === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
                 <?php endforeach; ?>
               </select>

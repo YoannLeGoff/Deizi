@@ -841,7 +841,9 @@ function app_site_nickname(): string
 
 function app_data_path(string $filename): string
 {
-    if (!in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json', 'translations-en.json', 'translations-br.json', 'translations-es.json'], true)) {
+    // Translations corrected in Configuration > Langues: one file per language other than French.
+    $isTranslations = preg_match('/^translations-([a-z]{2,3}(-[a-z0-9]{2,8})?)\.json$/', $filename, $match) === 1 && $match[1] !== DEFAULT_LANGUAGE;
+    if (!$isTranslations && !in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json'], true)) {
         throw new InvalidArgumentException('Nom de fichier de données non autorisé.');
     }
 
