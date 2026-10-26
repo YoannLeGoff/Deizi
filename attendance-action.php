@@ -7,7 +7,7 @@ $user = app_require_login();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit(__('Méthode non autorisée.'));
+    exit(__('methode_non_autorisee_phrase'));
 }
 
 app_verify_csrf();
@@ -26,7 +26,7 @@ if (
     || !is_string($requestedSection)
 ) {
     http_response_code(400);
-    exit(__('Réponse invalide.'));
+    exit(__('reponse_invalide_phrase'));
 }
 
 $userSections = app_expand_sections(app_user_sections($user));
@@ -83,15 +83,15 @@ update_json_file($path, static function (array $events) use (
 });
 
 if ($locked) {
-    app_flash(__('Cette date est terminée, annulée ou refusée : la présence ne peut plus être indiquée.'), 'error');
+    app_flash(__('cette_date_terminee_annulee_refusee_presence'), 'error');
     app_redirect($returnPage === 'event' ? 'event.php?id=' . rawurlencode($eventId) : ($returnPage === 'agenda' ? 'agenda.php' : 'index.php') . '#event-' . rawurlencode($eventId));
 }
 if (!$found || !$authorized) {
     http_response_code($found ? 403 : 404);
-    exit($found ? __('Cette date ne concerne pas vos sections.') : __('Cette date n’existe plus.'));
+    exit($found ? __('cette_date_concerne_vos_sections_phrase') : __('cette_date_nexiste_plus_phrase'));
 }
 
-app_flash(__('Votre réponse a été enregistrée : {answer}.', ['answer' => __($validResponses[$response])]));
+app_flash(__('votre_reponse_ete_enregistree_answer_phrase', ['answer' => app_label($validResponses[$response])]));
 if ($returnPage === 'event') {
     app_redirect('event.php?id=' . rawurlencode($eventId));
 }

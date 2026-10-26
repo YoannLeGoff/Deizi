@@ -96,15 +96,15 @@ app_header('Identité du site', $admin);
           </section>
 
           <section class="management-panel" aria-labelledby="site-language-title">
-            <h2 class="detail-heading" id="site-language-title"><?= app_escape(__('Langue')) ?></h2>
+            <h2 class="detail-heading" id="site-language-title"><?= app_escape(__('langue')) ?></h2>
             <div class="form-stack">
-              <label for="site-language"><?= app_escape(__('Langue par défaut du site')) ?></label>
+              <label for="site-language"><?= app_escape(__('langue_defaut_site')) ?></label>
               <select id="site-language" name="language">
                 <?php foreach (app_languages() as $code => $name): ?>
                 <option value="<?= $code ?>" lang="<?= $code ?>"<?= app_site_language() === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
                 <?php endforeach; ?>
               </select>
-              <p class="field-help"><?= app_escape(__('Langue des membres qui n’en ont pas choisi une dans « Mon compte ». Avant la connexion, la page s’affiche dans la langue du navigateur quand elle est disponible.')) ?></p>
+              <p class="field-help"><?= app_escape(__('langue_membres_nen_ont_choisi_dans')) ?></p>
             </div>
           </section>
 

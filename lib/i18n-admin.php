@@ -1,13 +1,13 @@
 <?php
 declare(strict_types=1);
 
-// Editing the translations (Configuration > Langues, tools/i18n-check.php). The translations of
-// the code (lang/<code>.php) can be overridden per installation: the corrections are kept in
-// data/translations-<code>.json ("French text" => "translation"), so that an update of the
-// application keeps them; an export gives back a complete lang/<code>.php to share.
+// Editing the texts of the interface (Configuration > Langues, tools/i18n-check.php). The texts
+// of the code (lang/<code>.php) can be corrected per installation, French included: the
+// corrections are kept in data/translations-<code>.json ("key" => "text"), so that an update of
+// the application keeps them; an export gives back a complete lang/<code>.php to share.
 
-// Texts to translate: the literal French strings given to __() and __n() in the code, and the
-// lists translated when shown. Text => file where it was found ("lists" for the lists).
+// Keys of the texts: the literal keys given to __() and __n() in the code, and those of the
+// lists translated when shown (their French labels). Key => file where it was found ("lists").
 function app_i18n_keys(): array
 {
     static $keys = null;
@@ -51,11 +51,11 @@ function app_i18n_keys(): array
     foreach ($lists as $list) {
         foreach ($list as $text) {
             if (is_string($text) && $text !== '') {
-                $keys[$text] ??= 'lists';
+                $keys[app_label_key($text) ?? $text] ??= 'lists';
             }
         }
     }
-    uksort($keys, static fn (string $first, string $second): int => strcmp(app_lowercase($first), app_lowercase($second)));
+    ksort($keys);
     return $keys;
 }
 
@@ -70,10 +70,10 @@ function app_php_string_value(string $literal): string
     return stripcslashes($body);
 }
 
-// Short identifier of a text, used in the forms and the exported files.
-function app_translation_id(string $text): string
+// French text of a key, as in the code (lang/fr.php).
+function app_french_text(string $key): string
 {
-    return substr(hash('sha256', $text), 0, 12);
+    return app_code_texts(DEFAULT_LANGUAGE)[$key] ?? $key;
 }
 
 // Translations a language starts from, without its own corrections: lang/<code>.php, or those
@@ -83,18 +83,16 @@ function app_code_translations(string $language): array
     return app_inherited_translations($language);
 }
 
-// Translation a text has before the corrections of $language: inherited, otherwise the French
-// text itself for a language coming from French ("fr-ca"), otherwise "" (to translate).
-function app_inherited_translation(string $language, string $french): string
+// Text a key has in $language before its own corrections ("" when it is still to translate).
+function app_inherited_translation(string $language, string $key): string
 {
-    $inherited = app_code_translations($language)[$french] ?? '';
-    return $inherited !== '' ? $inherited : (app_language_root($language) === DEFAULT_LANGUAGE ? $french : '');
+    return app_code_translations($language)[$key] ?? '';
 }
 
 // Corrections of this installation (data/translations-<code>.json).
 function app_translation_overrides(string $language): array
 {
-    if (!app_is_language($language) || $language === DEFAULT_LANGUAGE) {
+    if (!app_is_language($language)) {
         return [];
     }
     $stored = read_json_file(app_data_path('translations-' . $language . '.json'));
@@ -110,45 +108,46 @@ function app_text_placeholders(string $text): array
     return $placeholders;
 }
 
-// Why $translation cannot be used for $french, or null: its placeholders must be those of the French text.
-function app_translation_error(string $french, string $translation): ?string
+// Why $translation cannot be used for the text $key, or null: its placeholders must be those of
+// the French text.
+function app_translation_error(string $key, string $translation): ?string
 {
-    $expected = app_text_placeholders($french);
+    $expected = app_text_placeholders(app_french_text($key));
     $found = app_text_placeholders($translation);
     if ($expected !== $found) {
         return $expected === []
-            ? __('ne doit pas contenir de valeur entre accolades')
-            : __('doit contenir exactement {placeholders}', ['placeholders' => implode(' ', $expected)]);
+            ? __('doit_contenir_valeur_entre_accolades')
+            : __('doit_contenir_exactement_placeholders', ['placeholders' => implode(' ', $expected)]);
     }
     return null;
 }
 
-// Saves corrections of $language: text => new translation ("" or the translation of the code
-// removes the correction). Returns [saved, unchanged, refused (text => reason)].
+// Saves corrections of $language: key => new text ("" or the inherited text removes the
+// correction). Returns [saved, unchanged, refused (key => reason)].
 function app_save_translations(string $language, array $changes): array
 {
     $saved = 0;
     $unchanged = 0;
     $refused = [];
     $valid = [];
-    foreach ($changes as $french => $translation) {
+    foreach ($changes as $key => $translation) {
         $translation = trim(str_replace(["\r\n", "\r"], "\n", (string) $translation));
-        if ($translation !== '' && ($error = app_translation_error($french, $translation)) !== null) {
-            $refused[$french] = $error;
+        if ($translation !== '' && ($error = app_translation_error($key, $translation)) !== null) {
+            $refused[$key] = $error;
             continue;
         }
-        $valid[$french] = $translation === app_inherited_translation($language, $french) ? '' : $translation;
+        $valid[$key] = $translation === app_inherited_translation($language, $key) ? '' : $translation;
     }
     update_json_file(app_data_path('translations-' . $language . '.json'), static function (array $stored) use ($valid, &$saved, &$unchanged): array {
-        foreach ($valid as $french => $translation) {
-            if (($stored[$french] ?? '') === $translation) {
+        foreach ($valid as $key => $translation) {
+            if (($stored[$key] ?? '') === $translation) {
                 $unchanged++;
                 continue;
             }
             if ($translation === '') {
-                unset($stored[$french]);
+                unset($stored[$key]);
             } else {
-                $stored[$french] = $translation;
+                $stored[$key] = $translation;
             }
             $saved++;
         }
@@ -158,16 +157,16 @@ function app_save_translations(string $language, array $changes): array
     return [$saved, $unchanged, $refused];
 }
 
-// Complete lang/<code>.php of $language: the translations of the code with the corrections of
-// this installation, for the texts still in the code.
+// Complete lang/<code>.php of $language: the texts of the code with the corrections of this
+// installation, for the keys still in the code.
 function app_translation_php(string $language): string
 {
     $translations = app_translations($language);
     $quote = static fn (string $text): string => "'" . strtr($text, ['\\' => '\\\\', "'" => "\\'"]) . "'";
-    $lines = ['<?php', 'declare(strict_types=1);', '', '// Translations into ' . app_languages()[$language] . ': "French text of the code" => "translation".', '// Exported from Configuration > Langues on ' . date('Y-m-d') . '; keep the {placeholders} unchanged.', 'return ['];
-    foreach (array_keys(app_i18n_keys()) as $french) {
-        if (($translations[$french] ?? '') !== '') {
-            $lines[] = '    ' . $quote($french) . ' => ' . $quote($translations[$french]) . ',';
+    $lines = ['<?php', 'declare(strict_types=1);', '', '// Texts in ' . app_languages()[$language] . ': "key" => "text".', '// Exported from Configuration > Langues on ' . date('Y-m-d') . '; keep the {placeholders} unchanged.', 'return ['];
+    foreach (array_keys(app_i18n_keys()) as $key) {
+        if (($translations[$key] ?? '') !== '') {
+            $lines[] = '    ' . $quote($key) . ' => ' . $quote($translations[$key]) . ',';
         }
     }
     $lines[] = '];';

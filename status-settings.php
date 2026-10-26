@@ -82,7 +82,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
         $effective = array_map(static fn (string $label): string => app_lowercase($label), $labels + EVENT_STATUSES);
         if (count($effective) !== count(array_unique($effective))) {
-            app_flash(__('Deux statuts ne peuvent pas avoir le même libellé.'), 'error');
+            app_flash(__('deux_statuts_peuvent_avoir_meme_libelle'), 'error');
             app_redirect('status-settings.php');
         }
         update_json_file(app_data_path('settings.json'), static function (array $settings) use ($labels): array {

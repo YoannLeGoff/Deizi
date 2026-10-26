@@ -1,9 +1,10 @@
 <?php
 declare(strict_types=1);
 
-// Languages of the interface. French is the language the application is written in: its texts are
-// the keys of the translations, kept in lang/<code>.php ("French text" => "translation"). A text
-// without translation is shown in French. Placeholders are written {name} and given to __().
+// Languages of the interface. Each text of the interface has a key ("mon_compte"), given to __();
+// lang/<code>.php holds the texts of a language ("key" => "text"), lang/fr.php having all of
+// them (French is the language of reference). A text missing in a language is shown in French.
+// Placeholders are written {name} and given to __().
 // The language of a page: the member's own choice (Mon compte), otherwise the default language of
 // the site (Identité du site); before logging in, the language of the browser when available.
 // Languages of the code (lang/<code>.php); others are created in Configuration > Langues.
@@ -132,39 +133,71 @@ function app_set_locale_for(array $user): void
     app_locale(app_is_language($user['language'] ?? null) ? $user['language'] : app_site_language());
 }
 
-// Translations of a language: "French text" => "translated text": those of the code
-// (lang/<code>.php), or for a created language those of its base, with the corrections made in
-// Configuration > Langues (data/translations-<code>.json) over them.
+// Texts of a language: "key" => "text": those of the code (lang/<code>.php), or for a created
+// language those of its base, with the corrections made in Configuration > Langues
+// (data/translations-<code>.json) over them.
 function app_translations(string $language, bool $refresh = false): array
 {
     static $loaded = [];
     if (!isset($loaded[$language]) || $refresh) {
         $inherited = app_inherited_translations($language);
-        $overrides = $language !== DEFAULT_LANGUAGE && app_is_language($language) ? read_json_file(app_data_path('translations-' . $language . '.json')) : [];
+        $overrides = app_is_language($language) ? read_json_file(app_data_path('translations-' . $language . '.json')) : [];
         $loaded[$language] = array_merge($inherited, array_filter($overrides, static fn (mixed $value): bool => is_string($value) && $value !== ''));
     }
     return $loaded[$language];
 }
 
-// Translations a language starts from: lang/<code>.php for a language of the code, the
-// translations of its base for a created language (none when the base is French).
+// Texts a language starts from: lang/<code>.php for a language of the code, the texts of its
+// base for a created language.
 function app_inherited_translations(string $language): array
 {
     $custom = app_custom_languages();
     if (isset($custom[$language])) {
-        return $custom[$language]['base'] === DEFAULT_LANGUAGE ? [] : app_translations($custom[$language]['base']);
+        return app_translations($custom[$language]['base']);
     }
-    $file = dirname(__DIR__) . '/lang/' . $language . '.php';
-    $translations = $language !== DEFAULT_LANGUAGE && isset(LANGUAGES[$language]) && is_file($file) ? require $file : [];
-    return is_array($translations) ? $translations : [];
+    return isset(LANGUAGES[$language]) ? app_code_texts($language) : [];
 }
 
-// $text (French) in the language of the page, with its {placeholders} replaced by $values.
-function __(string $text, array $values = []): string
+// lang/<code>.php as shipped with the code.
+function app_code_texts(string $language): array
 {
-    $translated = app_translations(app_locale())[$text] ?? $text;
+    static $files = [];
+    if (!isset($files[$language])) {
+        $file = dirname(__DIR__) . '/lang/' . $language . '.php';
+        $texts = isset(LANGUAGES[$language]) && is_file($file) ? require $file : [];
+        $files[$language] = is_array($texts) ? $texts : [];
+    }
+    return $files[$language];
+}
+
+// Key of a French label of the code (the fixed lists of the code, such as roles or months, keep
+// their French labels), or null.
+function app_label_key(string $french): ?string
+{
+    static $byFrench = null;
+    if ($byFrench === null) {
+        $byFrench = [];
+        foreach (app_code_texts(DEFAULT_LANGUAGE) as $key => $value) {
+            $byFrench[str_replace("\u{00A0}", ' ', $value)] ??= $key;
+        }
+    }
+    return $byFrench[str_replace("\u{00A0}", ' ', $french)] ?? null;
+}
+
+// A French label of the code in the language of the page; any other text is shown as it is.
+function app_label(string $french, array $values = []): string
+{
+    $key = app_label_key($french);
+    return $key !== null ? __($key, $values) : $french;
+}
+
+// Text of $key in the language of the page (French when the language lacks it), with its
+// {placeholders} replaced by $values.
+function __(string $key, array $values = []): string
+{
+    $translated = app_translations(app_locale())[$key] ?? '';
     if ($translated === '') {
-        $translated = $text;
+        $translated = app_translations(DEFAULT_LANGUAGE)[$key] ?? $key;
     }
     if ($values !== []) {
         $translated = strtr($translated, array_combine(
@@ -187,13 +220,13 @@ const MONTH_NAMES = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 
 
 function app_weekday_name(int $day, bool $capital = false): string
 {
-    $name = __(WEEKDAY_NAMES[$day] ?? '');
+    $name = app_label(WEEKDAY_NAMES[$day] ?? '');
     return $capital ? app_ucfirst($name) : $name;
 }
 
 function app_month_name(int $month, bool $capital = false): string
 {
-    $name = __(MONTH_NAMES[$month] ?? '');
+    $name = app_label(MONTH_NAMES[$month] ?? '');
     return $capital ? app_ucfirst($name) : $name;
 }
 
@@ -201,7 +234,7 @@ const SHORT_MONTH_NAMES = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin',
 
 function app_month_short(int $month): string
 {
-    return __(SHORT_MONTH_NAMES[$month] ?? '');
+    return app_label(SHORT_MONTH_NAMES[$month] ?? '');
 }
 
 // Time of day: "14h30" in French, "14:30" otherwise.
@@ -222,12 +255,12 @@ function app_long_date(DateTimeInterface $date, bool $weekday = true, bool $year
         'year' => $date->format('Y'),
     ];
     if ($weekday && $year) {
-        return __('{weekday} {day} {month} {year}', $values);
+        return __('format_weekday_day_month_year', $values);
     }
     if ($weekday) {
-        return __('{weekday} {day} {month}', $values);
+        return __('format_weekday_day_month', $values);
     }
-    return $year ? __('{day} {month} {year}', $values) : __('{day} {month}', $values);
+    return $year ? __('format_day_month_year', $values) : __('format_day_month', $values);
 }
 
 function app_ucfirst(string $text): string
@@ -239,7 +272,7 @@ function app_ucfirst(string $text): string
 // stay used for validation): attendance answers and filters, roles.
 function app_translated(array $labels): array
 {
-    return array_map(static fn (string $label): string => __($label), $labels);
+    return array_map(static fn (string $label): string => app_label($label), $labels);
 }
 
 // Statuses of the dates: the labels set in Configuration > Statuts (settings.json, "status_labels"),
@@ -273,7 +306,7 @@ function app_attendance_filters(): array
 
 function app_no_response_label(): string
 {
-    return __(ATTENDANCE_NO_RESPONSE_LABEL);
+    return app_label(ATTENDANCE_NO_RESPONSE_LABEL);
 }
 
 function app_roles(): array
@@ -290,7 +323,8 @@ const LOG_LEGACY_WORDS = ['Annulé-Refusé'];
 
 function app_in_english(string $text): string
 {
-    $translated = app_translations('en')[$text] ?? '';
+    $key = app_label_key($text);
+    $translated = $key !== null ? app_code_texts('en')[$key] ?? '' : '';
     return $translated !== '' ? $translated : $text;
 }
 
@@ -306,34 +340,28 @@ function app_journal_value(string $field, string $value): string
 // A recorded word (English, or French for older entries) in the language of the page.
 function app_from_journal(string $text): string
 {
-    static $french = null;
-    if ($french === null) {
-        $french = [];
-        foreach (app_translations('en') as $source => $english) {
-            $french[$english] ??= $source;
-        }
+    static $byEnglish = null;
+    if ($byEnglish === null) {
+        $byEnglish = array_flip(array_reverse(app_code_texts('en'), true));
     }
-    return __($french[$text] ?? $text);
+    return isset($byEnglish[$text]) ? __($byEnglish[$text]) : app_label($text);
 }
 
 // Texts used by the scripts (menu.js…), given to them in the language of the page.
 const JS_TEXTS = [
-    'Afficher',
-    'Masquer',
-    'Afficher le mot de passe',
-    'Masquer le mot de passe',
-    'Fermer',
-    'Photo de {name}',
+    'afficher',
+    'masquer',
+    'afficher_mot_passe',
+    'masquer_mot_passe',
+    'fermer',
+    'photo_name',
 ];
 
 function app_js_translations(): array
 {
     $translations = [];
-    foreach (JS_TEXTS as $text) {
-        $translated = __($text);
-        if ($translated !== $text) {
-            $translations[$text] = $translated;
-        }
+    foreach (JS_TEXTS as $key) {
+        $translations[$key] = __($key);
     }
     return $translations;
 }

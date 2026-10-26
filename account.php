@@ -18,11 +18,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'usern
     $oldUsername = (string) $user['username'];
     $error = null;
     if ($impersonating) {
-        $error = __('Vous agissez en tant que ce membre : son identifiant ne peut pas être changé ainsi.');
+        $error = __('vous_agissez_tant_ce_membre_identifiant');
     } elseif (!is_string($current) || !app_is_valid_username($newUsername)) {
-        $error = __('Identifiant invalide ({rule}).', ['rule' => __(USERNAME_RULE)]);
+        $error = __('identifiant_invalide_rule_phrase', ['rule' => app_label(USERNAME_RULE)]);
     } elseif ($newUsername === $oldUsername) {
-        $error = __('C’est déjà votre identifiant.');
+        $error = __('cest_deja_votre_identifiant_phrase');
     }
     if ($error === null) {
         update_json_file(app_data_path('users.json'), static function (array $users) use ($userId, $current, $newUsername, $oldUsername, &$error): array {
@@ -35,16 +35,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'usern
                     $index = $position;
                 } elseif (app_username_key($account['username']) === app_username_key($newUsername)) {
                     // Logins are unique regardless of case and accents.
-                    $error = __('Cet identifiant est déjà utilisé par un autre compte.');
+                    $error = __('cet_identifiant_deja_utilise_autre_compte');
                     return $users;
                 }
             }
             if ($index === null) {
-                $error = __('Ce compte n’existe plus.');
+                $error = __('ce_compte_nexiste_plus_phrase');
                 return $users;
             }
             if (!is_string($users[$index]['password_hash'] ?? null) || !password_verify($current, $users[$index]['password_hash'])) {
-                $error = __('Le mot de passe actuel est incorrect.');
+                $error = __('mot_passe_actuel_incorrect_phrase');
                 return $users;
             }
             $users[$index]['username'] = $newUsername;
@@ -91,15 +91,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $userId = (string) $user['id'];
     $error = null;
     if ($impersonating) {
-        $error = __('Vous agissez en tant que ce membre : son mot de passe ne peut pas être changé ainsi.');
+        $error = __('vous_agissez_tant_ce_membre_mot');
     } elseif (!is_string($current) || !is_string($new) || !is_string($confirm)) {
-        $error = __('Demande invalide.');
+        $error = __('demande_invalide_phrase');
     } elseif (strlen($new) < 12 || strlen($new) > 200) {
-        $error = __('Le nouveau mot de passe doit compter 12 caractères au moins.');
+        $error = __('nouveau_mot_passe_doit_compter_12');
     } elseif ($new !== $confirm) {
-        $error = __('Les deux saisies du nouveau mot de passe ne sont pas identiques.');
+        $error = __('deux_saisies_nouveau_mot_passe_sont');
     } elseif ($new === $current) {
-        $error = __('Le nouveau mot de passe doit être différent de l’actuel.');
+        $error = __('nouveau_mot_passe_doit_etre_different');
     }
     if ($error === null) {
         update_json_file(app_data_path('users.json'), static function (array $users) use ($userId, $current, $new, &$error): array {
@@ -108,13 +108,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     continue;
                 }
                 if (!is_string($account['password_hash'] ?? null) || !password_verify($current, $account['password_hash'])) {
-                    $error = __('Le mot de passe actuel est incorrect.');
+                    $error = __('mot_passe_actuel_incorrect_phrase');
                     return $users;
                 }
                 $account['password_hash'] = password_hash($new, PASSWORD_DEFAULT);
                 return $users;
             }
-            $error = __('Ce compte n’existe plus.');
+            $error = __('ce_compte_nexiste_plus_phrase');
             return $users;
         });
     }
@@ -131,7 +131,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         app_remember_issue($userId);
     }
     session_regenerate_id(true);
-    app_flash(__('Votre mot de passe a été changé. Vos autres appareils devront se reconnecter.'));
+    app_flash(__('votre_mot_passe_ete_change_vos'));
     app_redirect('account.php');
 }
 
@@ -139,92 +139,92 @@ app_header('Mon compte', $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('Mon compte'))) ?></p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('mon_compte'))) ?></p>
           <?php app_page_links([['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1><?= app_escape(__('Mon compte')) ?><span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('mon_compte')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
 
         <section class="management-panel account-self" aria-labelledby="account-identity-title">
           <h2 class="detail-heading" id="account-identity-title"><?= app_escape((string) $user['username']) ?></h2>
           <p class="muted-copy"><?= app_escape(app_user_role_label($user)) ?> · <?= app_escape(app_describe_sections(app_user_sections($user))) ?></p>
-          <p class="muted-copy"><?= app_escape(__('Votre rôle et vos sections sont gérés par un organisateur ou un administrateur.')) ?></p>
+          <p class="muted-copy"><?= app_escape(__('votre_role_vos_sections_sont_geres')) ?></p>
         </section>
 
         <section class="management-panel account-self" aria-labelledby="account-language-title">
-          <h2 class="detail-heading" id="account-language-title"><?= app_escape(__('Langue')) ?></h2>
+          <h2 class="detail-heading" id="account-language-title"><?= app_escape(__('langue')) ?></h2>
           <form method="post" action="account.php" class="form-stack account-password-form">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="language">
-            <label for="account-language"><?= app_escape(__('Langue de l’application')) ?></label>
+            <label for="account-language"><?= app_escape(__('langue_lapplication')) ?></label>
             <select id="account-language" name="language">
-              <option value=""><?= app_escape(__('Langue du site ({language})', ['language' => app_languages()[app_site_language()]])) ?></option>
+              <option value=""><?= app_escape(__('langue_site_language', ['language' => app_languages()[app_site_language()]])) ?></option>
               <?php foreach (app_languages() as $code => $name): ?>
               <option value="<?= $code ?>" lang="<?= $code ?>"<?= ($user['language'] ?? '') === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
               <?php endforeach; ?>
             </select>
             <div class="form-actions">
-              <button class="primary-button" type="submit"><?= app_escape(__('Enregistrer')) ?></button>
+              <button class="primary-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
             </div>
           </form>
         </section>
 
-        <?php app_photo_panel($user, $user, 'account.php', __('Ma photo')); ?>
+        <?php app_photo_panel($user, $user, 'account.php', __('ma_photo')); ?>
 
         <section class="management-panel account-self" aria-labelledby="account-username-title">
-          <h2 class="detail-heading" id="account-username-title"><?= app_escape(__('Changer mon identifiant')) ?></h2>
+          <h2 class="detail-heading" id="account-username-title"><?= app_escape(__('changer_mon_identifiant')) ?></h2>
           <?php if ($impersonating): ?>
-          <p class="muted-copy"><?= app_escape(__('Vous agissez en tant que ce membre : son identifiant ne peut pas être changé ainsi.')) ?></p>
+          <p class="muted-copy"><?= app_escape(__('vous_agissez_tant_ce_membre_identifiant')) ?></p>
           <?php else: ?>
           <form method="post" action="account.php" class="form-stack account-password-form">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="username">
-            <label for="new-username"><?= app_escape(__('Nouvel identifiant')) ?></label>
+            <label for="new-username"><?= app_escape(__('nouvel_identifiant')) ?></label>
             <input id="new-username" name="username" required minlength="3" maxlength="32" autocomplete="username" value="<?= app_escape((string) $user['username']) ?>">
-            <p class="field-help"><?= app_escape(app_ucfirst(__(USERNAME_RULE))) ?>. <?= app_escape(__('Les majuscules et les accents ne comptent pas à la connexion.')) ?></p>
-            <label for="username-password"><?= app_escape(__('Mot de passe actuel')) ?></label>
+            <p class="field-help"><?= app_escape(app_ucfirst(app_label(USERNAME_RULE))) ?>. <?= app_escape(__('majuscules_accents_comptent_connexion')) ?></p>
+            <label for="username-password"><?= app_escape(__('mot_passe_actuel')) ?></label>
             <div class="password-field">
               <input id="username-password" name="current_password" type="password" required maxlength="200" autocomplete="current-password">
-              <button class="password-toggle" type="button" data-password-toggle aria-controls="username-password" aria-label="<?= app_escape(__('Afficher le mot de passe')) ?>" aria-pressed="false"><?= app_escape(__('Afficher')) ?></button>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="username-password" aria-label="<?= app_escape(__('afficher_mot_passe')) ?>" aria-pressed="false"><?= app_escape(__('afficher')) ?></button>
             </div>
-            <p class="field-help"><?= app_escape(__('Le changement est noté dans le journal d’audit, avec l’ancien et le nouvel identifiant.')) ?></p>
+            <p class="field-help"><?= app_escape(__('changement_note_dans_journal_daudit_avec')) ?></p>
             <div class="form-actions">
-              <button class="primary-button" type="submit"><?= app_escape(__('Changer mon identifiant')) ?></button>
+              <button class="primary-button" type="submit"><?= app_escape(__('changer_mon_identifiant')) ?></button>
             </div>
           </form>
           <?php endif; ?>
         </section>
 
         <section class="management-panel account-self" aria-labelledby="account-password-title">
-          <h2 class="detail-heading" id="account-password-title"><?= app_escape(__('Changer mon mot de passe')) ?></h2>
+          <h2 class="detail-heading" id="account-password-title"><?= app_escape(__('changer_mon_mot_passe')) ?></h2>
           <?php if ($impersonating): ?>
-          <p class="muted-copy"><?= app_escape(__('Vous agissez en tant que ce membre : son mot de passe se change depuis sa fiche dans Comptes.')) ?></p>
+          <p class="muted-copy"><?= app_escape(__('vous_agissez_tant_ce_membre_mot_passe_change')) ?></p>
           <?php else: ?>
           <form method="post" action="account.php" class="form-stack account-password-form">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="password">
             <input type="text" name="username" value="<?= app_escape((string) $user['username']) ?>" autocomplete="username" hidden>
-            <label for="current-password"><?= app_escape(__('Mot de passe actuel')) ?></label>
+            <label for="current-password"><?= app_escape(__('mot_passe_actuel')) ?></label>
             <div class="password-field">
               <input id="current-password" name="current_password" type="password" required maxlength="200" autocomplete="current-password">
-              <button class="password-toggle" type="button" data-password-toggle aria-controls="current-password" aria-label="<?= app_escape(__('Afficher le mot de passe')) ?>" aria-pressed="false"><?= app_escape(__('Afficher')) ?></button>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="current-password" aria-label="<?= app_escape(__('afficher_mot_passe')) ?>" aria-pressed="false"><?= app_escape(__('afficher')) ?></button>
             </div>
-            <label for="new-password"><?= app_escape(__('Nouveau mot de passe (12 caractères minimum)')) ?></label>
+            <label for="new-password"><?= app_escape(__('nouveau_mot_passe_12_caracteres_minimum')) ?></label>
             <div class="password-field">
               <input id="new-password" name="new_password" type="password" required minlength="12" maxlength="200" autocomplete="new-password">
-              <button class="password-toggle" type="button" data-password-toggle aria-controls="new-password" aria-label="<?= app_escape(__('Afficher le mot de passe')) ?>" aria-pressed="false"><?= app_escape(__('Afficher')) ?></button>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="new-password" aria-label="<?= app_escape(__('afficher_mot_passe')) ?>" aria-pressed="false"><?= app_escape(__('afficher')) ?></button>
             </div>
-            <label for="confirm-password"><?= app_escape(__('Nouveau mot de passe, une seconde fois')) ?></label>
+            <label for="confirm-password"><?= app_escape(__('nouveau_mot_passe_seconde_fois')) ?></label>
             <div class="password-field">
               <input id="confirm-password" name="confirm_password" type="password" required minlength="12" maxlength="200" autocomplete="new-password">
-              <button class="password-toggle" type="button" data-password-toggle aria-controls="confirm-password" aria-label="<?= app_escape(__('Afficher le mot de passe')) ?>" aria-pressed="false"><?= app_escape(__('Afficher')) ?></button>
+              <button class="password-toggle" type="button" data-password-toggle aria-controls="confirm-password" aria-label="<?= app_escape(__('afficher_mot_passe')) ?>" aria-pressed="false"><?= app_escape(__('afficher')) ?></button>
             </div>
-            <p class="field-help"><?= app_escape(__('Après le changement, vos autres appareils (téléphone, ordinateur) devront se reconnecter avec le nouveau mot de passe.')) ?></p>
+            <p class="field-help"><?= app_escape(__('apres_changement_vos_autres_appareils_telephone')) ?></p>
             <div class="form-actions">
-              <button class="primary-button" type="submit"><?= app_escape(__('Changer mon mot de passe')) ?></button>
+              <button class="primary-button" type="submit"><?= app_escape(__('changer_mon_mot_passe')) ?></button>
             </div>
           </form>
           <?php endif; ?>

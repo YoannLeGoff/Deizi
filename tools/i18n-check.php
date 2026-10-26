@@ -4,8 +4,8 @@ declare(strict_types=1);
 // Translations check, from the command line only:
 //   php tools/i18n-check.php            missing and unused texts of each language
 //   php tools/i18n-check.php --keys     every text to translate, one per line (JSON strings)
-// The texts are the literal French strings given to __() and __n() in the code, plus the lists
-// translated when shown (roles, days, months, Configuration themes…).
+// The keys are those given to __() and __n() in the code, plus those of the lists translated when
+// shown (roles, days, months, Configuration themes…); lang/fr.php must have them all.
 if (PHP_SAPI !== 'cli') {
     http_response_code(404);
     exit;
@@ -27,9 +27,6 @@ if (in_array('--keys', $argv, true)) {
 $status = 0;
 echo count($keys), " texts to translate\n";
 foreach (array_keys(LANGUAGES) as $language) {
-    if ($language === DEFAULT_LANGUAGE) {
-        continue;
-    }
     // The translations of the code only (corrections of an installation are not counted).
     $translations = app_code_translations($language);
     $missing = array_filter(array_keys($keys), static fn (string $key): bool => ($translations[$key] ?? '') === '');

@@ -1,5 +1,5 @@
-// Texts of the scripts in the language of the page: the translations given by the page
-// (#deizi-i18n, see JS_TEXTS in lib/i18n.php), the French text otherwise; {name} placeholders.
+// Texts of the scripts in the language of the page, by key (#deizi-i18n, see JS_TEXTS in
+// lib/i18n.php); {name} placeholders.
 const deiziTexts = (() => {
   try {
     return JSON.parse(document.getElementById("deizi-i18n")?.textContent || "{}");
@@ -145,8 +145,8 @@ document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const isVisible = input.type === "password";
     input.type = isVisible ? "text" : "password";
-    toggle.textContent = isVisible ? t("Masquer") : t("Afficher");
-    toggle.setAttribute("aria-label", isVisible ? t("Masquer le mot de passe") : t("Afficher le mot de passe"));
+    toggle.textContent = isVisible ? t("masquer") : t("afficher");
+    toggle.setAttribute("aria-label", isVisible ? t("masquer_mot_passe") : t("afficher_mot_passe"));
     toggle.setAttribute("aria-pressed", String(isVisible));
   });
 });
@@ -762,7 +762,7 @@ document.addEventListener("click", (event) => {
   dialog.className = "photo-dialog";
   const image = document.createElement("img");
   image.src = link.href;
-  image.alt = t("Photo de {name}", { name: link.dataset.photoName });
+  image.alt = t("photo_name", { name: link.dataset.photoName });
   const bar = document.createElement("div");
   bar.className = "photo-dialog-bar";
   const name = document.createElement("span");
@@ -770,7 +770,7 @@ document.addEventListener("click", (event) => {
   const close = document.createElement("button");
   close.type = "button";
   close.className = "text-button";
-  close.textContent = t("Fermer");
+  close.textContent = t("fermer");
   close.addEventListener("click", () => dialog.close());
   bar.append(name, close);
   dialog.append(image, bar);

@@ -11,16 +11,14 @@ require __DIR__ . '/lib/bootstrap.php';
 require __DIR__ . '/lib/i18n-admin.php';
 $admin = app_require_roles(['admin']);
 
-$editable = array_diff_key(app_languages(), [DEFAULT_LANGUAGE => true]);
+// French too: its texts can be adapted to the association like any other language.
+$editable = app_languages();
 $custom = app_custom_languages();
-$language = is_string($_REQUEST['langue'] ?? null) && isset($editable[$_REQUEST['langue']]) ? $_REQUEST['langue'] : array_key_first($editable);
+$language = is_string($_REQUEST['langue'] ?? null) && isset($editable[$_REQUEST['langue']]) ? $_REQUEST['langue'] : 'en';
 $filter = in_array($_GET['filtre'] ?? '', ['manquantes', 'modifiees'], true) ? $_GET['filtre'] : 'toutes';
 $search = is_string($_GET['q'] ?? null) ? trim($_GET['q']) : '';
 $keys = array_keys(app_i18n_keys());
-$byId = [];
-foreach ($keys as $french) {
-    $byId[app_translation_id($french)] = $french;
-}
+$isKey = array_flip($keys);
 $pageUrl = static fn (array $query = []): string => 'languages-settings.php?' . http_build_query(['langue' => $language] + $query);
 
 // Exports: the spreadsheet to translate, or the complete language file of the project.
@@ -35,10 +33,10 @@ if (in_array($_GET['export'] ?? '', ['csv', 'php'], true)) {
     $missingOnly = ($_GET['manquantes'] ?? '') === '1';
     $rows = [];
     $overrides = app_translation_overrides($language);
-    foreach ($keys as $french) {
-        $translation = $overrides[$french] ?? app_inherited_translation($language, $french);
+    foreach ($keys as $key) {
+        $translation = $overrides[$key] ?? app_inherited_translation($language, $key);
         if (!$missingOnly || $translation === '') {
-            $rows[] = [app_translation_id($french), $french, $translation];
+            $rows[] = [$key, app_french_text($key), $translation];
         }
     }
     app_send_csv('deizi-' . $language . ($missingOnly ? '-a-traduire' : '') . '.csv', ['Id', 'Français', app_languages()[$language]], $rows);
@@ -53,11 +51,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $newCode = is_string($_POST['code'] ?? null) ? strtolower(trim($_POST['code'])) : '';
         $base = is_string($_POST['base'] ?? null) && app_is_language($_POST['base']) ? $_POST['base'] : null;
         $error = match (true) {
-            $name === '' => __('Donnez un nom à la langue.'),
-            preg_match(LANGUAGE_CODE_PATTERN, $newCode) !== 1 => __('Le code s’écrit en minuscules : 2 ou 3 lettres, puis éventuellement un tiret et une précision (fr-ca, en-us, br-gwened).'),
-            app_is_language($newCode) => __('Cette langue existe déjà.'),
-            in_array(app_lowercase($name), array_map('app_lowercase', app_languages()), true) => __('Une langue porte déjà ce nom.'),
-            $base === null => __('Choisissez la langue de base.'),
+            $name === '' => __('donnez_nom_langue_phrase'),
+            preg_match(LANGUAGE_CODE_PATTERN, $newCode) !== 1 => __('code_secrit_minuscules_2_3_lettres'),
+            app_is_language($newCode) => __('cette_langue_existe_deja_phrase'),
+            in_array(app_lowercase($name), array_map('app_lowercase', app_languages()), true) => __('langue_porte_deja_ce_nom_phrase'),
+            $base === null => __('choisissez_langue_base_phrase'),
             default => null,
         };
         if ($error !== null) {
@@ -68,14 +66,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             $settings['languages'] = (is_array($settings['languages'] ?? null) ? $settings['languages'] : []) + [$newCode => ['name' => $name, 'base' => $base]];
             return $settings;
         });
-        app_flash(__('La langue « {name} » a été créée à partir de « {base} » : modifiez ci-dessous les textes qui diffèrent.', ['name' => $name, 'base' => app_languages()[$base]]));
+        app_flash(__('langue_name_ete_creee_partir_base', ['name' => $name, 'base' => app_languages()[$base]]));
         app_redirect('languages-settings.php?langue=' . rawurlencode($newCode));
     }
     if ($action === 'delete_language') {
         $deleted = is_string($_POST['code'] ?? null) && isset($custom[$_POST['code']]) ? $_POST['code'] : null;
         $dependents = array_keys(array_filter($custom, static fn (array $item): bool => $item['base'] === $deleted));
         if ($deleted === null || $dependents !== []) {
-            app_flash($deleted === null ? __('Cette langue n’existe plus.') : __('D’autres langues sont basées sur celle-ci ({languages}) : supprimez-les d’abord.', ['languages' => implode(', ', array_map(static fn (string $code): string => app_languages()[$code], $dependents))]), 'error');
+            app_flash($deleted === null ? __('cette_langue_nexiste_plus_phrase') : __('dautres_langues_sont_basees_celle_ci', ['languages' => implode(', ', array_map(static fn (string $code): string => app_languages()[$code], $dependents))]), 'error');
             app_redirect($pageUrl());
         }
         $deletedName = $custom[$deleted]['name'];
@@ -105,7 +103,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 unlink($file);
             }
         }
-        app_flash(__('La langue « {name} » a été supprimée ; ses membres reviennent à la langue du site.', ['name' => $deletedName]));
+        app_flash(__('langue_name_ete_supprimee_membres_reviennent', ['name' => $deletedName]));
         app_redirect('languages-settings.php');
     }
     $changes = [];
@@ -113,17 +111,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'save') {
         // One field per text shown (the filtered ones): ids of the form.
         foreach (is_array($_POST['t'] ?? null) ? $_POST['t'] : [] as $id => $translation) {
-            if (is_string($id) && isset($byId[$id]) && is_string($translation)) {
-                $changes[$byId[$id]] = $translation;
+            if (is_string($id) && isset($isKey[$id]) && is_string($translation)) {
+                $changes[$id] = $translation;
             }
         }
     } elseif ($action === 'import') {
         $file = $_FILES['file'] ?? null;
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file((string) $file['tmp_name']) || ($file['size'] ?? 0) > 2 * 1024 * 1024) {
-            app_flash(__('Choisissez un fichier CSV de 2 Mo au plus.'), 'error');
+            app_flash(__('choisissez_fichier_csv_2_mo_plus'), 'error');
             app_redirect($returnUrl);
         }
-        $byFrench = array_flip($keys);
         foreach (app_read_translation_csv((string) file_get_contents((string) $file['tmp_name'])) as $cells) {
             [$id, $french, $translation] = array_pad($cells, 3, '');
             $id = trim($id);
@@ -133,7 +130,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             // The export protects cells starting with = + - @ for Excel with a "'": removed here.
             $unprotect = static fn (string $text): string => preg_match("/^'[=+\\-@]/", $text) === 1 ? substr($text, 1) : $text;
             $french = $unprotect($french);
-            $key = $byId[$id] ?? (isset($byFrench[$french]) ? $french : null);
+            // The key of the first column, otherwise the French text of the second one.
+            $key = isset($isKey[$id]) ? $id : app_label_key($french);
+            $key = $key !== null && isset($isKey[$key]) ? $key : null;
             if ($key === null) {
                 $unknown++;
                 continue;
@@ -142,61 +141,61 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         }
     } else {
         http_response_code(400);
-        exit(__('Action inconnue.'));
+        exit(__('action_inconnue_phrase'));
     }
     [$saved, $unchanged, $refused] = app_save_translations($language, $changes);
-    $message = __n('{n} traduction enregistrée', '{n} traductions enregistrées', $saved) . ', ' . __n('{n} inchangée', '{n} inchangées', $unchanged);
+    $message = __n('traduction_enregistree', 'traductions_enregistrees', $saved) . ', ' . __n('inchangee', 'inchangees', $unchanged);
     if ($unknown > 0) {
-        $message .= ', ' . __n('{n} ligne ignorée (texte qui n’existe plus)', '{n} lignes ignorées (textes qui n’existent plus)', $unknown);
+        $message .= ', ' . __n('ligne_ignoree_texte_nexiste_plus', 'lignes_ignorees_textes_nexistent_plus', $unknown);
     }
     if ($refused !== []) {
         $details = implode(' ; ', array_map(
-            static fn (string $french, string $reason): string => '« ' . app_truncate($french, 60) . ' » ' . $reason,
+            static fn (string $key, string $reason): string => '« ' . app_truncate(app_french_text($key), 60) . ' » ' . $reason,
             array_slice(array_keys($refused), 0, 10),
             array_slice(array_values($refused), 0, 10)
         )) . (count($refused) > 10 ? ' ; …' : '');
-        $message .= '. ' . __n('{n} refusée : {details}', '{n} refusées : {details}', count($refused), ['details' => $details]);
+        $message .= '. ' . __n('refusee_details', 'refusees_details', count($refused), ['details' => $details]);
     }
     app_flash($message . '.', $refused === [] ? 'success' : 'error');
     app_redirect($returnUrl);
 }
 
 $overrides = app_translation_overrides($language);
-$fromFrench = app_language_root($language) === DEFAULT_LANGUAGE;
 $rows = [];
 $counts = ['toutes' => count($keys), 'manquantes' => 0, 'modifiees' => count(array_intersect_key($overrides, array_flip($keys)))];
-foreach ($keys as $french) {
-    $inherited = app_inherited_translation($language, $french);
-    $translation = $overrides[$french] ?? $inherited;
+foreach ($keys as $key) {
+    $french = app_french_text($key);
+    $inherited = app_inherited_translation($language, $key);
+    $translation = $overrides[$key] ?? $inherited;
     $missing = $translation === '';
     $counts['manquantes'] += $missing ? 1 : 0;
-    $changed = isset($overrides[$french]);
+    $changed = isset($overrides[$key]);
     if (($filter === 'manquantes' && !$missing) || ($filter === 'modifiees' && !$changed)) {
         continue;
     }
-    if ($search !== '' && mb_stripos($french . "\n" . $translation, $search) === false) {
+    if ($search !== '' && mb_stripos($key . "\n" . $french . "\n" . $translation, $search) === false) {
         continue;
     }
-    $rows[] = ['french' => $french, 'translation' => $translation, 'missing' => $missing, 'changed' => $changed, 'code' => $inherited];
+    $rows[] = ['key' => $key, 'french' => $french, 'translation' => $translation, 'missing' => $missing, 'changed' => $changed, 'code' => $inherited];
 }
 
 app_header('Langues', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('Configuration du site'))) ?></p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('configuration_site'))) ?></p>
           <?php app_page_links([['Configuration', 'settings.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1><?= app_escape(__('Langues')) ?><span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('langues')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('organisation', 'languages-settings.php', $admin); ?>
 
-        <p class="accounts-help"><?= app_escape(__('Les libellés de l’interface (menus, boutons, messages) sont traduits ; les contenus de l’association (dates, annonces, sections, statuts) restent tels que saisis. Corrigez une traduction ci-dessous, ou confiez une langue à un traducteur : exportez-la en tableur, faites remplir la dernière colonne, puis importez le fichier.')) ?></p>
+        <p class="accounts-help"><?= app_escape(__('libelles_linterface_menus_boutons_messages_sont')) ?></p>
 
-        <nav class="detail-tabs" aria-label="<?= app_escape(__('Langue')) ?>">
+        <nav class="detail-tabs" aria-label="<?= app_escape(__('langue')) ?>">
           <?php foreach ($editable as $code => $name): ?>
           <a class="detail-tab" href="languages-settings.php?langue=<?= $code ?>" lang="<?= $code ?>"<?= $code === $language ? ' aria-current="page"' : '' ?>><?= app_escape($name) ?><?php if (isset($custom[$code])): ?> <span class="count-badge"><?= app_escape($code) ?></span><?php endif; ?></a>
           <?php endforeach; ?>
@@ -204,66 +203,66 @@ app_header('Langues', $admin);
 
         <?php if (isset($custom[$language])): ?>
         <section class="management-panel languages-custom" aria-label="<?= app_escape(app_languages()[$language]) ?>">
-          <p class="muted-copy"><?= app_escape(__('« {name} » ({code}) est basée sur « {base} » : elle en reprend toutes les traductions, sauf celles que vous modifiez ici. Les dates s’écrivent comme en {root}.', ['name' => $custom[$language]['name'], 'code' => $language, 'base' => app_languages()[$custom[$language]['base']], 'root' => LANGUAGES[app_language_root($language)]])) ?></p>
-          <form method="post" action="languages-settings.php" onsubmit="return confirm(<?= app_escape(json_encode(__('Supprimer la langue « {name} » et ses traductions ? Ses membres reviendront à la langue du site.', ['name' => $custom[$language]['name']]), JSON_UNESCAPED_UNICODE)) ?>);">
+          <p class="muted-copy"><?= app_escape(__('name_code_basee_base_reprend_toutes', ['name' => $custom[$language]['name'], 'code' => $language, 'base' => app_languages()[$custom[$language]['base']], 'root' => LANGUAGES[app_language_root($language)]])) ?></p>
+          <form method="post" action="languages-settings.php" onsubmit="return confirm(<?= app_escape(json_encode(__('supprimer_langue_name_traductions_membres_reviendront', ['name' => $custom[$language]['name']]), JSON_UNESCAPED_UNICODE)) ?>);">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="delete_language">
             <input type="hidden" name="code" value="<?= app_escape($language) ?>">
-            <button class="text-button" type="submit"><?= app_escape(__('Supprimer cette langue')) ?></button>
+            <button class="text-button" type="submit"><?= app_escape(__('supprimer_cette_langue')) ?></button>
           </form>
         </section>
         <?php endif; ?>
 
         <section class="management-panel languages-bulk" aria-labelledby="languages-bulk-title">
-          <h2 class="detail-heading" id="languages-bulk-title"><?= app_escape(__('Traduire en masse')) ?></h2>
+          <h2 class="detail-heading" id="languages-bulk-title"><?= app_escape(__('traduire_masse')) ?></h2>
           <div class="languages-bulk-columns">
             <div>
-              <h3><?= app_escape(__('1. Exporter')) ?></h3>
-              <p class="field-help"><?= app_escape(__('Un fichier CSV pour Excel ou LibreOffice : une ligne par texte, avec son identifiant, le texte français et la traduction actuelle. Le traducteur remplit ou corrige la dernière colonne, sans toucher aux deux premières, et garde les valeurs entre accolades comme {name}.')) ?></p>
+              <h3><?= app_escape(__('1_exporter')) ?></h3>
+              <p class="field-help"><?= app_escape(__('fichier_csv_excel_libreoffice_ligne_texte')) ?></p>
               <div class="form-actions">
-                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'csv', 'manquantes' => '1'])) ?>"><?= app_escape(__('Textes à traduire ({n})', ['n' => $counts['manquantes']])) ?></a>
-                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'csv'])) ?>"><?= app_escape(__('Tous les textes ({n})', ['n' => $counts['toutes']])) ?></a>
+                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'csv', 'manquantes' => '1'])) ?>"><?= app_escape(__('textes_traduire', ['n' => $counts['manquantes']])) ?></a>
+                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'csv'])) ?>"><?= app_escape(__('tous_textes', ['n' => $counts['toutes']])) ?></a>
               </div>
             </div>
             <div>
-              <h3><?= app_escape(__('2. Importer')) ?></h3>
+              <h3><?= app_escape(__('2_importer')) ?></h3>
               <form method="post" action="languages-settings.php" enctype="multipart/form-data" class="form-stack">
                 <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                 <input type="hidden" name="action" value="import">
                 <input type="hidden" name="langue" value="<?= app_escape($language) ?>">
-                <label for="languages-file"><?= app_escape(__('Fichier rempli (CSV)')) ?></label>
+                <label for="languages-file"><?= app_escape(__('fichier_rempli_csv')) ?></label>
                 <input id="languages-file" name="file" type="file" accept=".csv,text/csv" required>
-                <p class="field-help"><?= app_escape(__('Les traductions valides sont enregistrées ; une cellule vide garde la traduction d’origine. Les lignes refusées (valeur entre accolades manquante…) sont listées.')) ?></p>
-                <div class="form-actions"><button class="primary-button compact-button" type="submit"><?= app_escape(__('Importer')) ?></button></div>
+                <p class="field-help"><?= app_escape(__('traductions_valides_sont_enregistrees_cellule_vide')) ?></p>
+                <div class="form-actions"><button class="primary-button compact-button" type="submit"><?= app_escape(__('importer')) ?></button></div>
               </form>
             </div>
             <div>
-              <h3><?= app_escape(__('3. Partager')) ?></h3>
-              <p class="field-help"><?= app_escape(__('Le fichier de langue complet du projet, avec vos corrections, à proposer sur le dépôt du code pour en faire profiter les autres associations.')) ?></p>
+              <h3><?= app_escape(__('3_partager')) ?></h3>
+              <p class="field-help"><?= app_escape(__('fichier_langue_complet_projet_avec_vos')) ?></p>
               <div class="form-actions">
-                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'php'])) ?>"><?= app_escape(__('Télécharger {file}', ['file' => 'lang/' . $language . '.php'])) ?></a>
+                <a class="secondary-button compact-button" href="<?= app_escape($pageUrl(['export' => 'php'])) ?>"><?= app_escape(__('telecharger_file', ['file' => 'lang/' . $language . '.php'])) ?></a>
               </div>
             </div>
           </div>
         </section>
 
         <section class="management-panel" aria-labelledby="languages-edit-title">
-          <h2 class="detail-heading" id="languages-edit-title"><?= app_escape(__('Corriger à l’écran')) ?></h2>
+          <h2 class="detail-heading" id="languages-edit-title"><?= app_escape(__('corriger_lecran')) ?></h2>
           <form method="get" action="languages-settings.php" class="languages-filters">
             <input type="hidden" name="langue" value="<?= app_escape($language) ?>">
             <div class="filter-buttons">
-              <?php foreach (['toutes' => __('Tous ({n})', ['n' => $counts['toutes']]), 'manquantes' => __('À traduire ({n})', ['n' => $counts['manquantes']]), 'modifiees' => __('Modifiés ici ({n})', ['n' => $counts['modifiees']])] as $value => $label): ?>
+              <?php foreach (['toutes' => __('tous', ['n' => $counts['toutes']]), 'manquantes' => __('a_traduire_n', ['n' => $counts['manquantes']]), 'modifiees' => __('modifies_ici', ['n' => $counts['modifiees']])] as $value => $label): ?>
               <a class="filter-button<?= $filter === $value ? ' is-active' : '' ?>" href="<?= app_escape($pageUrl(array_filter(['filtre' => $value === 'toutes' ? null : $value, 'q' => $search !== '' ? $search : null]))) ?>"<?= $filter === $value ? ' aria-current="page"' : '' ?>><?= app_escape($label) ?></a>
               <?php endforeach; ?>
             </div>
             <?php if ($filter !== 'toutes'): ?><input type="hidden" name="filtre" value="<?= app_escape($filter) ?>"><?php endif; ?>
-            <label class="sr-only" for="languages-search"><?= app_escape(__('Rechercher')) ?></label>
-            <input id="languages-search" name="q" type="search" value="<?= app_escape($search) ?>" placeholder="<?= app_escape(__('Rechercher un texte')) ?>">
-            <button class="secondary-button compact-button" type="submit"><?= app_escape(__('Rechercher')) ?></button>
+            <label class="sr-only" for="languages-search"><?= app_escape(__('rechercher')) ?></label>
+            <input id="languages-search" name="q" type="search" value="<?= app_escape($search) ?>" placeholder="<?= app_escape(__('rechercher_texte')) ?>">
+            <button class="secondary-button compact-button" type="submit"><?= app_escape(__('rechercher')) ?></button>
           </form>
 
           <?php if ($rows === []): ?>
-          <p class="muted-copy"><?= app_escape(__('Aucun texte pour ce filtre.')) ?></p>
+          <p class="muted-copy"><?= app_escape(__('aucun_texte_ce_filtre_phrase')) ?></p>
           <?php else: ?>
           <form method="post" action="languages-settings.php" class="languages-form">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
@@ -272,51 +271,52 @@ app_header('Langues', $admin);
             <input type="hidden" name="filtre" value="<?= app_escape($filter) ?>">
             <input type="hidden" name="q" value="<?= app_escape($search) ?>">
             <table class="languages-table">
-              <thead><tr><th scope="col"><?= app_escape(__('Français')) ?></th><th scope="col" lang="<?= $language ?>"><?= app_escape(app_languages()[$language]) ?></th></tr></thead>
+              <thead><tr><th scope="col"><?= app_escape(__('francais')) ?></th><th scope="col" lang="<?= $language ?>"><?= app_escape(app_languages()[$language]) ?></th></tr></thead>
               <tbody>
                 <?php foreach ($rows as $row): ?>
-                <?php $id = app_translation_id($row['french']); ?>
+                <?php $id = $row['key']; ?>
                 <tr class="<?= $row['missing'] ? 'is-missing' : ($row['changed'] ? 'is-changed' : '') ?>">
                   <td class="languages-french">
                     <label for="t-<?= $id ?>"><?= nl2br(app_escape($row['french']), false) ?></label>
-                    <?php if ($row['missing']): ?><span class="languages-state"><?= app_escape(__('À traduire')) ?></span><?php elseif ($row['changed']): ?><span class="languages-state" title="<?= app_escape(__('Traduction d’origine : {text}', ['text' => $row['code'] !== '' ? $row['code'] : '—'])) ?>"><?= app_escape(__('Modifié ici')) ?></span><?php endif; ?>
+                    <code class="languages-key"><?= app_escape($row['key']) ?></code>
+                    <?php if ($row['missing']): ?><span class="languages-state"><?= app_escape(__('traduire')) ?></span><?php elseif ($row['changed']): ?><span class="languages-state" title="<?= app_escape(__('traduction_dorigine_text', ['text' => $row['code'] !== '' ? $row['code'] : '—'])) ?>"><?= app_escape(__('modifie_ici')) ?></span><?php endif; ?>
                   </td>
                   <td><textarea id="t-<?= $id ?>" name="t[<?= $id ?>]" rows="<?= max(1, min(6, (int) ceil(mb_strlen($row['french']) / 70) + substr_count($row['french'], "\n"))) ?>" lang="<?= $language ?>" placeholder="<?= app_escape($row['code']) ?>"><?= app_escape($row['translation']) ?></textarea></td>
                 </tr>
                 <?php endforeach; ?>
               </tbody>
             </table>
-            <p class="field-help"><?= app_escape(__('Videz un champ pour revenir à la traduction d’origine (affichée en grisé). Les valeurs entre accolades comme {name} doivent rester identiques.')) ?></p>
-            <div class="form-actions languages-save"><button class="primary-button" type="submit"><?= app_escape(__('Enregistrer les traductions')) ?></button></div>
+            <p class="field-help"><?= app_escape(__('videz_champ_revenir_traduction_dorigine_affichee')) ?></p>
+            <div class="form-actions languages-save"><button class="primary-button" type="submit"><?= app_escape(__('enregistrer_traductions')) ?></button></div>
           </form>
           <?php endif; ?>
         </section>
 
         <section class="management-panel" aria-labelledby="languages-new-title">
-          <h2 class="detail-heading" id="languages-new-title"><?= app_escape(__('Créer une langue')) ?></h2>
-          <p class="muted-copy"><?= app_escape(__('Une variante (Français du Québec, anglais américain, breton vannetais…) ou une nouvelle langue : elle part des traductions d’une langue existante, et vous ne modifiez que ce qui diffère. Elle apparaît ensuite dans les choix de « Mon compte » et de la langue du site.')) ?></p>
+          <h2 class="detail-heading" id="languages-new-title"><?= app_escape(__('creer_une_langue')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('variante_francais_quebec_anglais_americain_breton')) ?></p>
           <form method="post" action="languages-settings.php" class="form-grid languages-new">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="create_language">
             <div class="form-stack">
-              <label for="language-name"><?= app_escape(__('Nom de la langue')) ?></label>
-              <input id="language-name" name="name" required maxlength="<?= LANGUAGE_NAME_MAX_LENGTH ?>" placeholder="<?= app_escape(__('Français (Québec)')) ?>">
+              <label for="language-name"><?= app_escape(__('nom_langue')) ?></label>
+              <input id="language-name" name="name" required maxlength="<?= LANGUAGE_NAME_MAX_LENGTH ?>" placeholder="<?= app_escape(__('francais_quebec')) ?>">
             </div>
             <div class="form-stack">
-              <label for="language-code"><?= app_escape(__('Code de la langue')) ?></label>
+              <label for="language-code"><?= app_escape(__('code_langue')) ?></label>
               <input id="language-code" name="code" required maxlength="12" pattern="[a-z]{2,3}(-[a-z0-9]{2,8})?" placeholder="fr-ca">
             </div>
             <div class="form-stack">
-              <label for="language-base"><?= app_escape(__('À partir de')) ?></label>
+              <label for="language-base"><?= app_escape(__('partir')) ?></label>
               <select id="language-base" name="base">
                 <?php foreach (app_languages() as $code => $name): ?>
                 <option value="<?= $code ?>" lang="<?= $code ?>"><?= app_escape($name) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
-            <div class="form-actions"><button class="primary-button" type="submit"><?= app_escape(__('Créer la langue')) ?></button></div>
+            <div class="form-actions"><button class="primary-button" type="submit"><?= app_escape(__('creer_langue')) ?></button></div>
           </form>
-          <p class="field-help"><?= app_escape(__('Le code identifie la langue pour les navigateurs : un visiteur dont le navigateur est réglé en fr-CA reçoit « fr-ca » s’il existe.')) ?></p>
+          <p class="field-help"><?= app_escape(__('code_identifie_langue_navigateurs_visiteur_dont')) ?></p>
         </section>
       </section>
 <?php app_footer(); ?>

@@ -19,7 +19,7 @@ $isScreenshot = preg_match('#^visuels/[a-z0-9-]+\.png$#', $requested) === 1;
 $path = isset($types[$requested]) || $isScreenshot ? realpath(ONBOARDING_DIRECTORY . '/' . $requested) : false;
 if ($path === false || !str_starts_with($path, realpath(ONBOARDING_DIRECTORY) . DIRECTORY_SEPARATOR) || !is_file($path)) {
     http_response_code(404);
-    exit(__('Fichier introuvable.'));
+    exit(__('fichier_introuvable_phrase'));
 }
 
 header('X-Content-Type-Options: nosniff');
@@ -32,7 +32,7 @@ if ($requested === 'presentation.html') {
     $html = str_replace('src="visuels/', 'src="onboarding.php?f=visuels/', $html);
     $html = str_replace(
         '<div class="controls">',
-        '<div class="controls"><a class="back-link" href="updates.php">← ' . app_escape(__('Retour à {app}', ['app' => app_site_nickname()])) . '</a><a class="back-link" href="onboarding.php?f=Deizi-presentation.pdf" target="_blank" rel="noopener">PDF</a>',
+        '<div class="controls"><a class="back-link" href="updates.php">← ' . app_escape(__('retour_app', ['app' => app_site_nickname()])) . '</a><a class="back-link" href="onboarding.php?f=Deizi-presentation.pdf" target="_blank" rel="noopener">PDF</a>',
         $html
     );
     $html = str_replace('</style>', '  .controls .back-link { padding: 7px 12px; color: #fff; background: #3a3c3f; border-radius: 6px; font: 600 13px var(--sans); text-decoration: none; }' . "\n" . '  .controls .back-link:hover { background: #4a4d50; }' . "\n" . '</style>', $html);

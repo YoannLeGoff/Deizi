@@ -1490,6 +1490,7 @@ a.settings-row-title:hover { color: var(--sea); }
 .languages-table thead th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .languages-table td:first-child { width: 46%; }
 .languages-french label { display: block; color: var(--ink); line-height: 1.45; }
+.languages-key { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
 .languages-state { display: inline-block; margin-top: 6px; padding: 1px 6px; color: #6b4600; background: #f3e1b5; border-radius: 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
 .languages-table tr.is-changed .languages-state { color: var(--sea); background: #e2f2f5; }
 .languages-table textarea { width: 100%; padding: 8px 10px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 3px; font: 13px/1.45 var(--sans); resize: vertical; }

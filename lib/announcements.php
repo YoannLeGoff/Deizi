@@ -130,7 +130,7 @@ function app_announcement_dismissed_by(array $announcement, array $user): bool
 function app_announcement_audience(array $announcement): string
 {
     if ($announcement['everyone']) {
-        return __('Tout le monde');
+        return __('tout_monde');
     }
     $parts = [];
     foreach (app_section_tree() as $definition) {

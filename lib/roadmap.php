@@ -313,18 +313,18 @@ function app_store_uploaded_image(mixed $file, string $prefix = 'qr'): ?string
         return null;
     }
     if (($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
-        throw new InvalidArgumentException(__('L’envoi de l’image a échoué.'));
+        throw new InvalidArgumentException(__('lenvoi_limage_echoue_phrase'));
     }
     if (($file['size'] ?? 0) > ROADMAP_MAX_UPLOAD_BYTES) {
-        throw new InvalidArgumentException(__('L’image ne doit pas dépasser 2 Mo.'));
+        throw new InvalidArgumentException(__('limage_doit_depasser_2_mo_phrase'));
     }
     $info = getimagesize($file['tmp_name']);
     if ($info === false || !isset(ROADMAP_UPLOAD_TYPES[$info[2]])) {
-        throw new InvalidArgumentException(__('L’image doit être au format PNG, JPEG, GIF ou WebP.'));
+        throw new InvalidArgumentException(__('limage_doit_etre_format_png_jpeg'));
     }
     $directory = app_upload_directory();
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-        throw new RuntimeException(__('Impossible de créer le dossier des images.'));
+        throw new RuntimeException(__('impossible_creer_dossier_images_phrase'));
     }
     $name = $prefix . '-' . bin2hex(random_bytes(16)) . '.' . ROADMAP_UPLOAD_TYPES[$info[2]][0];
     $path = $directory . '/' . $name;
@@ -390,7 +390,7 @@ function app_render_checklist(array $options, array $checked): void
               <ul class="roadmap-checklist">
                 <?php foreach ($options as $value => $label): ?>
                 <?php $isChecked = in_array($value, $checked, true); ?>
-                <li class="<?= $isChecked ? 'is-checked' : '' ?>"><span class="roadmap-box" aria-hidden="true"></span><?= app_escape($label) ?><span class="sr-only"><?= app_escape($isChecked ? __(' : oui') : __(' : non')) ?></span></li>
+                <li class="<?= $isChecked ? 'is-checked' : '' ?>"><span class="roadmap-box" aria-hidden="true"></span><?= app_escape($label) ?><span class="sr-only"><?= app_escape($isChecked ? __('suffixe_oui') : __('suffixe_non')) ?></span></li>
                 <?php endforeach; ?>
               </ul>
 <?php
@@ -497,15 +497,15 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
         <article class="roadmap" data-print-title="<?= app_escape($printTitle) ?>">
           <p class="roadmap-updated">
             <?php if ($updatedAt !== null): ?>
-            <?= __('Informations mises à jour le {date}', ['date' => '<strong>' . app_escape(__('{date} à {time}', ['date' => app_long_date($updatedAt, true, true, false), 'time' => app_time($updatedAt)])) . '</strong>']) ?>
+            <?= __('informations_mises_jour_date', ['date' => '<strong>' . app_escape(__('date_time', ['date' => app_long_date($updatedAt, true, true, false), 'time' => app_time($updatedAt)])) . '</strong>']) ?>
             <?php else: ?>
-            <?= app_escape(__('Date de dernière mise à jour inconnue (feuille de route enregistrée avant le suivi des mises à jour)')) ?>
+            <?= app_escape(__('date_derniere_mise_jour_inconnue_feuille')) ?>
             <?php endif; ?>
           </p>
           <header class="roadmap-header">
             <img class="roadmap-logo" src="assets/kerlenn-pondi-logo.png" alt="Kerlenn Pondi" width="512" height="145">
             <div class="roadmap-types">
-              <h3><?= app_escape(__('Type sortie')) ?></h3>
+              <h3><?= app_escape(__('type_sortie')) ?></h3>
               <?php app_render_checklist($branchLabels, $concernedBranches); ?>
             </div>
           </header>
@@ -516,7 +516,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
           </h2>
 
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Contacts')) ?></h3>
+            <h3><?= app_escape(__('contacts')) ?></h3>
             <div class="roadmap-contacts">
               <table>
                 <tbody>
@@ -532,7 +532,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
                   </tr>
                   <?php endforeach; ?>
                   <?php if ($roadmap['contacts'] === []): ?>
-                  <tr><td class="roadmap-empty"><?= app_escape(__('Aucun contact renseigné.')) ?></td></tr>
+                  <tr><td class="roadmap-empty"><?= app_escape(__('aucun_contact_renseigne_phrase')) ?></td></tr>
                   <?php endif; ?>
                 </tbody>
               </table>
@@ -545,7 +545,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
                 <span><?= app_escape($qr['caption']) ?></span>
                 <?php endif; ?>
                 <?php if ($qr['image_url'] !== null): ?>
-                <img src="<?= app_escape($qr['image_url']) ?>" alt="<?= app_escape(__('QR code : {caption}', ['caption' => $qr['caption']])) ?>" width="150" height="150">
+                <img src="<?= app_escape($qr['image_url']) ?>" alt="<?= app_escape(__('qr_code_caption', ['caption' => $qr['caption']])) ?>" width="150" height="150">
                 <?php endif; ?>
               </div>
               <?php endif; ?>
@@ -554,7 +554,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
 
           <?php if ($location !== '' || $roadmap['location_note'] !== ''): ?>
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Lieu de l’évènement')) ?></h3>
+            <h3><?= app_escape(__('lieu_levenement')) ?></h3>
             <p class="roadmap-location">
               <?php if ($roadmap['location_url'] !== '' && $location !== ''): ?>
               <a href="<?= app_escape($roadmap['location_url']) ?>" target="_blank" rel="noopener noreferrer"><?= app_escape($location) ?></a>
@@ -567,24 +567,24 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
           <?php endif; ?>
 
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Informations générales')) ?></h3>
+            <h3><?= app_escape(__('informations_generales')) ?></h3>
             <div class="roadmap-grid roadmap-general">
-              <div><h4><?= app_escape(__('Transport')) ?></h4><?php app_render_checklist(app_translated(ROADMAP_TRANSPORT), $roadmap['transport']); ?></div>
+              <div><h4><?= app_escape(__('transport')) ?></h4><?php app_render_checklist(app_translated(ROADMAP_TRANSPORT), $roadmap['transport']); ?></div>
               <div>
-                <h4><?= app_escape(__('Repas')) ?></h4>
+                <h4><?= app_escape(__('repas')) ?></h4>
                 <?php if ($roadmap['meals'] === ''): ?>
-                <p class="roadmap-text roadmap-empty"><?= app_escape(__('Non précisé')) ?></p>
+                <p class="roadmap-text roadmap-empty"><?= app_escape(__('non_precise')) ?></p>
                 <?php else: ?>
                 <p class="roadmap-text"><?= implode('<br>', array_map('app_linkify', app_text_lines($roadmap['meals']))) ?></p>
                 <?php endif; ?>
               </div>
-              <div><h4><?= app_escape(__('Tenue')) ?></h4><?php app_render_checklist(app_translated(ROADMAP_OUTFITS), $roadmap['outfit']); ?></div>
+              <div><h4><?= app_escape(__('tenue')) ?></h4><?php app_render_checklist(app_translated(ROADMAP_OUTFITS), $roadmap['outfit']); ?></div>
             </div>
           </section>
 
           <?php if ($repertoireBoxes !== []): ?>
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Répertoire')) ?></h3>
+            <h3><?= app_escape(__('repertoire')) ?></h3>
             <div class="roadmap-grid roadmap-repertoires">
               <?php foreach ($repertoireBoxes as $key => $label): ?>
               <div>
@@ -598,7 +598,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
 
           <?php if ($roadmap['documents'] !== []): ?>
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Documents')) ?></h3>
+            <h3><?= app_escape(__('documents')) ?></h3>
             <ul class="roadmap-documents">
               <?php foreach ($roadmap['documents'] as $document): ?>
               <li>
@@ -612,7 +612,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
 
           <?php if ($schedule !== [] || $pennNotes !== [] || $notes !== []): ?>
           <section class="roadmap-block">
-            <h3><?= app_escape(__('Déroulé de la journée / prestation')) ?></h3>
+            <h3><?= app_escape(__('deroule_journee_prestation')) ?></h3>
             <div class="roadmap-program">
               <div>
                 <?php if ($schedule !== []): ?>
@@ -627,7 +627,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
                 </ul>
                 <?php endif; ?>
                 <?php if ($notes !== []): ?>
-                <h4><?= app_escape(__('Note :')) ?></h4>
+                <h4><?= app_escape(__('note_label')) ?></h4>
                 <ul class="roadmap-notes">
                   <?php foreach ($notes as $note): ?>
                   <?php if (trim($note) !== ''): ?><li><?= app_linkify(trim($note)) ?></li><?php endif; ?>
@@ -637,7 +637,7 @@ function app_render_roadmap(array $event, array $roadmap, array $settings, ?stri
               </div>
               <?php if ($pennNotes !== []): ?>
               <div>
-                <h4><?= app_escape(__('Note des Penn :')) ?></h4>
+                <h4><?= app_escape(__('note_penn_label')) ?></h4>
                 <ul class="roadmap-notes">
                   <?php foreach ($pennNotes as $pennNote): ?>
                   <li><?= app_linkify($pennNote) ?></li>
@@ -672,7 +672,7 @@ function app_roadmap_documents(mixed $rows): array
             continue;
         }
         $label = app_clean_line($row['label'] ?? '', ROADMAP_DOCUMENT_LABEL_MAX);
-        $documents[] = ['label' => $label !== '' ? $label : ($file !== null ? __('Document') : $url), 'url' => $url, 'file' => $file];
+        $documents[] = ['label' => $label !== '' ? $label : ($file !== null ? __('document') : $url), 'url' => $url, 'file' => $file];
     }
     return array_slice($documents, 0, ROADMAP_DOCUMENTS_MAX);
 }
@@ -685,10 +685,10 @@ function app_store_roadmap_document(mixed $file): ?string
         return null;
     }
     if (in_array($file['error'] ?? null, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || ($file['size'] ?? 0) > ROADMAP_DOCUMENT_MAX_BYTES) {
-        throw new InvalidArgumentException(__('Un document ne doit pas dépasser 10 Mo.'));
+        throw new InvalidArgumentException(__('document_doit_depasser_10_mo_phrase'));
     }
     if (($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
-        throw new InvalidArgumentException(__('L’envoi d’un document a échoué.'));
+        throw new InvalidArgumentException(__('lenvoi_dun_document_echoue_phrase'));
     }
     $head = (string) file_get_contents($file['tmp_name'], false, null, 0, 5);
     $info = @getimagesize($file['tmp_name']);
@@ -700,16 +700,16 @@ function app_store_roadmap_document(mixed $file): ?string
         default => null,
     };
     if ($extension === null) {
-        throw new InvalidArgumentException(__('Un document doit être un PDF ou une image PNG, JPEG ou WebP.'));
+        throw new InvalidArgumentException(__('document_doit_etre_pdf_image_png'));
     }
     $directory = app_upload_directory();
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-        throw new RuntimeException(__('Impossible de créer le dossier des documents.'));
+        throw new RuntimeException(__('impossible_creer_dossier_documents_phrase'));
     }
     $name = 'doc-' . bin2hex(random_bytes(16)) . '.' . $extension;
     $path = $directory . '/' . $name;
     if (!move_uploaded_file($file['tmp_name'], $path) || !chmod($path, 0600)) {
-        throw new RuntimeException(__('Impossible d’enregistrer le document.'));
+        throw new RuntimeException(__('impossible_denregistrer_document_phrase'));
     }
     return $name;
 }

@@ -116,21 +116,21 @@ function app_store_photo(mixed $file): ?string
         return null;
     }
     if (in_array($file['error'] ?? null, [UPLOAD_ERR_INI_SIZE, UPLOAD_ERR_FORM_SIZE], true) || ($file['size'] ?? 0) > PHOTO_MAX_BYTES) {
-        throw new InvalidArgumentException(__('La photo ne doit pas dépasser 8 Mo.'));
+        throw new InvalidArgumentException(__('photo_doit_depasser_8_mo_phrase'));
     }
     if (($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
-        throw new InvalidArgumentException(__('L’envoi de la photo a échoué.'));
+        throw new InvalidArgumentException(__('lenvoi_photo_echoue_phrase'));
     }
     $info = @getimagesize($file['tmp_name']);
     if ($info === false || !in_array($info[2], [IMAGETYPE_JPEG, IMAGETYPE_PNG, IMAGETYPE_GIF, IMAGETYPE_WEBP], true)) {
-        throw new InvalidArgumentException(__('La photo doit être une image JPEG ou PNG.'));
+        throw new InvalidArgumentException(__('photo_doit_etre_image_jpeg_png'));
     }
     if (!function_exists('imagecreatefromstring') || !function_exists('imagejpeg')) {
-        throw new InvalidArgumentException(__('Le serveur ne sait pas traiter les images (extension PHP GD absente) : demandez à l’hébergeur de l’activer.'));
+        throw new InvalidArgumentException(__('serveur_sait_traiter_images_extension_php'));
     }
     $source = @imagecreatefromstring((string) file_get_contents($file['tmp_name']));
     if ($source === false) {
-        throw new InvalidArgumentException(__('Cette image ne peut pas être lue : enregistrez-la en JPEG ou en PNG.'));
+        throw new InvalidArgumentException(__('cette_image_peut_etre_lue_enregistrez'));
     }
     // Phone pictures: turned as they were taken.
     if ($info[2] === IMAGETYPE_JPEG) {
@@ -145,14 +145,14 @@ function app_store_photo(mixed $file): ?string
     }
     $directory = app_upload_directory();
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-        throw new RuntimeException(__('Impossible de créer le dossier des photos.'));
+        throw new RuntimeException(__('impossible_creer_dossier_photos_phrase'));
     }
     $base = 'photo-' . bin2hex(random_bytes(16));
     // Square from the top of the picture (thumbnail), and portrait 3:4 (enlarged view).
     foreach ([[$base . '.jpg', PHOTO_SIZE, PHOTO_SIZE], [$base . '-portrait.jpg', PHOTO_PORTRAIT_WIDTH, PHOTO_PORTRAIT_HEIGHT]] as [$fileName, $targetWidth, $targetHeight]) {
         $path = $directory . '/' . $fileName;
         if (!imagejpeg(app_photo_crop_top($source, $targetWidth, $targetHeight), $path, 85) || !chmod($path, 0600)) {
-            throw new RuntimeException(__('Impossible d’enregistrer la photo.'));
+            throw new RuntimeException(__('impossible_denregistrer_photo_phrase'));
         }
     }
     return $base . '.jpg';
@@ -194,7 +194,7 @@ function app_photo_zoom(array $user, string $class = '', int $size = 96): string
         return app_photo_thumb($user, $class, $size);
     }
     $name = app_member_display_name($user);
-    return '<a class="photo-zoom" href="' . app_escape($url) . '" data-photo-zoom data-photo-name="' . app_escape($name) . '" aria-label="' . app_escape(__('Agrandir la photo de {name}', ['name' => $name])) . '">' . app_photo_thumb($user, $class, $size) . '</a>';
+    return '<a class="photo-zoom" href="' . app_escape($url) . '" data-photo-zoom data-photo-name="' . app_escape($name) . '" aria-label="' . app_escape(__('agrandir_photo_name', ['name' => $name])) . '">' . app_photo_thumb($user, $class, $size) . '</a>';
 }
 
 // Square thumbnail with rounded corners: the photo, or the initials of the member. $size (px) is
@@ -207,14 +207,14 @@ function app_photo_thumb(array $user, string $class = '', int $size = 96): strin
     $classes = trim('member-photo ' . $class);
     if ($photo !== null) {
         $url = app_photo_url($user);
-        return '<img class="' . app_escape($classes) . '" src="' . app_escape($url) . '" alt="' . app_escape(__('Photo de {name}', ['name' => $name])) . '" width="' . $size . '" height="' . $size . '" style="object-fit:cover;border-radius:18%" loading="lazy">';
+        return '<img class="' . app_escape($classes) . '" src="' . app_escape($url) . '" alt="' . app_escape(__('photo_name', ['name' => $name])) . '" width="' . $size . '" height="' . $size . '" style="object-fit:cover;border-radius:18%" loading="lazy">';
     }
     $words = preg_split('/[\s._-]+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [$name];
     $initials = '';
     foreach (array_slice($words, 0, 2) as $word) {
         $initials .= function_exists('mb_substr') ? mb_strtoupper(mb_substr($word, 0, 1)) : strtoupper(substr($word, 0, 1));
     }
-    return '<span class="' . app_escape($classes . ' is-initials') . '" role="img" aria-label="' . app_escape(__('Pas de photo pour {name}', ['name' => $name])) . '">' . app_escape($initials) . '</span>';
+    return '<span class="' . app_escape($classes . ' is-initials') . '" role="img" aria-label="' . app_escape(__('pas_de_photo_pour_name', ['name' => $name])) . '">' . app_escape($initials) . '</span>';
 }
 
 // Photo block of an account: the thumbnail, and for whoever may change it the forms to send a new
@@ -230,8 +230,8 @@ function app_photo_panel(array $target, array $actor, string $return, string $he
             <?php if ($hasPhoto): ?>
             <figure class="photo-panel-versions">
               <?= app_photo_thumb($target, 'photo-panel-thumb', 128) ?>
-              <img class="photo-panel-portrait" src="<?= app_escape((string) app_photo_url($target, true)) ?>" alt="<?= app_escape(__('Portrait de {name}', ['name' => app_member_display_name($target)])) ?>" width="120" height="160" style="object-fit:cover;border-radius:10px" loading="lazy">
-              <figcaption class="field-help"><?= app_escape(__('Vignette et portrait')) ?></figcaption>
+              <img class="photo-panel-portrait" src="<?= app_escape((string) app_photo_url($target, true)) ?>" alt="<?= app_escape(__('portrait_name', ['name' => app_member_display_name($target)])) ?>" width="120" height="160" style="object-fit:cover;border-radius:10px" loading="lazy">
+              <figcaption class="field-help"><?= app_escape(__('vignette_portrait')) ?></figcaption>
             </figure>
             <?php else: ?>
             <?= app_photo_thumb($target, 'photo-panel-thumb', 128) ?>
@@ -243,22 +243,22 @@ function app_photo_panel(array $target, array $actor, string $return, string $he
                 <input type="hidden" name="action" value="upload">
                 <input type="hidden" name="user_id" value="<?= app_escape((string) $target['id']) ?>">
                 <input type="hidden" name="return" value="<?= app_escape($return) ?>">
-                <label for="photo-file"><?= app_escape($hasPhoto ? __('Nouvelle photo (JPEG ou PNG, 8 Mo au plus)') : __('Photo (JPEG ou PNG, 8 Mo au plus)')) ?></label>
+                <label for="photo-file"><?= app_escape($hasPhoto ? __('nouvelle_photo_jpeg_png_8_mo') : __('photo_jpeg_png_8_mo_plus')) ?></label>
                 <input id="photo-file" name="photo" type="file" accept="image/jpeg,image/png" required>
-                <p class="field-help"><?= app_escape(__('Elle est recadrée par le haut, en carré pour la vignette et en portrait pour l’agrandissement (cadrez le visage en haut de l’image), et réduite ; ses informations cachées (lieu de la prise de vue…) sont retirées. Elle apparaît dans le trombinoscope, visible des seuls membres connectés. Chaque changement est noté dans le journal d’audit.')) ?></p>
-                <div class="form-actions"><button class="primary-button compact-button" type="submit"><?= app_escape(__('Enregistrer la photo')) ?></button></div>
+                <p class="field-help"><?= app_escape(__('recadree_haut_carre_vignette_portrait_lagrandissement')) ?></p>
+                <div class="form-actions"><button class="primary-button compact-button" type="submit"><?= app_escape(__('enregistrer_photo')) ?></button></div>
               </form>
               <?php if ($hasPhoto): ?>
-              <form method="post" action="photo-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('Retirer cette photo ?'), JSON_UNESCAPED_UNICODE)) ?>);">
+              <form method="post" action="photo-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('retirer_cette_photo'), JSON_UNESCAPED_UNICODE)) ?>);">
                 <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                 <input type="hidden" name="action" value="remove">
                 <input type="hidden" name="user_id" value="<?= app_escape((string) $target['id']) ?>">
                 <input type="hidden" name="return" value="<?= app_escape($return) ?>">
-                <button class="text-button" type="submit"><?= app_escape(__('Retirer la photo')) ?></button>
+                <button class="text-button" type="submit"><?= app_escape(__('retirer_photo')) ?></button>
               </form>
               <?php endif; ?>
               <?php else: ?>
-              <p class="muted-copy"><?= app_impersonator() !== null ? __('La photo ne se change pas en agissant en tant que ce membre.') : __('Seuls le membre (artiste ou manager), les managers de ses sous-sections et les administrateurs peuvent modifier cette photo.') ?></p>
+              <p class="muted-copy"><?= app_impersonator() !== null ? __('photo_change_agissant_tant_ce_membre') : __('seuls_membre_artiste_manager_managers_sous') ?></p>
               <?php endif; ?>
             </div>
           </div>
