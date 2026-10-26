@@ -1696,12 +1696,12 @@ function app_header(string $title, ?array $user = null): void
     header('Referrer-Policy: same-origin');
     $identity = app_site_identity();
     $siteTitle = $identity['title'];
-    $pageTitle = $title === '' ? $siteTitle : $title . ' — ' . $siteTitle;
+    $pageTitle = $title === '' ? $siteTitle : __($title) . ' — ' . $siteTitle;
     $flash = app_take_flash();
     $impersonator = $user !== null ? app_impersonator() : null;
     ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= app_escape(app_locale()) ?>">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1728,20 +1728,23 @@ function app_header(string $title, ?array $user = null): void
     <?php if (($statusColorsCss = app_status_colors_css()) !== ''): ?>
     <style><?= $statusColorsCss ?></style>
     <?php endif; ?>
+    <?php // Texts of the scripts in the language of the page (French when absent). ?>
+    <?php if (($jsTranslations = app_js_translations()) !== []): ?>
+    <script type="application/json" id="deizi-i18n"><?= json_encode($jsTranslations, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+    <?php endif; ?>
     <script src="<?= app_escape(app_asset_url('menu.js')) ?>" defer></script>
   </head>
   <body>
     <?php if ($impersonator !== null): ?>
     <div class="impersonation-banner" role="status">
       <p>
-        <strong><?= app_escape((string) $impersonator['username']) ?></strong> agit en tant que
-        <strong><?= app_escape((string) $user['username']) ?></strong> (<?= app_escape(USER_ROLES[$user['role']] ?? '') ?>).
-        Les réponses saisies sont enregistrées au nom de « <?= app_escape($user['username'] . '-i-' . $impersonator['username']) ?> ».
+        <?= __('{admin} agit en tant que {member} ({role}).', ['admin' => '<strong>' . app_escape((string) $impersonator['username']) . '</strong>', 'member' => '<strong>' . app_escape((string) $user['username']) . '</strong>', 'role' => app_escape(__(USER_ROLES[$user['role']] ?? ''))]) ?>
+        <?= app_escape(__('Les réponses saisies sont enregistrées au nom de « {name} ».', ['name' => $user['username'] . '-i-' . $impersonator['username']])) ?>
       </p>
       <form method="post" action="impersonate-action.php">
         <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
         <input type="hidden" name="action" value="stop">
-        <button class="impersonation-stop" type="submit">Revenir à mon compte</button>
+        <button class="impersonation-stop" type="submit"><?= app_escape(__('Revenir à mon compte')) ?></button>
       </form>
     </div>
     <?php endif; ?>
@@ -1750,7 +1753,7 @@ function app_header(string $title, ?array $user = null): void
       <?php if (app_current_user() !== null): ?>
       <?php if ($user !== null): ?>
       <?php // Large screens: the connected account sits in a band above the menu, aligned right. ?>
-      <div class="session-bar"><a href="account.php" title="Mon compte"><?= app_escape((string) $user['username']) ?></a> · <?= app_escape(app_user_role_label($user)) ?></div>
+      <div class="session-bar"><a href="account.php" title="<?= app_escape(__('Mon compte')) ?>"><?= app_escape((string) $user['username']) ?></a> · <?= app_escape(app_user_role_label($user)) ?></div>
       <?php endif; ?>
       <div class="app-brand">
         <a class="brand" href="index.php" aria-label="<?= app_escape($siteTitle) ?>">
@@ -1775,23 +1778,23 @@ function app_header(string $title, ?array $user = null): void
         $noticeReturn = app_safe_return_path(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) . (($_SERVER['QUERY_STRING'] ?? '') !== '' ? '?' . $_SERVER['QUERY_STRING'] : ''));
         ?>
         <details class="notice-menu" data-unread-count="<?= $unreadCount ?>">
-          <summary class="notice-toggle" aria-label="<?= app_escape($unreadCount === 0 ? 'Aucune nouveauté' : ($unreadCount === 1 ? '1 date nouvelle ou modifiée' : $unreadCount . ' dates nouvelles ou modifiées')) ?>">
+          <summary class="notice-toggle" aria-label="<?= app_escape($unreadCount === 0 ? __('Aucune nouveauté') : __n('{n} date nouvelle ou modifiée', '{n} dates nouvelles ou modifiées', $unreadCount)) ?>">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.3 15.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .9-1.6L18 12.6V9a6 6 0 0 0-6-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 19.5a2.6 2.6 0 0 0 5 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <?php if ($unreadCount > 0): ?><span class="notice-count" aria-hidden="true"><?= $unreadCount > 99 ? '99+' : $unreadCount ?></span><?php endif; ?>
           </summary>
           <div class="notice-panel">
-            <p class="notice-heading">Nouveautés</p>
+            <p class="notice-heading"><?= app_escape(__('Nouveautés')) ?></p>
             <?php if ($unreadEvents === []): ?>
-            <p class="notice-empty">Aucune date nouvelle ou modifiée depuis votre dernière consultation.</p>
+            <p class="notice-empty"><?= app_escape(__('Aucune date nouvelle ou modifiée depuis votre dernière consultation.')) ?></p>
             <?php else: ?>
             <ul class="notice-list">
               <?php foreach (array_slice($unreadEvents, 0, 20) as $item): ?>
               <?php $noticeDate = app_parse_date($item['event']['date'] ?? null); ?>
               <li>
                 <a href="event.php?id=<?= rawurlencode((string) $item['event']['id']) ?>">
-                  <span class="notice-kind <?= $item['notice']['type'] === 'new' ? 'is-new' : 'is-changed' ?>"><?= $item['notice']['type'] === 'new' ? 'Nouveau' : 'Modifié' ?></span>
+                  <span class="notice-kind <?= $item['notice']['type'] === 'new' ? 'is-new' : 'is-changed' ?>"><?= app_escape($item['notice']['type'] === 'new' ? __('Nouveau') : __('Modifié')) ?></span>
                   <strong><?= app_escape((string) ($item['event']['title'] ?? '')) ?></strong>
-                  <span class="notice-meta"><?= $noticeDate !== null ? app_escape($noticeDate->format('d/m/Y')) : '' ?><?= $item['notice']['type'] === 'changed' ? ' · ' . app_escape(implode(', ', $item['notice']['fields'])) : '' ?></span>
+                  <span class="notice-meta"><?= $noticeDate !== null ? app_escape($noticeDate->format('d/m/Y')) : '' ?><?= $item['notice']['type'] === 'changed' ? ' · ' . app_escape(implode(', ', array_map('__', $item['notice']['fields']))) : '' ?></span>
                 </a>
               </li>
               <?php endforeach; ?>
@@ -1800,40 +1803,40 @@ function app_header(string $title, ?array $user = null): void
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="action" value="mark_all_seen">
               <?php if ($noticeReturn !== null): ?><input type="hidden" name="return" value="<?= app_escape($noticeReturn) ?>"><?php endif; ?>
-              <button class="text-button notice-clear" type="submit">Tout marquer comme lu</button>
+              <button class="text-button notice-clear" type="submit"><?= app_escape(__('Tout marquer comme lu')) ?></button>
             </form>
             <?php endif; ?>
-            <a class="notice-settings" href="updates.php#notifications">Notifications sur cet appareil</a>
+            <a class="notice-settings" href="updates.php#notifications"><?= app_escape(__('Notifications sur cet appareil')) ?></a>
           </div>
         </details>
         <div class="account-menu">
-          <button class="account-menu-toggle" type="button" aria-expanded="false" aria-controls="account-navigation" aria-label="Ouvrir le menu">
+          <button class="account-menu-toggle" type="button" aria-expanded="false" aria-controls="account-navigation" aria-label="<?= app_escape(__('Ouvrir le menu')) ?>">
             <span></span><span></span><span></span>
           </button>
           <?php // Large screens: icons only, the text of each entry being its alternative text and tooltip; phones: icon and text. ?>
-          <nav class="account-menu-links" id="account-navigation" aria-label="Menu du compte">
+          <nav class="account-menu-links" id="account-navigation" aria-label="<?= app_escape(__('Menu du compte')) ?>">
             <span class="account-menu-user"><?= app_escape((string) $user['username']) ?> · <?= app_escape(app_user_role_label($user)) ?></span>
             <?php if (in_array($user['role'], EVENT_MANAGER_ROLES, true)): ?>
-            <?= app_menu_link('manage-events.php', 'calendar-pen', 'Gérer les dates') ?>
-            <?= app_menu_link(app_matrix_tab_url(), 'grid-check', 'Tableau de présence') ?>
+            <?= app_menu_link('manage-events.php', 'calendar-pen', __('Gérer les dates')) ?>
+            <?= app_menu_link(app_matrix_tab_url(), 'grid-check', __('Tableau de présence')) ?>
             <?php endif; ?>
-            <?= app_menu_link('reporting.php', 'planning', 'Vues') ?>
-            <?= app_menu_link('trombinoscope.php', 'users', 'Trombinoscope') ?>
+            <?= app_menu_link('reporting.php', 'planning', __('Vues')) ?>
+            <?= app_menu_link('trombinoscope.php', 'users', __('Trombinoscope')) ?>
             <?php if (app_can_publish_announcements($user)): ?>
-            <?= app_menu_link('announcements.php', 'megaphone', 'Annonces') ?>
+            <?= app_menu_link('announcements.php', 'megaphone', __('Annonces')) ?>
             <?php endif; ?>
             <?php if (app_can_manage_logistics($user)): ?>
-            <?= app_menu_link('logistics.php', 'receipt-euro', 'Logistique') ?>
+            <?= app_menu_link('logistics.php', 'receipt-euro', __('Logistique')) ?>
             <?php endif; ?>
             <span class="menu-separator" aria-hidden="true"></span>
-            <?= app_menu_link('updates.php#installer', 'phone-install', 'Installer l’application', 'install-menu-link', ' data-install-link') ?>
+            <?= app_menu_link('updates.php#installer', 'phone-install', __('Installer l’application'), 'install-menu-link', ' data-install-link') ?>
             <?php if (in_array($user['role'], EVENT_MANAGER_ROLES, true)): ?>
-            <?= app_menu_link('settings.php', 'gear', 'Configuration') ?>
+            <?= app_menu_link('settings.php', 'gear', __('Configuration')) ?>
             <?php endif; ?>
-            <?= app_menu_link('account.php', 'user', 'Mon compte') ?>
+            <?= app_menu_link('account.php', 'user', __('Mon compte')) ?>
             <form method="post" action="logout.php">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
-              <button class="text-button menu-icon-link menu-logout" type="submit" data-label="Se déconnecter"><?= app_menu_icon('logout') ?><span class="menu-label">Se déconnecter</span></button>
+              <button class="text-button menu-icon-link menu-logout" type="submit" data-label="<?= app_escape(__('Se déconnecter')) ?>"><?= app_menu_icon('logout') ?><span class="menu-label"><?= app_escape(__('Se déconnecter')) ?></span></button>
             </form>
           </nav>
         </div>
@@ -1842,7 +1845,7 @@ function app_header(string $title, ?array $user = null): void
       <?php endif; ?>
       <?php if ($flash !== null): ?>
       <?php $flashLink = is_array($flash['link'] ?? null) && is_string($flash['link']['url'] ?? null) && is_string($flash['link']['label'] ?? null) ? $flash['link'] : null; ?>
-      <p class="flash-message <?= app_escape((string) ($flash['kind'] ?? 'success')) ?>" role="status"><?= app_escape((string) ($flash['message'] ?? '')) ?><?php if ($flashLink !== null): ?> <a class="flash-link" href="<?= app_escape($flashLink['url']) ?>"><?= app_escape($flashLink['label']) ?> <span aria-hidden="true">→</span></a><?php endif; ?></p>
+      <p class="flash-message <?= app_escape((string) ($flash['kind'] ?? 'success')) ?>" role="status"><?= app_escape(__((string) ($flash['message'] ?? ''))) ?><?php if ($flashLink !== null): ?> <a class="flash-link" href="<?= app_escape($flashLink['url']) ?>"><?= app_escape(__($flashLink['label'])) ?> <span aria-hidden="true">→</span></a><?php endif; ?></p>
       <?php endif; ?>
 <?php
 }
@@ -1919,17 +1922,18 @@ function app_settings_nav(string $group, string $current, array $user): void
         return;
     }
     ?>
-        <nav class="settings-subnav" aria-label="<?= app_escape(SETTINGS_GROUPS[$group][0]) ?>">
-          <span class="settings-subnav-group"><?= app_escape(SETTINGS_GROUPS[$group][0]) ?></span>
+        <nav class="settings-subnav" aria-label="<?= app_escape(__(SETTINGS_GROUPS[$group][0])) ?>">
+          <span class="settings-subnav-group"><?= app_escape(__(SETTINGS_GROUPS[$group][0])) ?></span>
           <?php foreach ($pages as [$file, $name]): ?>
-          <a href="<?= app_escape($file) ?>"<?= $file === $current ? ' aria-current="page"' : '' ?>><?= app_escape($name) ?></a>
+          <a href="<?= app_escape($file) ?>"<?= $file === $current ? ' aria-current="page"' : '' ?>><?= app_escape(__($name)) ?></a>
           <?php endforeach; ?>
         </nav>
 <?php
 }
 
 // Navigation links shown on the right of the eyebrow line of a page, the same way on every page.
-// $links: [label, url] pairs; null entries (links reserved to some roles) are skipped.
+// $links: [label, url] pairs, labels in French (translated here); null entries (links reserved to
+// some roles) are skipped.
 function app_page_links(array $links): void
 {
     $links = array_values(array_filter($links));
@@ -1937,10 +1941,10 @@ function app_page_links(array $links): void
         return;
     }
     ?>
-          <nav class="eyebrow eyebrow-links" aria-label="Navigation">
+          <nav class="eyebrow eyebrow-links" aria-label="<?= app_escape(__('Navigation')) ?>">
             <?php foreach ($links as $index => [$label, $url]): ?>
             <?php if ($index > 0): ?><span class="eyebrow-sep" aria-hidden="true">/</span><?php endif; ?>
-            <a href="<?= app_escape($url) ?>"><?= app_escape(mb_strtoupper($label)) ?></a>
+            <a href="<?= app_escape($url) ?>"><?= app_escape(mb_strtoupper(__($label))) ?></a>
             <?php endforeach; ?>
           </nav>
 <?php
@@ -1969,15 +1973,16 @@ function app_footer(): void
     <footer class="site-footer">
       <?php // Title and last update: logged-in users only, like the site banner (not on the login page). ?>
       <?php if (app_current_user() !== null): ?>
-      <?= app_escape(app_site_title()) ?> — Dernière mise à jour le <a href="updates.php" title="Voir les nouveautés"><?= app_files_updated_at()->format('d/m/Y') ?></a> ·
+      <?= app_escape(app_site_title()) ?> — <?= app_escape(__('Dernière mise à jour le')) ?> <a href="updates.php" title="<?= app_escape(__('Voir les nouveautés')) ?>"><?= app_files_updated_at()->format('d/m/Y') ?></a> ·
       <?php endif; ?>
-      Deizi, logiciel libre sous <a href="<?= app_escape(DEIZI_LICENSE_URL) ?>" target="_blank" rel="noopener license">licence AGPL</a> · <a href="<?= app_escape(app_source_url()) ?>" target="_blank" rel="noopener">code source</a>
+      <?= app_escape(__('Deizi, logiciel libre sous')) ?> <a href="<?= app_escape(DEIZI_LICENSE_URL) ?>" target="_blank" rel="noopener license"><?= app_escape(__('licence AGPL')) ?></a> · <a href="<?= app_escape(app_source_url()) ?>" target="_blank" rel="noopener"><?= app_escape(__('code source')) ?></a>
     </footer>
   </body>
 </html>
 <?php
 }
 
+require __DIR__ . '/i18n.php';
 require __DIR__ . '/roadmap.php';
 require __DIR__ . '/polls.php';
 require __DIR__ . '/changes.php';

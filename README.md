@@ -216,6 +216,16 @@ Chaque page d'un thème affiche sous son titre les onglets de son thème (`app_s
 
 Sur ordinateur (plus de 760 px de large), le menu du compte affiche des **icônes** (`MENU_ICONS` et `app_menu_link()` dans `lib/bootstrap.php`) : Gérer les dates (calendrier et crayon), Tableau de présence (grille cochée), Vues (planning), Annonces (porte-voix), Logistique (reçu en euros), puis, après une séparation, Installer l'application (téléphone et flèche), Configuration (engrenage), Mon compte (silhouette) et Se déconnecter (en rouge). Le texte de chaque entrée reste dans le lien, masqué visuellement mais lu par les lecteurs d'écran, et s'affiche en bulle au survol ou au focus clavier. Sur téléphone, le menu déroulant montre l'icône et le texte.
 
+## Langues (branche `multilingue`, en cours)
+
+L'interface est prévue en **français**, **anglais**, **breton** et **espagnol** (`LANGUAGES` dans `lib/i18n.php`). Le français est la langue du code : chaque texte affiché passe par `__('Texte français')` (ou `__n('{n} date', '{n} dates', $nombre)` pour un pluriel), et ce texte sert de clé aux traductions rangées dans `lang/en.php`, `lang/br.php` et `lang/es.php` (« texte français » => « traduction »). Les valeurs variables s'écrivent `{nom}` et se passent à `__()` : `__('Photo de {name}', ['name' => $nom])`. Un texte sans traduction s'affiche en français. Les noms des jours et des mois passent par `app_weekday_name()` et `app_month_name()` ; les textes des scripts (`menu.js`…) sont listés dans `JS_TEXTS` et lus par `t('…')`.
+
+**Choix de la langue** : celle du membre (**Mon compte › Langue**, clé `language` du compte), sinon la **langue par défaut du site** (**Configuration › Identité du site**, clé `language` de `site`) ; avant la connexion, la langue du navigateur quand elle fait partie des langues prévues. L'attribut `lang` de la page suit la langue choisie.
+
+**Traduire** : `php tools/i18n-check.php` compte, pour chaque langue, les textes traduits, manquants et inutilisés (liste des premiers manquants) ; `php tools/i18n-check.php --keys` donne tous les textes à traduire. L'outil ne fonctionne qu'en ligne de commande. Les traductions bretonnes sont à relire par un brittophone.
+
+Avancement : socle, en-tête, menu, cloche, pied de page, connexion et Mon compte sont traduits ; les autres pages restent en français pour l'instant.
+
 ## Sécurité et publication
 
 Le site n'est **pas indexé par les moteurs de recherche** : `robots.txt` interdit l'exploration à tous les robots, chaque réponse de l'application porte l'en-tête `X-Robots-Tag: noindex, nofollow, noarchive` (posé par `lib/bootstrap.php`, et par `.htaccess` pour les fichiers statiques si le module Apache `mod_headers` est actif), et chaque page contient la balise `<meta name="robots" content="noindex, nofollow, noarchive">`. Si des pages ont déjà été indexées, retirez temporairement la ligne `Disallow: /` de `robots.txt` le temps que les moteurs repassent et lisent la consigne `noindex`, ou demandez leur retrait dans Google Search Console.

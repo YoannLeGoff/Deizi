@@ -1,3 +1,14 @@
+// Texts of the scripts in the language of the page: the translations given by the page
+// (#deizi-i18n, see JS_TEXTS in lib/i18n.php), the French text otherwise; {name} placeholders.
+const deiziTexts = (() => {
+  try {
+    return JSON.parse(document.getElementById("deizi-i18n")?.textContent || "{}");
+  } catch (error) {
+    return {};
+  }
+})();
+window.t = (text, values = {}) => (deiziTexts[text] || text).replace(/\{(\w+)\}/g, (match, key) => (key in values ? String(values[key]) : match));
+
 const accountMenu = document.querySelector(".account-menu");
 
 if (accountMenu) {
@@ -134,8 +145,8 @@ document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const isVisible = input.type === "password";
     input.type = isVisible ? "text" : "password";
-    toggle.textContent = isVisible ? "Masquer" : "Afficher";
-    toggle.setAttribute("aria-label", `${isVisible ? "Masquer" : "Afficher"} le mot de passe`);
+    toggle.textContent = isVisible ? t("Masquer") : t("Afficher");
+    toggle.setAttribute("aria-label", isVisible ? t("Masquer le mot de passe") : t("Afficher le mot de passe"));
     toggle.setAttribute("aria-pressed", String(isVisible));
   });
 });
@@ -743,7 +754,7 @@ document.addEventListener("click", (event) => {
   dialog.className = "photo-dialog";
   const image = document.createElement("img");
   image.src = link.href;
-  image.alt = `Photo de ${link.dataset.photoName}`;
+  image.alt = t("Photo de {name}", { name: link.dataset.photoName });
   const bar = document.createElement("div");
   bar.className = "photo-dialog-bar";
   const name = document.createElement("span");
@@ -751,7 +762,7 @@ document.addEventListener("click", (event) => {
   const close = document.createElement("button");
   close.type = "button";
   close.className = "text-button";
-  close.textContent = "Fermer";
+  close.textContent = t("Fermer");
   close.addEventListener("click", () => dialog.close());
   bar.append(name, close);
   dialog.append(image, bar);
