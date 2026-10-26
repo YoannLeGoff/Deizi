@@ -79,14 +79,17 @@ function app_set_locale_for(array $user): void
     app_locale(app_is_language($user['language'] ?? null) ? $user['language'] : app_site_language());
 }
 
-// Translations of a language: "French text" => "translated text".
-function app_translations(string $language): array
+// Translations of a language: "French text" => "translated text", those of the code
+// (lang/<code>.php) with the corrections made in Configuration > Langues
+// (data/translations-<code>.json) over them.
+function app_translations(string $language, bool $refresh = false): array
 {
     static $loaded = [];
-    if (!isset($loaded[$language])) {
+    if (!isset($loaded[$language]) || $refresh) {
         $file = dirname(__DIR__) . '/lang/' . $language . '.php';
         $translations = $language !== DEFAULT_LANGUAGE && is_file($file) ? require $file : [];
-        $loaded[$language] = is_array($translations) ? $translations : [];
+        $overrides = $language !== DEFAULT_LANGUAGE && isset(LANGUAGES[$language]) ? read_json_file(app_data_path('translations-' . $language . '.json')) : [];
+        $loaded[$language] = array_merge(is_array($translations) ? $translations : [], array_filter($overrides, 'is_string'));
     }
     return $loaded[$language];
 }

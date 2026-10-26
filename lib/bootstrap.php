@@ -841,7 +841,7 @@ function app_site_nickname(): string
 
 function app_data_path(string $filename): string
 {
-    if (!in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json'], true)) {
+    if (!in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json', 'translations-en.json', 'translations-br.json', 'translations-es.json'], true)) {
         throw new InvalidArgumentException('Nom de fichier de données non autorisé.');
     }
 
@@ -1899,6 +1899,7 @@ const SETTINGS_GROUPS = [
         ['site-settings.php', 'Identité du site', ['admin']],
         ['sections-settings.php', 'Sections', ['admin']],
         ['status-settings.php', 'Statuts', ['admin']],
+        ['languages-settings.php', 'Langues', ['admin']],
     ]],
     'suivi' => ['Suivi et sécurité', 'Ce qui a été fait, par qui et quand, et les opérations définitives.', [
         ['attendance-log.php', 'Journal d’audit', ACCOUNT_MANAGER_ROLES],

@@ -79,6 +79,7 @@ const RIGHTS_MATRIX = [
         ['Se connecter en tant qu’un autre membre', [false, false, false, false, true]],
         ['Gérer les vacances scolaires et les jours fériés', [false, false, true, true, true]],
         ['Régler la feuille de route par défaut', [false, false, true, true, true]],
+        ['Modifier les traductions de l’interface (Configuration › Langues : à l’écran, ou par export et import d’un tableur)', [false, false, false, false, true]],
         ['Gérer les sections (codes, couleurs, couleur de l’étiquette Tutti, affichage dans les filtres et le trombinoscope)', [false, false, false, false, true]],
         ['Régler le début des saisons', [false, false, false, false, true]],
         ['Choisir la couleur des statuts', [false, false, false, false, true]],

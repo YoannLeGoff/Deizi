@@ -1477,3 +1477,23 @@ a.settings-row-title:hover { color: var(--sea); }
 .account-role.account-lead { color: #6b4600; background: #f3e1b5; }
 .trombi-edit { color: var(--sea); font-size: 11px; font-weight: 600; }
 @media (max-width: 760px) { .trombi-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } .trombi-photo { width: 84px; height: 84px; } }
+
+/* Configuration > Langues: bulk export / import, and the table of translations. */
+.languages-bulk-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 28px; }
+.languages-bulk-columns h3 { margin: 0 0 6px; font-size: 14px; }
+.languages-bulk-columns .form-actions { flex-wrap: wrap; }
+.languages-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
+.languages-filters .filter-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-right: auto; }
+.languages-filters input[type="search"] { min-width: 220px; min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 3px; font: 13px var(--sans); }
+.languages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.languages-table th, .languages-table td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.languages-table thead th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.languages-table td:first-child { width: 46%; }
+.languages-french label { display: block; color: var(--ink); line-height: 1.45; }
+.languages-state { display: inline-block; margin-top: 6px; padding: 1px 6px; color: #6b4600; background: #f3e1b5; border-radius: 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.languages-table tr.is-changed .languages-state { color: var(--sea); background: #e2f2f5; }
+.languages-table textarea { width: 100%; padding: 8px 10px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 3px; font: 13px/1.45 var(--sans); resize: vertical; }
+.languages-table tr.is-missing textarea { border-color: #e0b85a; }
+.languages-table textarea:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
+.languages-save { position: sticky; bottom: 0; padding: 12px 0; background: var(--white); }
+@media (max-width: 760px) { .languages-bulk-columns { grid-template-columns: 1fr; } .languages-table td:first-child { width: auto; } .languages-table, .languages-table tbody, .languages-table tr, .languages-table td { display: block; } .languages-table thead { display: none; } }
