@@ -199,6 +199,32 @@ function app_roles(): array
     return app_translated(USER_ROLES);
 }
 
+// Audit journal: its words (status of a date, yes/no) are recorded in English, whatever the
+// language of the author, and shown in the language of the page; entries recorded in French
+// before are shown the same way.
+const LOG_YES_NO = ['Non', 'Oui'];
+// Former status of the dates, still found in older entries.
+const LOG_LEGACY_WORDS = ['Annulé-Refusé'];
+
+function app_in_english(string $text): string
+{
+    $translated = app_translations('en')[$text] ?? '';
+    return $translated !== '' ? $translated : $text;
+}
+
+// A recorded word (English, or French for older entries) in the language of the page.
+function app_from_journal(string $text): string
+{
+    static $french = null;
+    if ($french === null) {
+        $french = [];
+        foreach (app_translations('en') as $source => $english) {
+            $french[$english] ??= $source;
+        }
+    }
+    return __($french[$text] ?? $text);
+}
+
 // Texts used by the scripts (menu.js…), given to them in the language of the page.
 const JS_TEXTS = [
     'Afficher',
