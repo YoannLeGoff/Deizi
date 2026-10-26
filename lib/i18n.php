@@ -168,16 +168,30 @@ function app_ucfirst(string $text): string
 }
 
 // Fixed lists of labels, translated (same keys as the constants, which keep the French labels and
-// stay used for validation): statuses of the dates, attendance answers and filters, roles.
+// stay used for validation): attendance answers and filters, roles.
 function app_translated(array $labels): array
 {
     return array_map(static fn (string $label): string => __($label), $labels);
 }
 
+// Statuses of the dates: the labels set in Configuration > Statuts (settings.json, "status_labels"),
+// otherwise those of EVENT_STATUSES. Content of the association: never translated.
 function app_statuses(): array
 {
-    return app_translated(EVENT_STATUSES);
+    static $labels = null;
+    if ($labels === null) {
+        $stored = read_json_file(app_data_path('settings.json'))['status_labels'] ?? [];
+        $labels = EVENT_STATUSES;
+        foreach (is_array($stored) ? $stored : [] as $status => $label) {
+            if (isset(EVENT_STATUSES[$status]) && is_string($label) && trim($label) !== '') {
+                $labels[$status] = trim($label);
+            }
+        }
+    }
+    return $labels;
 }
+
+const STATUS_LABEL_MAX_LENGTH = 40;
 
 function app_attendance_responses(): array
 {
@@ -199,9 +213,9 @@ function app_roles(): array
     return app_translated(USER_ROLES);
 }
 
-// Audit journal: its words (status of a date, yes/no) are recorded in English, whatever the
-// language of the author, and shown in the language of the page; entries recorded in French
-// before are shown the same way.
+// Audit journal: its words (yes/no) are recorded in English, whatever the language of the author,
+// and shown in the language of the page; entries recorded in French before are shown the same
+// way. Statuses are recorded as codes (app_journal_value()).
 const LOG_YES_NO = ['Non', 'Oui'];
 // Former status of the dates, still found in older entries.
 const LOG_LEGACY_WORDS = ['Annulé-Refusé'];
@@ -210,6 +224,15 @@ function app_in_english(string $text): string
 {
     $translated = app_translations('en')[$text] ?? '';
     return $translated !== '' ? $translated : $text;
+}
+
+// A recorded value of a field: a status code with its current label, otherwise app_from_journal().
+function app_journal_value(string $field, string $value): string
+{
+    if ($field === 'status' && isset(app_statuses()[$value])) {
+        return app_statuses()[$value];
+    }
+    return app_from_journal($value);
 }
 
 // A recorded word (English, or French for older entries) in the language of the page.

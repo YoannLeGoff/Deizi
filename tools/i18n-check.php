@@ -46,7 +46,7 @@ foreach ($files as $file) {
 }
 $lists = [
     array_values(USER_ROLES), WEEKDAY_NAMES, MONTH_NAMES, SHORT_MONTH_NAMES, JS_TEXTS, [USERNAME_RULE],
-    array_values(EVENT_STATUSES), array_values(ATTENDANCE_RESPONSES), array_values(ATTENDANCE_FILTERS), [ATTENDANCE_NO_RESPONSE_LABEL],
+    array_values(ATTENDANCE_RESPONSES), array_values(ATTENDANCE_FILTERS), [ATTENDANCE_NO_RESPONSE_LABEL],
     array_values(EVENT_CHANGE_FIELDS), array_values(ROADMAP_TRANSPORT), array_values(ROADMAP_OUTFITS), array_values(POLL_USER_INFO), LOG_YES_NO, LOG_LEGACY_WORDS,
     array_merge(...array_map(static fn (array $group): array => [$group[0], $group[1], ...array_column($group[2], 1)], array_values(SETTINGS_GROUPS))),
 ];

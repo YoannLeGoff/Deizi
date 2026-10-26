@@ -972,8 +972,8 @@ function app_event_log_value(array $event, string $field): string
 {
     $value = $event[$field] ?? null;
     return match ($field) {
-        // The journal is recorded in English (status, yes/no), and translated when shown.
-        'status' => app_in_english(EVENT_STATUSES[is_string($value) && isset(EVENT_STATUSES[$value]) ? $value : 'pending']),
+        // The journal records the status code (shown with its current label) and yes/no in English.
+        'status' => is_string($value) && isset(EVENT_STATUSES[$value]) ? $value : 'pending',
         'date', 'end_date' => ($date = app_parse_date($value)) !== null ? $date->format('d/m/Y') : '',
         'all_day', 'tutti', 'reserved', 'roadmap_disabled' => app_in_english(LOG_YES_NO[$value === true ? 1 : 0]),
         'sections' => implode(', ', array_map(
@@ -1104,7 +1104,7 @@ function app_event_log_changes_text(array $entry): string
             continue;
         }
         $parts[] = array_key_exists('from', $change)
-            ? $label . ' : ' . (($change['from'] ?? '') !== '' ? app_from_journal((string) $change['from']) : '—') . ' → ' . (($change['to'] ?? '') !== '' ? app_from_journal((string) $change['to']) : '—')
+            ? $label . ' : ' . (($change['from'] ?? '') !== '' ? app_journal_value((string) $change['field'], (string) $change['from']) : '—') . ' → ' . (($change['to'] ?? '') !== '' ? app_journal_value((string) $change['field'], (string) $change['to']) : '—')
             : $label . ' modifié' . ($label === 'Feuille de route' ? 'e' : '');
     }
     return implode(' ; ', $parts);

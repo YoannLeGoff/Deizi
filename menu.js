@@ -286,6 +286,14 @@ document.querySelectorAll("[data-status-colors] [data-status-row]").forEach((row
     input.dispatchEvent(new Event("input"));
     input.focus();
   });
+  // Label of the status: the badge of the preview follows it (the original one when empty).
+  const label = row.querySelector("[data-status-label]");
+  const badge = preview.querySelector(".status-preview-badge");
+  if (label && badge) {
+    label.addEventListener("input", () => {
+      badge.textContent = label.value.trim() || label.placeholder;
+    });
+  }
 });
 
 // Detailed poll table: filter the rows on the login, first name or last name, ignoring case and accents.

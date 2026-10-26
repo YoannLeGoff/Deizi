@@ -1011,6 +1011,8 @@ h2 { margin-bottom: 0; font-size: clamp(34px, 4.4vw, 53px); line-height: 1.1; fo
 /* Configuration > Statuts: colour of each status button with a preview of its derived colours. */
 .status-colors-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .status-colors-table th, .status-colors-table td { padding: 12px 14px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+.status-label-input { width: 100%; min-width: 140px; padding: 9px 11px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 0; font: inherit; }
+.status-label-input:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
 .status-colors-table thead th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .status-colors-table tbody th { font-weight: 700; white-space: nowrap; }
 .status-color-field { display: flex; align-items: center; gap: 10px; }

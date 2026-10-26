@@ -1,7 +1,8 @@
 <?php
 declare(strict_types=1);
 
-// "Statuts": colour of the status buttons (badges) of the dates, reserved for administrators, and
+// "Statuts": label and colour of the status buttons (badges) of the dates, reserved for
+// administrators (labels are content of the association, not translated), and
 // list of the logistics statuses (code, label, status of the date it sets, default one) with
 // their workflow.
 // The text colour, the accents of the agenda cards, legend dots and attendance columns and the
@@ -51,7 +52,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             };
             $missing = array_diff_key(EVENT_STATUSES, array_flip(array_column($list, 'status')));
             if ($error === null && $missing !== []) {
-                $error = 'Chaque statut de la date doit avoir au moins un statut logistique (manquant' . "\u{00A0}" . ': ' . implode(', ', $missing) . ').';
+                $error = 'Chaque statut de la date doit avoir au moins un statut logistique (manquant' . "\u{00A0}" . ': ' . implode(', ', array_intersect_key(app_statuses(), $missing)) . ').';
             }
             if ($error !== null || app_logistics_parse_statuses($list) === null) {
                 app_flash($error ?? 'La liste des statuts logistiques est invalide.', 'error');
@@ -71,6 +72,27 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
     $posted = is_array($_POST['colors'] ?? null) ? $_POST['colors'] : [];
     if ($action === 'save') {
+        // Labels: an empty field gives back the original label.
+        $labels = [];
+        foreach (EVENT_STATUSES as $status => $defaultLabel) {
+            $label = app_clean_line($_POST['labels'][$status] ?? '', STATUS_LABEL_MAX_LENGTH);
+            if ($label !== '' && $label !== $defaultLabel) {
+                $labels[$status] = $label;
+            }
+        }
+        $effective = array_map(static fn (string $label): string => app_lowercase($label), $labels + EVENT_STATUSES);
+        if (count($effective) !== count(array_unique($effective))) {
+            app_flash(__('Deux statuts ne peuvent pas avoir le même libellé.'), 'error');
+            app_redirect('status-settings.php');
+        }
+        update_json_file(app_data_path('settings.json'), static function (array $settings) use ($labels): array {
+            if ($labels === []) {
+                unset($settings['status_labels']);
+            } else {
+                $settings['status_labels'] = $labels;
+            }
+            return $settings;
+        });
         $colors = [];
         foreach (STATUS_DEFAULT_PALETTES as $status => ['bg' => $default]) {
             $color = app_normalize_hex_color($posted[$status] ?? null);
@@ -82,7 +104,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $colors[$status] = $color;
             }
         }
-        $message = 'Les couleurs des statuts ont été enregistrées.';
+        $message = 'Les libellés et les couleurs des statuts ont été enregistrés.';
     } elseif ($action === 'reset') {
         $colors = [];
         $message = 'Les couleurs d’origine des statuts ont été rétablies.';
@@ -133,7 +155,7 @@ app_header('Statuts', $admin);
         </div>
         <?php app_settings_nav('organisation', 'status-settings.php', $admin); ?>
 
-        <p class="accounts-help">Choisissez la couleur du bouton de chaque statut, affiché sur l’agenda, le détail des dates et les vues avancées. La couleur du texte, le repère des cartes de l’agenda, les pastilles de légende et les cases du planning annuel s’en déduisent automatiquement.</p>
+        <p class="accounts-help">Choisissez le libellé et la couleur du bouton de chaque statut, affiché sur l’agenda, le détail des dates et les vues avancées. Les libellés s’affichent tels quels dans toutes les langues ; un libellé vide reprend celui d’origine. La couleur du texte, le repère des cartes de l’agenda, les pastilles de légende et les cases du planning annuel s’en déduisent automatiquement.</p>
 
         <details class="management-panel workflow-accordion">
           <summary><span class="detail-heading" id="workflow-title">Flux de travail des statuts logistiques</span> <span class="workflow-accordion-hint">Afficher</span></summary>
@@ -149,6 +171,7 @@ app_header('Statuts', $admin);
                 <thead>
                   <tr>
                     <th scope="col">Statut</th>
+                    <th scope="col">Libellé</th>
                     <th scope="col">Couleur du bouton</th>
                     <th scope="col">Aperçu</th>
                   </tr>
@@ -160,7 +183,8 @@ app_header('Statuts', $admin);
                       $color = $customColors[$status] ?? $default;
                   ?>
                   <tr data-status-row data-default-palette="<?= app_escape(json_encode(STATUS_DEFAULT_PALETTES[$status], JSON_THROW_ON_ERROR)) ?>">
-                    <th scope="row"><?= app_escape($label) ?></th>
+                    <th scope="row"><code><?= app_escape($status) ?></code></th>
+                    <td><input class="status-label-input" name="labels[<?= $status ?>]" maxlength="<?= STATUS_LABEL_MAX_LENGTH ?>" value="<?= app_escape($label) ?>" placeholder="<?= app_escape(EVENT_STATUSES[$status]) ?>" aria-label="Libellé du statut <?= app_escape($status) ?>" data-status-label></td>
                     <td>
                       <div class="status-color-field">
                         <input type="color" id="status-color-<?= $status ?>" name="colors[<?= $status ?>]" value="<?= $color ?>" data-default="<?= $default ?>" aria-label="Couleur du bouton « <?= app_escape($label) ?> »">
@@ -181,7 +205,7 @@ app_header('Statuts', $admin);
               </table>
             </div>
             <div class="form-actions">
-              <button class="primary-button" type="submit" name="action" value="save">Enregistrer les couleurs</button>
+              <button class="primary-button" type="submit" name="action" value="save">Enregistrer les libellés et les couleurs</button>
               <?php if ($customColors !== []): ?>
               <button class="secondary-button" type="submit" name="action" value="reset" onclick="return confirm('Rétablir les couleurs d’origine de tous les statuts ?');">Rétablir toutes les couleurs d’origine</button>
               <?php endif; ?>
