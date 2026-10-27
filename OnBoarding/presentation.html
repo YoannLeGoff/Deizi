@@ -141,6 +141,11 @@
   .home-mock .push-mock img { grid-row: span 2; width: 34px; height: 34px; border-radius: 8px; }
   .home-mock .push-mock b { font-size: 12.5px; }
   .home-mock .push-mock span { color: var(--muted); }
+  /* Languages slide: the same agenda on four phones */
+  .lang-phones { position: absolute; left: 512px; top: 56px; width: 704px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 0; }
+  .lang-phones figure { margin: 0; }
+  .lang-phones .screen { position: relative; height: 400px; }
+  .lang-phones figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; font-weight: 700; text-align: center; }
   /* Controls (screen only) */
   .controls { position: fixed; right: 18px; bottom: 16px; display: flex; gap: 8px; align-items: center; color: #c9cccd; font: 13px var(--sans); }
   .controls button { padding: 7px 12px; color: #fff; background: #3a3c3f; border: 0; border-radius: 6px; font: 600 13px var(--sans); cursor: pointer; }
@@ -165,7 +170,7 @@
   <div class="title-main">
     <p class="eyebrow">Présentation aux futurs utilisateurs</p>
     <h1>Deizi<span class="dot">.</span></h1>
-    <p class="lead">L’agenda partagé de Kerlenn Pondi&#8239;: les dates du groupe, les présences de chacun et toute l’organisation des sorties, au même endroit.</p>
+    <p class="lead">L’agenda partagé de Kerlenn Pondi&#8239;: les dates du groupe, les présences de chacun et toute l’organisation des sorties, au même endroit, dans la langue de chacun.</p>
   </div>
   <div class="screen title-side"><div class="vp"><img src="visuels/02-agenda.png" alt="Agenda des prochaines dates"></div></div>
   <div class="footer"><span>Kerlenn Pondi</span><span>Prise en main de Deizi</span></div>
@@ -180,6 +185,7 @@
       <li><span class="n">1</span><span><b>Fini les messages éparpillés</b>Dates, horaires, lieux et changements sont à jour pour tout le monde.</span></li>
       <li><span class="n">2</span><span><b>La présence en un clic</b>Chacun répond, les responsables savent tout de suite qui sera là.</span></li>
       <li><span class="n">3</span><span><b>L’organisation au même endroit</b>Sondages, feuilles de route, contrats et devis suivent chaque date.</span></li>
+      <li><span class="n">4</span><span><b>Dans la langue de chacun</b>Français, anglais, breton, espagnol&#8239;: chaque membre choisit la sienne.</span></li>
     </ul>
   </div>
   <div class="screen split-shot"><div class="vp"><img src="visuels/02-agenda.png" alt="Les prochaines dates"></div></div>
@@ -210,18 +216,18 @@
     <p class="lead">Tout le monde suit la première partie&#8239;; les suivantes concernent les rôles qui en ont l’usage.</p>
   </div>
   <div class="agenda">
-    <div style="background: var(--artistes)"><span class="num">01</span><b>Tous les membres</b><span>Connexion, agenda, présence et sondages, iCal, application sur le téléphone, trombinoscope, planning annuel.</span></div>
+    <div style="background: var(--artistes)"><span class="num">01</span><b>Tous les membres</b><span>Connexion, langue, agenda, présence et sondages, iCal, application sur le téléphone, trombinoscope, planning annuel.</span></div>
     <div style="background: var(--managers)"><span class="num">02</span><b>Managers</b><span>Rendez-vous de section (stages, répétitions), annonces, photos et identifiants, tableau de présence.</span></div>
     <div style="background: var(--organisateurs)"><span class="num">03</span><b>Organisateurs</b><span>Sondages et leurs résultats, feuilles de route et lien public, comptes, journal d’audit.</span></div>
     <div style="background: var(--logisticiens)"><span class="num">04</span><b>Logisticiens</b><span>Statut logistique, contrat et cachet, devis, rapport.</span></div>
-    <div style="background: var(--admins)"><span class="num">05</span><b>Administrateurs</b><span>Configuration, statuts, fiche d’un membre (titre, responsable, journal), matrice des droits.</span></div>
+    <div style="background: var(--admins)"><span class="num">05</span><b>Administrateurs</b><span>Configuration, statuts, langues et traductions, fiche d’un membre, matrice des droits.</span></div>
   </div>
 </section>
 
 <!-- 5. Divider Artistes -->
 <section class="slide divider-artistes" data-title="Tous les membres">
   <div class="divider"><span class="level">Niveau 1 · Tous les membres</span><h2>L’essentiel pour tous<span class="dot">.</span></h2><p class="lead" style="color:#e3f3f6">Ce que chaque artiste utilise au quotidien.</p></div>
-  <ul class="divider-list"><li>Se connecter</li><li>Consulter l’agenda</li><li>Répondre&#8239;: présence et sondages</li><li>S’abonner (iCal), liens partagés</li><li>Installer l’application</li><li>Trombinoscope</li><li>Planning annuel</li></ul>
+  <ul class="divider-list"><li>Se connecter, choisir sa langue</li><li>Consulter l’agenda</li><li>Répondre&#8239;: présence et sondages</li><li>S’abonner (iCal), liens partagés</li><li>Installer l’application</li><li>Trombinoscope</li><li>Planning annuel</li></ul>
   <div class="footer"><span>Deizi</span><span>Tous les membres</span></div>
 </section>
 
@@ -238,6 +244,27 @@
     <p class="tip"><b>Sur votre téléphone&#8239;:</b> cochez «&#8239;Rester connecté sur cet appareil&#8239;» pour ne pas avoir à vous reconnecter (90&#8239;jours). Sur un ordinateur partagé, laissez-la décochée.</p>
   </div>
   <div class="screen split-shot"><div class="vp"><img src="visuels/01-connexion.png" alt="Page de connexion"></div></div>
+</section>
+
+<!-- 6b. Langue -->
+<section class="slide" data-title="Dans votre langue">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-tous">Tous</span></div>
+    <h2>Dans votre langue<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>Chacun choisit la sienne</b>«&#8239;Mon compte&#8239;», rubrique «&#8239;Langue&#8239;»&#8239;: français, anglais, breton, espagnol, ou une langue ajoutée par l’association. Par défaut, celle du site.</span></li>
+      <li><span class="n">2</span><span><b>Seuls les libellés changent</b>Menus, boutons, messages et dates. Les contenus de l’association (titres des dates, lieux, annonces, sections) restent tels que saisis.</span></li>
+      <li><span class="n">3</span><span><b>Les statuts aussi</b>«&#8239;Confirmé&#8239;» s’affiche tel que l’association l’a nommé, quelle que soit la langue.</span></li>
+    </ul>
+    <p class="tip"><b>Votre agenda (iCal)</b> suit aussi la langue choisie.</p>
+  </div>
+  <div class="lang-phones">
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-fr.png" alt="Agenda en français"></div></div><figcaption>Français</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-en.png" alt="Agenda en anglais"></div></div><figcaption>English</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-br.png" alt="Agenda en breton"></div></div><figcaption>Brezhoneg</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-es.png" alt="Agenda en espagnol"></div></div><figcaption>Español</figcaption></figure>
+  </div>
+  <div class="screen" style="left:512px; top:500px; width:704px; height:164px"><div class="vp"><img src="visuels/31-mon-compte-langue.png" alt="Choix de la langue dans Mon compte" style="--crop: 27.4"></div></div>
 </section>
 
 <!-- 7. Agenda -->
@@ -522,7 +549,7 @@
 <!-- 21. Divider Admins -->
 <section class="slide divider-admins" data-title="Administrateurs">
   <div class="divider"><span class="level">Niveau 5 · Administrateurs</span><h2>Configurer Deizi<span class="dot">.</span></h2><p class="lead">Les réglages qui s’appliquent à tout le monde.</p></div>
-  <ul class="divider-list"><li>Comptes et sections</li><li>Statuts et flux de travail</li><li>Identité du site, saisons</li><li>Matrice des droits</li></ul>
+  <ul class="divider-list"><li>Comptes et sections</li><li>Statuts et flux de travail</li><li>Identité du site, saisons</li><li>Langues et traductions</li><li>Matrice des droits</li></ul>
   <div class="footer"><span>Deizi</span><span>Administrateurs</span></div>
 </section>
 
@@ -536,6 +563,18 @@
   <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/19-flux-statuts.png" alt="Flux de travail des statuts" style="--crop: 16.6"></div></div>
   <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Réglages par thème</b> — calendrier, configuration du site, membres, documents, suivi et sécurité&#8239;; dans Sections, l’affichage de chacune dans les filtres et le trombinoscope.</p>
   <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Statuts</b> — couleurs, statuts logistiques et leur correspondance, avec le schéma du flux.</p>
+</section>
+
+<!-- 22a. Langues (administrateurs) -->
+<section class="slide" data-title="Langues">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-admins">Administrateurs</span></div>
+    <h2>Langues et traductions<span class="dot">.</span></h2>
+  </div>
+  <div class="screen" style="left:64px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/32-langues.png" alt="Configuration › Langues : traduire en masse et corriger à l’écran" style="--crop: 22.2"></div></div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/33-langues-creer.png" alt="Une variante du français et le formulaire Créer une langue" style="--crop: 56"></div></div>
+  <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Corriger ou déléguer</b> — chaque texte sous sa version française, à corriger à l’écran&#8239;; ou un fichier CSV à confier à un traducteur, puis à réimporter.</p>
+  <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Créer une langue</b> — une variante (français du Québec, breton vannetais…) part d’une langue existante&#8239;: on ne change que ce qui diffère.</p>
 </section>
 
 <!-- 22b. Fiche d’un membre (administrateurs) -->
@@ -568,7 +607,7 @@
     <h2>Quatre gestes cette semaine<span class="dot">.</span></h2>
   </div>
   <div class="steps">
-    <div><span class="n">1</span><b>Se connecter</b><p>Avec l’identifiant et le mot de passe reçus.</p></div>
+    <div><span class="n">1</span><b>Se connecter</b><p>Avec l’identifiant et le mot de passe reçus, puis choisir sa langue dans «&#8239;Mon compte&#8239;».</p></div>
     <div><span class="n">2</span><b>Installer</b><p>Ajouter Deizi à l’écran d’accueil du téléphone.</p></div>
     <div><span class="n">3</span><b>Répondre</b><p>Indiquer sa présence sur toutes les prochaines dates.</p></div>
     <div><span class="n">4</span><b>S’abonner</b><p>Abonner le téléphone avec le bouton calendrier (iCal)&#8239;: il reste à jour tout seul.</p></div>

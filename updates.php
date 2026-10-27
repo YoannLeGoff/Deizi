@@ -25,13 +25,13 @@ app_header('Mises à jour', $user);
           </div>
           <div class="page-actions">
             <a class="primary-button compact-button" href="onboarding.php" target="_blank" rel="noopener"><?= app_escape(__('voir_presentation')) ?></a>
-            <a class="secondary-button compact-button" href="onboarding.php?f=Deizi-presentation.pdf" target="_blank" rel="noopener"><?= app_escape(__('pdf')) ?></a>
+            <a class="secondary-button compact-button" href="onboarding.php?f=pdf" target="_blank" rel="noopener"><?= app_escape(__('pdf')) ?></a>
           </div>
         </div>
 
         <?php // General presentation of the application, above the list of updates. ?>
         <section class="management-panel app-intro" aria-label="<?= app_escape(__('presentation_app', ['app' => $nickname])) ?>">
-          <p class="app-intro-presentation"><?= __('decouvrir_lapplication_selon_votre_role_presentation', ['presentation' => '<a class="page-switch" href="onboarding.php" target="_blank" rel="noopener">' . app_escape(__('presentation_app_minuscule', ['app' => $nickname])) . '</a>', 'pdf' => '<a class="page-switch" href="onboarding.php?f=Deizi-presentation.pdf" target="_blank" rel="noopener">PDF</a>']) ?></p>
+          <p class="app-intro-presentation"><?= __('decouvrir_lapplication_selon_votre_role_presentation', ['presentation' => '<a class="page-switch" href="onboarding.php" target="_blank" rel="noopener">' . app_escape(__('presentation_app_minuscule', ['app' => $nickname])) . '</a>', 'pdf' => '<a class="page-switch" href="onboarding.php?f=pdf" target="_blank" rel="noopener">PDF</a>']) ?></p>
           <?php // Presentation set in Configuration > Identité du site. ?>
           <?php $about = app_site_about(); ?>
           <?php if ($about['title'] !== '' || $about['text'] !== ''): ?>

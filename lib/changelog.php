@@ -9,6 +9,13 @@ declare(strict_types=1);
 const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations de la présentation et de la navigation.'];
 
 const CHANGELOG = [
+    '2026-10-27' => [
+        ['Présentation en anglais', 'La présentation de l’application existe aussi en anglais : « Voir la présentation » et « PDF » ouvrent celle de votre langue. Elle présente aussi le choix de la langue et la page Langues.'],
+        ['Créer une langue', 'Dans Configuration › Langues, l’administrateur crée une langue à partir d’une langue existante (français du Québec, breton vannetais…) : elle reprend toutes ses traductions, et il ne modifie que ce qui diffère.'],
+        ['Langues et traductions', 'Configuration › Langues (administrateurs) : chaque texte de l’interface, sous sa version française, se corrige à l’écran. Pour déléguer, la langue s’exporte en fichier CSV à faire remplir par un traducteur, puis se réimporte, avec un rapport.'],
+        ['Statuts paramétrables', 'Dans Configuration › Statuts, l’administrateur choisit le nom affiché de chaque statut des dates. Ce nom n’est pas traduit : il s’affiche tel quel dans toutes les langues.'],
+        ['Langue de chacun', 'Dans « Mon compte », chacun choisit la langue de l’application : français, anglais, breton ou espagnol (par défaut, celle du site, réglable dans Identité du site). Seuls les libellés sont traduits ; les contenus saisis par l’association (dates, annonces, sections) restent tels quels. Les pages de gestion sont en cours de traduction.'],
+    ],
     '2026-10-25' => [
         ['Logiciel libre', 'Deizi est publié sous licence libre AGPL : le bas de chaque page donne les liens vers la licence et vers le code source.'],
         ['Présentation modifiable', 'Le texte de présentation en tête de la page « À propos » se modifie dans Configuration › Identité du site ; il est précédé en gras de la phrase d’accroche.'],
