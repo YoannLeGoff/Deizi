@@ -671,11 +671,11 @@ function app_render_logistics_workflow(): void
     $step = static fn (string $key): string => '<span class="workflow-code">' . app_escape($statuses[$key][0]) . '</span> ' . app_escape($statuses[$key][1]);
     $statusesOf = static fn (string $eventStatus): array => array_keys(array_filter($statuses, static fn (array $definition): bool => $definition[2] === $eventStatus));
     ?>
-          <div class="workflow" role="group" aria-label="Flux de travail des statuts logistiques">
+          <div class="workflow" role="group" aria-label="<?= app_escape(__('flux_travail_statuts_logistiques')) ?>">
             <ol class="workflow-lanes">
               <?php foreach (LOGISTICS_WORKFLOW_LANES as $eventStatus): ?>
               <li class="workflow-lane" style="--lane-cell: var(--status-<?= $eventStatus ?>-cell); --lane-accent: var(--status-<?= $eventStatus ?>-accent)">
-                <p class="workflow-lane-title">Statut de la date<?= "\u{00A0}" ?>: <?= $badge($eventStatus) ?></p>
+                <p class="workflow-lane-title"><?= app_escape(__('statut_date_label')) ?> <?= $badge($eventStatus) ?></p>
                 <ol class="workflow-steps">
                   <?php foreach ($statusesOf($eventStatus) as $key): ?>
                   <li class="workflow-step"><?= $step($key) ?></li>
@@ -689,7 +689,7 @@ function app_render_logistics_workflow(): void
               <?php foreach ($statusesOf($eventStatus) as $key): ?>
               <li class="workflow-exit" style="--lane-cell: var(--status-<?= $eventStatus ?>-cell); --lane-accent: var(--status-<?= $eventStatus ?>-accent)">
                 <p class="workflow-step"><?= $step($key) ?> <?= $badge($eventStatus) ?></p>
-                <p class="workflow-exit-text"><?= app_escape($description) ?></p>
+                <p class="workflow-exit-text"><?= app_escape(app_label($description)) ?></p>
               </li>
               <?php endforeach; ?>
               <?php endforeach; ?>
@@ -899,17 +899,17 @@ function app_render_quote_workflow(): void
 {
     $statuses = app_quote_statuses();
     $lanes = [
-        'draft' => 'Le devis se prépare et se modifie.',
-        'published' => 'Lien public envoyé à l’organisateur ; devis figé.',
-        'accepted' => 'L’organisateur accepte (une option retenue).',
-        'declined' => 'L’organisateur décline.',
+        'draft' => __('devis_se_prepare_modifie_phrase'),
+        'published' => __('lien_public_envoye_organisateur_devis_fige'),
+        'accepted' => __('organisateur_accepte_option_retenue'),
+        'declined' => __('organisateur_decline_phrase'),
     ];
     ?>
-          <div class="workflow quote-workflow" role="group" aria-label="Flux de travail des devis">
+          <div class="workflow quote-workflow" role="group" aria-label="<?= app_escape(__('flux_travail_devis')) ?>">
             <ol class="workflow-lanes">
               <?php foreach (['draft', 'published'] as $type): ?>
               <li class="workflow-lane quote-lane-<?= $type ?>">
-                <p class="workflow-lane-title"><?= app_escape(explode(' — ', QUOTE_STATUS_TYPES[$type])[0]) ?></p>
+                <p class="workflow-lane-title"><?= app_escape(explode(' — ', app_label(QUOTE_STATUS_TYPES[$type]))[0]) ?></p>
                 <ol class="workflow-steps">
                   <?php foreach (array_keys(array_filter($statuses, static fn (array $status): bool => $status[1] === $type)) as $key): ?>
                   <li class="workflow-step"><span class="quote-status quote-status-<?= $type ?>"><?= app_escape($statuses[$key][0]) ?></span></li>
@@ -919,7 +919,7 @@ function app_render_quote_workflow(): void
               </li>
               <?php endforeach; ?>
               <li class="workflow-lane quote-lane-answer">
-                <p class="workflow-lane-title">Réponse de l’organisateur</p>
+                <p class="workflow-lane-title"><?= app_escape(__('reponse_organisateur')) ?></p>
                 <ol class="workflow-steps quote-answers">
                   <?php foreach (['accepted', 'declined'] as $type): ?>
                   <?php foreach (array_keys(array_filter($statuses, static fn (array $status): bool => $status[1] === $type)) as $key): ?>
@@ -929,7 +929,7 @@ function app_render_quote_workflow(): void
                 </ol>
               </li>
             </ol>
-            <p class="workflow-exit-text quote-workflow-back">↩ « Retirer le lien » ramène un devis publié en brouillon ; le republier crée un nouveau lien.</p>
+            <p class="workflow-exit-text quote-workflow-back">↩ <?= app_escape(__('retirer_lien_ramene_devis_publie_brouillon')) ?></p>
           </div>
     <?php
 }

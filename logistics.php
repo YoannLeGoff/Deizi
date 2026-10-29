@@ -246,7 +246,7 @@ if ($event === null):
                 <tbody>
                   <?php foreach ($figures['months'] as $month => $values): ?>
                   <tr>
-                    <td><?= app_escape(ucfirst(SEASON_MONTHS[(int) substr($month, 5, 2)]) . ' ' . substr($month, 0, 4)) ?></td>
+                    <td><?= app_escape(app_month_name((int) substr($month, 5, 2), true) . ' ' . substr($month, 0, 4)) ?></td>
                     <td class="amount-cell"><?= $values['dates'] ?></td>
                     <td class="amount-cell"><?= $values['contract'] !== 0 ? $money($values['contract']) : '<span class="log-sub">—</span>' ?></td>
                     <td class="amount-cell"><?= $values['fee'] !== 0 ? $money($values['fee']) : '<span class="log-sub">—</span>' ?></td>

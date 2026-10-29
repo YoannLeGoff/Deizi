@@ -11,6 +11,7 @@ const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations d
 const CHANGELOG = [
     '2026-10-29' => [
         ['Langue par défaut', 'La langue par défaut de l’application se choisit en tête de Configuration › Langues : c’est celle des membres qui n’en ont pas choisi une dans « Mon compte ».'],
+        ['Réglages traduits', 'Les pages de réglages s’affichent aussi dans la langue de chacun : Identité du site, Sections, Statuts, Saisons, Vacances scolaires, Jours fériés, Feuille de route, Paramètres des devis et Suppression des dates. Les noms de saison (« Saison 2026-2027 ») et les jours fériés légaux sont traduits ; les statuts, sections et formules saisis par l’association restent tels quels.'],
         ['Configuration traduite', 'La page Configuration (titres des thèmes, pages et résumés) s’affiche dans la langue de chacun.'],
     ],
     '2026-10-27' => [
