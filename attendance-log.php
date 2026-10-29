@@ -43,7 +43,7 @@ $filterQuery = array_filter(['event' => $filterEvent, 'member' => $filterMember,
 if (($_GET['format'] ?? '') === 'csv') {
     app_send_csv(
         'journal-audit.csv',
-        ['Le', 'Date concernée', 'Événement', 'Membre', 'Action ou ancienne réponse', 'Nouvelle réponse', 'Par', 'Source'],
+        [__('le'), __('date_concernee'), __('evenement'), __('membre'), __('action_ancienne_reponse'), __('nouvelle_reponse'), __('par'), __('source')],
         array_map(static function (array $entry): array {
             $eventDate = app_parse_date($entry['event_date'] ?? null);
             if (app_is_login_log_entry($entry)) {
@@ -52,10 +52,10 @@ if (($_GET['format'] ?? '') === 'csv') {
                     '',
                     '',
                     (string) ($entry['member'] ?? ''),
-                    LOGIN_LOG_ACTIONS[$entry['action']],
+                    app_label(LOGIN_LOG_ACTIONS[$entry['action']]),
                     '',
                     (string) ($entry['by'] ?? ''),
-                    ATTENDANCE_LOG_SOURCES['login'],
+                    app_label(ATTENDANCE_LOG_SOURCES['login']),
                 ];
             }
             if (app_is_account_log_entry($entry)) {
@@ -66,10 +66,10 @@ if (($_GET['format'] ?? '') === 'csv') {
                     '',
                     '',
                     (string) ($entry['member'] ?? ''),
-                    ACCOUNT_LOG_ACTIONS[$entry['action']] . ($isPhoto ? '' : ' : ' . (string) ($entry['from'] ?? '')),
+                    app_label(ACCOUNT_LOG_ACTIONS[$entry['action']]) . ($isPhoto ? '' : __('suffixe_value', ['value' => (string) ($entry['from'] ?? '')])),
                     $isPhoto ? '' : (string) ($entry['to'] ?? ''),
                     (string) ($entry['by'] ?? ''),
-                    ATTENDANCE_LOG_SOURCES['account'],
+                    app_label(ATTENDANCE_LOG_SOURCES['account']),
                 ];
             }
             if (app_is_event_log_entry($entry)) {
@@ -79,10 +79,10 @@ if (($_GET['format'] ?? '') === 'csv') {
                     $eventDate !== null ? $eventDate->format('d/m/Y') : '',
                     (string) ($entry['event_title'] ?? ''),
                     '',
-                    EVENT_LOG_ACTIONS[$entry['action']],
+                    app_label(EVENT_LOG_ACTIONS[$entry['action']]),
                     app_event_log_changes_text($entry),
                     (string) ($entry['by'] ?? ''),
-                    ATTENDANCE_LOG_SOURCES['event'],
+                    app_label(ATTENDANCE_LOG_SOURCES['event']),
                 ];
             }
             return [
@@ -93,7 +93,7 @@ if (($_GET['format'] ?? '') === 'csv') {
                 app_attendance_response_label($entry['previous'] ?? null),
                 app_attendance_response_label($entry['response']),
                 (string) ($entry['by'] ?? ''),
-                ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? '',
+                app_label(ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? ''),
             ];
         }, $entries)
     );
@@ -106,12 +106,12 @@ app_header('Journal d’audit', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> CONFIGURATION · SUIVI ET SÉCURITÉ</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('configuration_suivi_securite_majuscules')) ?></p>
           <?php app_page_links([['Configuration', 'settings.php'], ['Tableau de présence', app_matrix_tab_url()], ['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Journal d’audit<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('journal_daudit')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('suivi', 'attendance-log.php', $admin); ?>
@@ -119,45 +119,45 @@ app_header('Journal d’audit', $admin);
         <section class="management-panel">
           <form method="get" action="attendance-log.php" class="log-filters">
             <div>
-              <label for="log-event">Date</label>
+              <label for="log-event"><?= app_escape(__('date')) ?></label>
               <select id="log-event" name="event">
-                <option value="">Toutes les dates</option>
+                <option value=""><?= app_escape(__('toutes_dates')) ?></option>
                 <?php foreach ($eventOptions as $value => $label): ?>
                 <option value="<?= app_escape((string) $value) ?>"<?= $filterEvent === (string) $value ? ' selected' : '' ?>><?= app_escape($label) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
             <div>
-              <label for="log-member">Membre</label>
+              <label for="log-member"><?= app_escape(__('membre')) ?></label>
               <select id="log-member" name="member">
-                <option value="">Tous les membres</option>
+                <option value=""><?= app_escape(__('tous_membres_2')) ?></option>
                 <?php foreach ($memberOptions as $value => $label): ?>
                 <option value="<?= app_escape((string) $value) ?>"<?= $filterMember === (string) $value ? ' selected' : '' ?>><?= app_escape($label) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
             <div>
-              <label for="log-source">Source</label>
+              <label for="log-source"><?= app_escape(__('source')) ?></label>
               <select id="log-source" name="source">
-                <option value="">Toutes les sources</option>
+                <option value=""><?= app_escape(__('toutes_sources')) ?></option>
                 <?php foreach (ATTENDANCE_LOG_SOURCES as $value => $label): ?>
-                <option value="<?= app_escape($value) ?>"<?= $filterSource === $value ? ' selected' : '' ?>><?= app_escape($label) ?></option>
+                <option value="<?= app_escape($value) ?>"<?= $filterSource === $value ? ' selected' : '' ?>><?= app_escape(app_label($label)) ?></option>
                 <?php endforeach; ?>
               </select>
             </div>
             <div class="form-actions">
-              <button class="secondary-button compact-button" type="submit">Filtrer</button>
-              <?php if ($filterQuery !== []): ?><a class="section-note page-switch" href="attendance-log.php">Effacer les filtres</a><?php endif; ?>
-              <a class="section-note page-switch" href="attendance-log.php?<?= app_escape(http_build_query($filterQuery + ['format' => 'csv'])) ?>">Exporter en CSV <span aria-hidden="true">↓</span></a>
+              <button class="secondary-button compact-button" type="submit"><?= app_escape(__('filtrer')) ?></button>
+              <?php if ($filterQuery !== []): ?><a class="section-note page-switch" href="attendance-log.php"><?= app_escape(__('effacer_filtres')) ?></a><?php endif; ?>
+              <a class="section-note page-switch" href="attendance-log.php?<?= app_escape(http_build_query($filterQuery + ['format' => 'csv'])) ?>"><?= app_escape(__('exporter_csv')) ?> <span aria-hidden="true">↓</span></a>
             </div>
           </form>
 
-          <h2>Entrées <span class="count-badge"><?= $totalEntries ?></span></h2>
+          <h2><?= app_escape(__('entrees')) ?> <span class="count-badge"><?= $totalEntries ?></span></h2>
           <?php if ($totalEntries > ATTENDANCE_LOG_DISPLAY_LIMIT): ?>
-          <p class="muted-copy">Les <?= ATTENDANCE_LOG_DISPLAY_LIMIT ?> entrées les plus récentes sont affichées. Affinez les filtres ou exportez en CSV pour tout consulter.</p>
+          <p class="muted-copy"><?= app_escape(__('entrees_plus_recentes_sont_affichees_affinez', ['n' => ATTENDANCE_LOG_DISPLAY_LIMIT])) ?></p>
           <?php endif; ?>
           <?php if ($entries === []): ?>
-          <p class="muted-copy">Aucune entrée enregistrée<?= $filterQuery !== [] ? ' pour ces filtres' : '' ?>.</p>
+          <p class="muted-copy"><?= app_escape($filterQuery !== [] ? __('aucune_entree_enregistree_ces_filtres_phrase') : __('aucune_entree_enregistree_phrase')) ?></p>
           <?php else: ?>
           <?php app_render_attendance_log_table($entries, true, $existingEventIds); ?>
           <?php endif; ?>

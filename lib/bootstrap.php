@@ -1092,7 +1092,7 @@ function app_account_log_change_text(array $entry): string
     if (str_starts_with((string) ($entry['action'] ?? ''), 'photo_')) {
         return '';
     }
-    $value = static fn (mixed $text): string => is_string($text) && $text !== '' ? $text : '(vide)';
+    $value = static fn (mixed $text): string => is_string($text) && $text !== '' ? $text : __('vide_parentheses');
     return $value($entry['from'] ?? '') . ' → ' . $value($entry['to'] ?? '');
 }
 
@@ -1101,15 +1101,20 @@ function app_event_log_changes_text(array $entry): string
 {
     $parts = [];
     foreach (is_array($entry['changes'] ?? null) ? $entry['changes'] : [] as $change) {
-        $label = EVENT_LOG_FIELDS[$change['field'] ?? ''] ?? null;
-        if ($label === null) {
+        $field = (string) ($change['field'] ?? '');
+        if (!isset(EVENT_LOG_FIELDS[$field])) {
             continue;
         }
+        $label = app_label(EVENT_LOG_FIELDS[$field]);
         $parts[] = array_key_exists('from', $change)
-            ? $label . ' : ' . (($change['from'] ?? '') !== '' ? app_journal_value((string) $change['field'], (string) $change['from']) : '—') . ' → ' . (($change['to'] ?? '') !== '' ? app_journal_value((string) $change['field'], (string) $change['to']) : '—')
-            : $label . ' modifié' . ($label === 'Feuille de route' ? 'e' : '');
+            ? __('field_from_to', [
+                'field' => $label,
+                'from' => ($change['from'] ?? '') !== '' ? app_journal_value($field, (string) $change['from']) : '—',
+                'to' => ($change['to'] ?? '') !== '' ? app_journal_value($field, (string) $change['to']) : '—',
+            ])
+            : ($field === 'roadmap' ? __('field_modifiee', ['field' => $label]) : __('field_modifie', ['field' => $label]));
     }
-    return implode(' ; ', $parts);
+    return implode(__('separateur_liste'), $parts);
 }
 
 function app_attendance_log_entry(array $event, array $member, mixed $previous, string $response, array $author, string $source, ?array $impersonator = null): array
@@ -1232,7 +1237,8 @@ function app_attendance_log_read(bool $withEventChanges = false): array
 function app_format_log_time(string $at): string
 {
     try {
-        return (new DateTimeImmutable($at))->setTimezone(new DateTimeZone('Europe/Paris'))->format('d/m/Y à H:i');
+        $time = (new DateTimeImmutable($at))->setTimezone(new DateTimeZone('Europe/Paris'));
+        return __('date_time', ['date' => $time->format('d/m/Y'), 'time' => $time->format('H:i')]);
     } catch (Exception) {
         return $at;
     }
@@ -1341,7 +1347,7 @@ function app_attendance_response_label(mixed $response): string
         // Answer withdrawn by a manager in the attendance matrix.
         return app_no_response_label();
     }
-    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? app_attendance_responses()[$response] : 'Aucune réponse';
+    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? app_attendance_responses()[$response] : __('aucune_reponse');
 }
 
 function app_render_attendance_log_table(array $entries, bool $withEvent, array $existingEventIds = []): void
@@ -1351,11 +1357,11 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
             <table class="log-table">
               <thead>
                 <tr>
-                  <th scope="col">Le</th>
-                  <?php if ($withEvent): ?><th scope="col">Date concernée</th><?php endif; ?>
-                  <th scope="col">Membre</th>
-                  <th scope="col">Action</th>
-                  <th scope="col">Par</th>
+                  <th scope="col"><?= app_escape(__('le')) ?></th>
+                  <?php if ($withEvent): ?><th scope="col"><?= app_escape(__('date_concernee')) ?></th><?php endif; ?>
+                  <th scope="col"><?= app_escape(__('membre')) ?></th>
+                  <th scope="col"><?= app_escape(__('action')) ?></th>
+                  <th scope="col"><?= app_escape(__('par')) ?></th>
                 </tr>
               </thead>
               <tbody>
@@ -1376,29 +1382,29 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
                     <?php else: ?>
                     <strong><?= app_escape((string) ($entry['event_title'] ?? '')) ?></strong>
                     <?php endif; ?>
-                    <span class="log-sub"><?= $eventDate !== null ? app_escape($eventDate->format('d/m/Y')) : '' ?><?= $eventExists ? '' : ' · date supprimée' ?></span>
+                    <span class="log-sub"><?= $eventDate !== null ? app_escape($eventDate->format('d/m/Y')) : '' ?><?= $eventExists ? '' : ' · ' . app_escape(__('date_supprimee')) ?></span>
                   </td>
                   <?php endif; ?>
                   <?php if (app_is_login_log_entry($entry)): ?>
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(LOGIN_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(app_label(LOGIN_LOG_ACTIONS[$entry['action']])) ?></span>
                   </td>
                   <?php elseif (app_is_account_log_entry($entry)): ?>
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-rename"><?= app_escape(ACCOUNT_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-rename"><?= app_escape(app_label(ACCOUNT_LOG_ACTIONS[$entry['action']])) ?></span>
                     <?php if (app_account_log_change_text($entry) !== ''): ?>
                     <span class="log-sub"><?= app_escape(app_account_log_change_text($entry)) ?></span>
                     <?php endif; ?>
                     <?php if (($entry['by_id'] ?? '') !== ($entry['member_id'] ?? '')): ?>
-                    <span class="log-sub">par <?= app_escape((string) ($entry['by'] ?? '')) ?></span>
+                    <span class="log-sub"><?= app_escape(__('par_name', ['name' => (string) ($entry['by'] ?? '')])) ?></span>
                     <?php endif; ?>
                   </td>
                   <?php elseif (app_is_event_log_entry($entry)): ?>
                   <td><span class="log-sub">—</span></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(EVENT_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(app_label(EVENT_LOG_ACTIONS[$entry['action']])) ?></span>
                     <?php if (app_event_log_changes_text($entry) !== ''): ?>
                     <span class="log-sub"><?= app_escape(app_event_log_changes_text($entry)) ?></span>
                     <?php endif; ?>
@@ -1407,13 +1413,13 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change">
                     <span class="log-response log-response-<?= app_escape($previous) ?>"><?= app_escape(app_attendance_response_label($entry['previous'] ?? null)) ?></span>
-                    <span aria-label="devient">→</span>
+                    <span aria-label="<?= app_escape(__('devient')) ?>">→</span>
                     <span class="log-response log-response-<?= app_escape($entry['response']) ?>"><?= app_escape(app_attendance_response_label($entry['response'])) ?></span>
                   </td>
                   <?php endif; ?>
                   <td>
                     <?= app_escape((string) ($entry['by'] ?? '')) ?>
-                    <span class="log-sub"><?= app_escape(ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? '') ?></span>
+                    <span class="log-sub"><?= app_escape(app_label(ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? '')) ?></span>
                   </td>
                 </tr>
                 <?php endforeach; ?>
