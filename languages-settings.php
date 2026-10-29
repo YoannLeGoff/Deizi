@@ -6,7 +6,7 @@ declare(strict_types=1);
 // that a translator fills in without an account, then importing it back. Corrections are kept in
 // data/translations-<code>.json; the export as lang/<code>.php shares them with the project.
 // New languages ("Français (Québec)") are created from an existing one, whose translations they
-// take until they change them.
+// take until they change them. The default language of the application is chosen here too.
 require __DIR__ . '/lib/bootstrap.php';
 require __DIR__ . '/lib/i18n-admin.php';
 $admin = app_require_roles(['admin']);
@@ -46,6 +46,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     app_verify_csrf();
     $action = $_POST['action'] ?? '';
     $returnUrl = $pageUrl(array_filter(['filtre' => $_POST['filtre'] ?? null, 'q' => $_POST['q'] ?? null], static fn (mixed $value): bool => is_string($value) && $value !== '' && $value !== 'toutes'));
+    if ($action === 'default_language') {
+        $default = is_string($_POST['default'] ?? null) && app_is_language($_POST['default']) ? $_POST['default'] : DEFAULT_LANGUAGE;
+        update_json_file(app_data_path('settings.json'), static function (array $settings) use ($default): array {
+            $settings['site'] = (is_array($settings['site'] ?? null) ? $settings['site'] : []);
+            $settings['site']['language'] = $default;
+            return $settings;
+        });
+        app_flash(__('langue_defaut_enregistree', ['language' => app_languages()[$default]]));
+        app_redirect($pageUrl());
+    }
     if ($action === 'create_language') {
         $name = app_clean_line($_POST['name'] ?? '', LANGUAGE_NAME_MAX_LENGTH);
         $newCode = is_string($_POST['code'] ?? null) ? strtolower(trim($_POST['code'])) : '';
@@ -194,6 +204,25 @@ app_header('Langues', $admin);
         <?php app_settings_nav('organisation', 'languages-settings.php', $admin); ?>
 
         <p class="accounts-help"><?= app_escape(__('libelles_linterface_menus_boutons_messages_sont')) ?></p>
+
+        <section class="management-panel languages-default" aria-labelledby="languages-default-title">
+          <h2 class="detail-heading" id="languages-default-title"><?= app_escape(__('langue_defaut_application')) ?></h2>
+          <form class="languages-default-form" method="post" action="languages-settings.php">
+            <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
+            <input type="hidden" name="action" value="default_language">
+            <input type="hidden" name="langue" value="<?= app_escape($language) ?>">
+            <div class="form-stack">
+              <label for="languages-default"><?= app_escape(__('langue_defaut_site')) ?></label>
+              <select id="languages-default" name="default">
+                <?php foreach (app_languages() as $code => $name): ?>
+                <option value="<?= $code ?>" lang="<?= $code ?>"<?= app_site_language() === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
+                <?php endforeach; ?>
+              </select>
+              <p class="field-help"><?= app_escape(__('langue_membres_nen_ont_choisi_dans')) ?></p>
+            </div>
+            <button class="primary-button compact-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
+          </form>
+        </section>
 
         <nav class="detail-tabs" aria-label="<?= app_escape(__('langue')) ?>">
           <?php foreach ($editable as $code => $name): ?>

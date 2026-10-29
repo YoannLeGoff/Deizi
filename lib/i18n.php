@@ -6,7 +6,7 @@ declare(strict_types=1);
 // them (French is the language of reference). A text missing in a language is shown in French.
 // Placeholders are written {name} and given to __().
 // The language of a page: the member's own choice (Mon compte), otherwise the default language of
-// the site (Identité du site); before logging in, the language of the browser when available.
+// the site (Configuration > Langues); before logging in, the language of the browser when available.
 // Languages of the code (lang/<code>.php); others are created in Configuration > Langues.
 const LANGUAGES = [
     'fr' => 'Français',
@@ -69,7 +69,7 @@ function app_language_root(string $code): string
     return isset(LANGUAGES[$code]) ? $code : DEFAULT_LANGUAGE;
 }
 
-// Default language of the site, set in Configuration > Identité du site.
+// Default language of the site, set in Configuration > Langues.
 function app_site_language(): string
 {
     $language = read_json_file(app_data_path('settings.json'))['site']['language'] ?? null;

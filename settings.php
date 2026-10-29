@@ -28,47 +28,59 @@ $schoolCount = count($calendarSettings['school_holidays']);
 $lastUpdate = app_parse_date(array_key_first(CHANGELOG));
 
 // Current state of each page, under its name.
+$seasonYears = $season['first']->format('Y') . ($season['first']->format('Y') === $season['last']->format('Y') ? '' : '-' . $season['last']->format('Y'));
+$holidayCount = count(PUBLIC_HOLIDAY_RULES) - count($calendarSettings['disabled_holidays']);
+$customHolidayCount = count($calendarSettings['custom_holidays']);
+$repertoireCount = count($settings['repertoires']);
 $summaries = [
-    'season-settings.php' => $season['label'] . ' en cours : ' . app_season_range($season) . '. Les dates sont regroupées par saison dans la Logistique.',
-    'school-holidays-settings.php' => $schoolCount . ' période' . ($schoolCount > 1 ? 's' : '') . ' enregistrée' . ($schoolCount > 1 ? 's' : '') . ', repérées dans le planning annuel.',
-    'holidays-settings.php' => (count(PUBLIC_HOLIDAY_RULES) - count($calendarSettings['disabled_holidays'])) . ' jours fériés légaux actifs sur ' . count(PUBLIC_HOLIDAY_RULES) . ($calendarSettings['custom_holidays'] !== [] ? ', ' . count($calendarSettings['custom_holidays']) . ' jour' . (count($calendarSettings['custom_holidays']) > 1 ? 's' : '') . ' ajouté' . (count($calendarSettings['custom_holidays']) > 1 ? 's' : '') : '') . '.',
-    'site-settings.php' => 'Titre « ' . app_site_title() . ' », pseudo « ' . app_site_nickname() . ' », logo d’en-tête ' . ($identity['logo'] === null ? 'd’origine' : 'personnalisé') . ', icône de l’application et logo de connexion.',
-    'sections-settings.php' => count(app_section_tree()) . ' branches et ' . count(app_section_leaves()) . ' sous-sections, leurs codes, couleurs et répertoires.',
-    'status-settings.php' => count(EVENT_STATUSES) . ' statuts de date, ' . ($customStatusCount === 0 ? 'aux couleurs d’origine' : $customStatusCount . ' avec une couleur personnalisée') . ' ; statuts logistiques et leur flux.',
-    'users.php' => count($accounts) . ' comptes, dont ' . $activeCount . ' actifs et ' . $managerCount . ' managers. Rôles, sections, périmètres' . ($isAdmin ? ' et mots de passe' : '') . '.',
-    'users-import.php' => 'Créer des comptes en masse depuis un fichier CSV, avec ou sans mot de passe.',
-    'rights.php' => 'Ce que peuvent faire les artistes, managers, organisateurs, logisticiens et administrateurs.',
-    'roadmap-settings.php' => 'QR code et contact par défaut, ' . count($settings['repertoires']) . ' répertoire' . (count($settings['repertoires']) > 1 ? 's' : '') . ' (' . $pieceCount . ' morceau' . ($pieceCount > 1 ? 'x' : '') . ').',
-    'logistics-settings.php' => 'Mise en page des devis (logo, adresse, pied de page), flux de travail des devis et formules.',
-    'attendance-log.php' => $logCount . ' entrée' . ($logCount > 1 ? 's' : '') . ' : connexions, réponses de présence, dates créées, modifiées ou supprimées, changements d’identifiant.',
-    'delete-events.php' => 'Supprimer définitivement une date, avec ses réponses, sondages et feuille de route.',
+    'season-settings.php' => __('resume_saisons', ['years' => $seasonYears, 'first' => app_long_date($season['first'], false, true, false), 'last' => app_long_date($season['last'], false, true, false)]),
+    'school-holidays-settings.php' => __n('resume_vacances_une', 'resume_vacances', $schoolCount),
+    'holidays-settings.php' => __('resume_jours_feries', ['n' => $holidayCount, 'total' => count(PUBLIC_HOLIDAY_RULES)])
+        . ($customHolidayCount > 0 ? __n('resume_jours_feries_ajoute', 'resume_jours_feries_ajoutes', $customHolidayCount) : '') . '.',
+    'site-settings.php' => $identity['logo'] === null
+        ? __('resume_identite_logo_origine', ['title' => app_site_title(), 'nickname' => app_site_nickname()])
+        : __('resume_identite_logo_personnalise', ['title' => app_site_title(), 'nickname' => app_site_nickname()]),
+    'sections-settings.php' => __('resume_sections', ['branches' => count(app_section_tree()), 'leaves' => count(app_section_leaves())]),
+    'status-settings.php' => $customStatusCount === 0
+        ? __('resume_statuts_origine', ['n' => count(EVENT_STATUSES)])
+        : __('resume_statuts_personnalises', ['n' => count(EVENT_STATUSES), 'custom' => $customStatusCount]),
+    'languages-settings.php' => __('resume_langues', ['language' => app_languages()[app_site_language()], 'n' => count(app_languages())]),
+    'users.php' => $isAdmin
+        ? __('resume_comptes_admin', ['n' => count($accounts), 'active' => $activeCount, 'managers' => $managerCount])
+        : __('resume_comptes', ['n' => count($accounts), 'active' => $activeCount, 'managers' => $managerCount]),
+    'users-import.php' => __('resume_import_comptes'),
+    'rights.php' => __('resume_matrice_droits'),
+    'roadmap-settings.php' => __n('resume_feuille_route_un', 'resume_feuille_route', $repertoireCount, ['pieces' => __n('n_morceau', 'n_morceaux', $pieceCount)]),
+    'logistics-settings.php' => __('resume_parametres_devis'),
+    'attendance-log.php' => __n('resume_journal_une', 'resume_journal', $logCount),
+    'delete-events.php' => __('resume_suppression_dates'),
 ];
 
 app_header('Configuration', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> ADMINISTRATION</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('administration'))) ?></p>
           <?php app_page_links([['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Configuration<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('configuration')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
 
-        <p class="accounts-help settings-intro">Les réglages sont regroupés par thème. Dans chaque thème, des onglets permettent de passer d’une page à l’autre sans revenir ici.</p>
+        <p class="accounts-help settings-intro"><?= app_escape(__('reglages_regroupes_par_theme')) ?></p>
 
         <div class="settings-groups" data-masonry>
           <section class="management-panel settings-group" aria-labelledby="settings-group-apropos" data-masonry-first>
-            <h2 class="detail-heading" id="settings-group-apropos">À propos</h2>
+            <h2 class="detail-heading" id="settings-group-apropos"><?= app_escape(__('a_propos')) ?></h2>
             <ul class="settings-rows">
               <li class="settings-row">
                 <div class="settings-row-text">
-                  <a class="settings-row-title" href="updates.php">Mises à jour</a>
-                  <span class="settings-row-summary">Les nouveautés de l’application, la présentation et l’installation sur téléphone<?= $lastUpdate !== null ? ' ; dernière mise à jour le ' . $lastUpdate->format('d/m/Y') : '' ?>.</span>
+                  <a class="settings-row-title" href="updates.php"><?= app_escape(__('mises_a_jour')) ?></a>
+                  <span class="settings-row-summary"><?= app_escape($lastUpdate !== null ? __('resume_mises_a_jour_date', ['date' => app_long_date($lastUpdate, false, true, false)]) : __('resume_mises_a_jour')) ?></span>
                 </div>
-                <a class="secondary-button compact-button" href="updates.php" aria-label="Ouvrir Mises à jour">Ouvrir</a>
+                <a class="secondary-button compact-button" href="updates.php" aria-label="<?= app_escape(__('ouvrir_page', ['page' => __('mises_a_jour')])) ?>"><?= app_escape(__('ouvrir')) ?></a>
               </li>
             </ul>
           </section>
@@ -77,30 +89,30 @@ app_header('Configuration', $admin);
           <?php $pages = app_settings_group_pages($groupKey, $admin); ?>
           <?php if ($pages !== [] || ($groupKey === 'suivi' && $isAdmin)): ?>
           <section class="management-panel settings-group" aria-labelledby="settings-group-<?= $groupKey ?>"<?= in_array($groupKey, ['membres', 'documents'], true) ? ' data-masonry-first' : '' ?>>
-            <h2 class="detail-heading" id="settings-group-<?= $groupKey ?>"><?= app_escape($groupName) ?></h2>
-            <p class="muted-copy settings-group-lead"><?= app_escape($groupDescription) ?></p>
+            <h2 class="detail-heading" id="settings-group-<?= $groupKey ?>"><?= app_escape(app_label($groupName)) ?></h2>
+            <p class="muted-copy settings-group-lead"><?= app_escape(app_label($groupDescription)) ?></p>
             <ul class="settings-rows">
               <?php foreach ($pages as [$file, $name]): ?>
               <li class="settings-row<?= $file === 'delete-events.php' ? ' is-danger' : '' ?>">
                 <div class="settings-row-text">
-                  <a class="settings-row-title" href="<?= app_escape($file) ?>"><?= app_escape($name) ?></a>
+                  <a class="settings-row-title" href="<?= app_escape($file) ?>"><?= app_escape(app_label($name)) ?></a>
                   <span class="settings-row-summary"><?= app_escape($summaries[$file] ?? '') ?></span>
                 </div>
                 <?php if ($file === 'users.php'): ?>
-                <a class="secondary-button compact-button" href="user.php">Créer un compte</a>
+                <a class="secondary-button compact-button" href="user.php"><?= app_escape(__('creer_un_compte')) ?></a>
                 <?php endif; ?>
-                <a class="<?= $file === 'delete-events.php' ? 'danger-button' : 'secondary-button' ?> compact-button" href="<?= app_escape($file) ?>" aria-label="Ouvrir <?= app_escape($name) ?>">Ouvrir</a>
+                <a class="<?= $file === 'delete-events.php' ? 'danger-button' : 'secondary-button' ?> compact-button" href="<?= app_escape($file) ?>" aria-label="<?= app_escape(__('ouvrir_page', ['page' => app_label($name)])) ?>"><?= app_escape(__('ouvrir')) ?></a>
               </li>
               <?php endforeach; ?>
               <?php if ($groupKey === 'suivi' && $isAdmin): ?>
               <li class="settings-row">
                 <div class="settings-row-text">
-                  <span class="settings-row-title">Mon lien d’abonnement iCal</span>
-                  <span class="settings-row-summary">Renouvelez votre lien personnel si vous pensez qu’il a été partagé : l’ancien cesse aussitôt de fonctionner. Le lien d’un autre membre se renouvelle depuis sa fiche.<?= $adminHasCalendarLink ? '' : ' Votre lien sera créé à votre prochaine visite de l’agenda.' ?></span>
+                  <span class="settings-row-title"><?= app_escape(__('mon_lien_abonnement_ical')) ?></span>
+                  <span class="settings-row-summary"><?= app_escape(__('renouvelez_lien_personnel_partage')) ?><?= $adminHasCalendarLink ? '' : ' ' . app_escape(__('lien_cree_prochaine_visite_agenda')) ?></span>
                 </div>
-                <form method="post" action="calendar-token-action.php" onsubmit="return confirm('Renouveler votre lien d’abonnement iCal ? L’ancien lien cessera de fonctionner.');">
+                <form method="post" action="calendar-token-action.php" onsubmit="return confirm(<?= app_escape(json_encode(__('confirmer_renouveler_lien_ical'), JSON_UNESCAPED_UNICODE)) ?>);">
                   <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
-                  <button class="secondary-button compact-button" type="submit"<?= $adminHasCalendarLink ? '' : ' disabled' ?>>Renouveler</button>
+                  <button class="secondary-button compact-button" type="submit"<?= $adminHasCalendarLink ? '' : ' disabled' ?>><?= app_escape(__('renouveler')) ?></button>
                 </form>
               </li>
               <?php endif; ?>

@@ -11,7 +11,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $association = app_clean_line($_POST['association'] ?? '', 80);
     $tagline = app_clean_line($_POST['tagline'] ?? '', 120);
     $aboutText = app_clean_text($_POST['about_text'] ?? '', 1000);
-    $language = app_is_language($_POST['language'] ?? null) ? $_POST['language'] : DEFAULT_LANGUAGE;
     if ($title === '') {
         app_flash('Le titre du site est obligatoire.', 'error');
         app_redirect('site-settings.php');
@@ -32,9 +31,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 
     $obsolete = [];
-    update_json_file(app_data_path('settings.json'), static function (array $settings) use ($title, $nickname, $association, $tagline, $aboutText, $language, $uploaded, $reset, &$obsolete): array {
+    update_json_file(app_data_path('settings.json'), static function (array $settings) use ($title, $nickname, $association, $tagline, $aboutText, $uploaded, $reset, &$obsolete): array {
         $site = is_array($settings['site'] ?? null) ? $settings['site'] : [];
-        $saved = ['title' => $title, 'nickname' => $nickname, 'association' => $association, 'tagline' => $tagline, 'about_text' => $aboutText, 'language' => $language];
+        // The default language is chosen in Configuration > Langues: kept as it is.
+        $saved = ['title' => $title, 'nickname' => $nickname, 'association' => $association, 'tagline' => $tagline, 'about_text' => $aboutText] + array_intersect_key($site, ['language' => true]);
         foreach (array_keys(SITE_LOGOS) as $key) {
             $previous = is_string($site[$key] ?? null) ? $site[$key] : null;
             $saved[$key] = $uploaded[$key] ?? ($reset[$key] ? null : $previous);
@@ -92,19 +92,6 @@ app_header('Identité du site', $admin);
                 <input id="site-tagline" name="tagline" maxlength="120" value="<?= app_escape($identity['tagline']) ?>">
                 <p class="field-help">Laissez vide pour n’afficher que le titre.</p>
               </div>
-            </div>
-          </section>
-
-          <section class="management-panel" aria-labelledby="site-language-title">
-            <h2 class="detail-heading" id="site-language-title"><?= app_escape(__('langue')) ?></h2>
-            <div class="form-stack">
-              <label for="site-language"><?= app_escape(__('langue_defaut_site')) ?></label>
-              <select id="site-language" name="language">
-                <?php foreach (app_languages() as $code => $name): ?>
-                <option value="<?= $code ?>" lang="<?= $code ?>"<?= app_site_language() === $code ? ' selected' : '' ?>><?= app_escape($name) ?></option>
-                <?php endforeach; ?>
-              </select>
-              <p class="field-help"><?= app_escape(__('langue_membres_nen_ont_choisi_dans')) ?></p>
             </div>
           </section>
 
