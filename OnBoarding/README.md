@@ -28,7 +28,7 @@ Pour un public d’artistes seulement, s’arrêter après la partie « Tous les
 
 - Les copies d’écran viennent d’une **installation de démonstration** : les dates et les lieux sont ceux de Kerlenn Pondi, mais les membres (noms, prénoms, identifiants), leurs photos (avatars dessinés), les téléphones, les liens et les montants sont **fictifs**. La présentation peut donc être diffusée librement.
 - Dans l’application, la présentation est consultable par les **personnes connectées** via `onboarding.php` (bouton « Voir la présentation » de la page **Mises à jour**) : en français pour les membres qui utilisent le français, une de ses variantes ou le breton, en anglais pour les autres ; le bouton « PDF » (`onboarding.php?f=pdf`) suit la même règle.
-- Dans la version anglaise, les pages de gestion (managers, organisateurs, logisticiens, administrateurs) apparaissent encore en français, le temps de leur traduction ; une note le signale. Les refaire en anglais une fois traduites.
+- Les captures anglaises (`visuels/en/`) sont prises sur l’installation de démonstration réglée entièrement en anglais, langue du site comprise (le devis y est donc en anglais) ; seuls les contenus saisis par l’association (titres des dates, statuts, annonces) restent en français.
 - Le script vidéo (`script-video.md`) n’existe qu’en français. Le dossier n’est jamais servi directement (bloqué par `router.php` et `.htaccess`) : le publier avec l’application, avec son `.htaccess`.
 - Les polices viennent de Google Fonts ; sans connexion Internet, la présentation HTML s’affiche avec Arial (le PDF garde les bonnes polices).
 - Pour refaire les captures après des changements dans l’application, demander à Claude de « régénérer les visuels OnBoarding ».
