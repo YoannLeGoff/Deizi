@@ -6,7 +6,7 @@ require __DIR__ . '/lib/bootstrap.php';
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('methode_non_autorisee_phrase'));
 }
 
 app_verify_csrf();
@@ -24,12 +24,12 @@ if ($action === 'stop') {
 
 if ($action !== 'start') {
     http_response_code(400);
-    exit('Action inconnue.');
+    exit(__('action_inconnue_phrase'));
 }
 
 $admin = app_require_roles(['admin']);
 if (app_impersonator() !== null) {
-    app_flash('Revenez d’abord à votre compte avant d’en impersonifier un autre.', 'error');
+    app_flash(__('revenez_dabord_votre_compte_avant_den'), 'error');
     app_redirect('index.php');
 }
 $targetId = $_POST['user_id'] ?? '';
@@ -41,7 +41,7 @@ foreach (read_json_file(app_data_path('users.json')) as $account) {
     }
 }
 if ($target === null || $target['id'] === $admin['id'] || !app_can_be_impersonated($target)) {
-    app_flash('Seuls les comptes actifs d’artistes et de managers peuvent être impersonifiés.', 'error');
+    app_flash(__('seuls_comptes_actifs_dartistes_managers_peuvent'), 'error');
     app_redirect('users.php');
 }
 

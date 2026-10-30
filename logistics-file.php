@@ -18,7 +18,7 @@ if (is_string($eventId) && is_string($quoteId) && $eventId !== '' && $quoteId !=
 $path = $quote !== null && $quote['file'] !== null ? app_quote_file_path($quote['file']) : null;
 if ($path === null || !is_file($path)) {
     http_response_code(404);
-    exit('Fichier introuvable.');
+    exit(__('fichier_introuvable_phrase'));
 }
 
 $extension = pathinfo($path, PATHINFO_EXTENSION);

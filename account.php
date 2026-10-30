@@ -58,7 +58,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'usern
         app_flash($error, 'error');
         app_redirect('account.php');
     }
-    app_flash('Votre identifiant est maintenant « ' . $newUsername . ' ». Utilisez-le pour vous connecter.');
+    app_flash(__('votre_identifiant_maintenant_name_utilisez_vous', ['name' => $newUsername]));
     app_redirect('account.php');
 }
 

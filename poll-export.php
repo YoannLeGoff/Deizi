@@ -21,7 +21,7 @@ if (is_string($pollId) && $pollId !== '') {
 }
 if ($event === null || $polls === [] || !app_user_can_see_event($user, $event)) {
     http_response_code(404);
-    exit('Sondage introuvable.');
+    exit(__('sondage_introuvable_phrase'));
 }
 
 $members = array_values(array_filter(
@@ -34,7 +34,7 @@ $eventLeaves = app_event_leaves($event);
 
 // Account information columns: those chosen for at least one of the exported polls.
 $userInfo = array_values(array_intersect(array_keys(POLL_USER_INFO), array_merge(...array_values(array_map(static fn (array $poll): array => $poll['user_info'], $polls)))));
-$header = ['Membre', 'Prénom', 'Nom', 'Rôle', 'Sous-sections', ...array_map(static fn (string $flag): string => ACCOUNT_FLAGS[$flag], $userInfo)];
+$header = [__('membre'), __('prenom'), __('nom'), __('role'), __('sous_sections'), ...array_map(static fn (string $flag): string => app_label(ACCOUNT_FLAGS[$flag]), $userInfo)];
 foreach ($polls as $poll) {
     $header[] = $poll['question'];
 }
@@ -50,11 +50,11 @@ foreach ($members as $member) {
         implode(', ', array_map(static fn (string $leaf): string => $labels[$leaf] ?? $leaf, $memberLeaves)),
     ];
     foreach ($userInfo as $flag) {
-        $row[] = ($member[$flag] ?? false) === true ? 'Oui' : 'Non';
+        $row[] = ($member[$flag] ?? false) === true ? __('oui') : __('non');
     }
     foreach ($polls as $poll) {
         $answer = $poll['responses'][$member['id']] ?? null;
-        $row[] = $answer !== null ? $poll['options'][$answer] : 'Sans réponse';
+        $row[] = $answer !== null ? $poll['options'][$answer] : __('sans_reponse');
     }
     $rows[] = $row;
 }
