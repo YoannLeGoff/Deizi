@@ -14,6 +14,13 @@ if ($isCalendarRequest && is_string($calendarTokenInput) && $calendarTokenInput 
     }
     // No session for a calendar application: the language of the owner of the link.
     app_set_locale_for($user);
+    // While the application is closed, calendar applications keep the dates they already have.
+    if (app_maintenance() !== null) {
+        http_response_code(503);
+        header('Retry-After: 3600');
+        header('Content-Type: text/plain; charset=utf-8');
+        exit(__('maintenance_titre'));
+    }
 } else {
     $user = app_require_login();
 }

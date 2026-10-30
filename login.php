@@ -6,6 +6,8 @@ require __DIR__ . '/lib/bootstrap.php';
 if (app_current_user() !== null) {
     app_redirect('index.php');
 }
+// While the application is closed, its message is shown here and only administrators log in.
+$maintenance = app_maintenance();
 
 $error = __('');
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
@@ -44,6 +46,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             && hash_equals(app_username_key($user['username']), app_username_key($username))
             && password_verify($password, $user['password_hash'])
         ) {
+            if ($maintenance !== null && ($user['role'] ?? null) !== 'admin') {
+                // Right password, but the application is closed: no session, the message stays shown.
+                $error = __('maintenance_connexion_refusee');
+                break;
+            }
             app_login_record_attempt($username, true);
             app_login_log_record($user, 'login');
             app_adopt_site_language($user);
@@ -78,6 +85,13 @@ app_header('Connexion');
         <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(__('acces_membres'))) ?></p>
         <h1 id="login-title"><?= app_escape(__('connexion')) ?></h1>
         <p class="login-intro"><?= app_escape(__('connectez_vous_acceder_lapplication_phrase')) ?></p>
+        <?php if ($maintenance !== null): ?>
+        <div class="maintenance-notice" role="status">
+          <strong><?= app_escape(__('maintenance_titre')) ?></strong>
+          <p><?= trim($maintenance['message']) !== '' ? nl2br(app_escape($maintenance['message']), false) : app_escape(__('maintenance_message_defaut')) ?></p>
+          <p class="muted-copy"><?= app_escape(__('maintenance_seuls_administrateurs')) ?></p>
+        </div>
+        <?php endif; ?>
         <?php if ($error !== ''): ?>
         <p class="form-error" role="alert"><?= app_escape($error) ?></p>
         <?php endif; ?>

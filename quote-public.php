@@ -5,6 +5,9 @@ declare(strict_types=1);
 // the document as frozen at publication; a link withdrawn or replaced by a new publication no
 // longer works.
 require __DIR__ . '/lib/bootstrap.php';
+if (app_maintenance_excludes(app_current_user())) {
+    app_render_maintenance_page();
+}
 
 $found = app_quote_by_public_token($_GET['t'] ?? null);
 header('Cache-Control: private, no-store');

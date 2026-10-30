@@ -208,9 +208,21 @@ La page **Configuration** (`settings.php`) regroupe les réglages par thème (`S
 - **Documents** : Feuille de route, Paramètres des devis ;
 - **Calendrier** : Saisons, Vacances scolaires, Jours fériés ;
 - **Configuration du site** : Identité du site, Sections, Statuts, Langues ;
-- **Suivi et sécurité** : Journal d'audit, Suppression des dates, renouvellement du lien iCal de l'administrateur.
+- **Suivi et sécurité** : Journal d'audit, Suppression des dates, Fermeture temporaire, renouvellement du lien iCal de l'administrateur.
 
 Chaque page d'un thème affiche sous son titre les onglets de son thème (`app_settings_nav()`), pour passer de l'une à l'autre sans revenir à la Configuration ; les adresses des pages ne changent pas. Un thème dont le membre ne peut ouvrir aucune page n'apparaît pas. Sur grand écran, les thèmes sont disposés en mosaïque (effet « masonry », `menu.js`) : À propos, Membres et Documents ouvrent les colonnes, puis les autres thèmes sont répartis entre les colonnes de façon que la plus haute soit la plus courte possible (toutes les répartitions sont essayées) ; sur téléphone ou sans JavaScript, ils s'empilent dans l'ordre de la page.
+
+
+### Fermeture temporaire (maintenance)
+
+Le temps d'une mise à jour, un administrateur ferme l'application à tous les autres rôles depuis **Configuration › Fermeture temporaire** (`maintenance-settings.php`), avec un message de son choix (600 caractères au plus, affiché tel quel dans toutes les langues ; vide, un message par défaut s'affiche dans la langue de chacun). Pendant la fermeture :
+
+- les artistes, managers, organisateurs et logisticiens connectés voient la page « Application fermée temporairement » et le message à la place de toute page (réponse HTTP 503 avec `Retry-After`, y compris pour les appels du tableau de présence) ;
+- la page de connexion affiche le message, et seuls les administrateurs peuvent se connecter (un autre compte, même avec le bon mot de passe, n'ouvre pas de session) ;
+- les liens publics (feuilles de route, devis) affichent la même page, et le flux iCal répond 503 : les agendas abonnés gardent les dates qu'ils ont déjà ;
+- les administrateurs utilisent l'application normalement, avec un bandeau jaune qui rappelle la fermeture et mène à la page pour rouvrir ; un administrateur qui agit en tant qu'un membre continue lui aussi.
+
+L'état est enregistré sous la clé `maintenance` de `data/settings.json` (`active`, `message`, `since`, `by`) ; le message est conservé à la réouverture pour la fois suivante. La page propose un aperçu de ce que voient les membres (`?apercu=1`). Fonctions : `app_maintenance()`, `app_maintenance_excludes()`, `app_render_maintenance_page()` (`lib/bootstrap.php`).
 
 ## Menu
 

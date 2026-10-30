@@ -8,5 +8,6 @@ Numérotation `MAJEURE.MINEURE.CORRECTIF` (versionnage sémantique) : correctif 
 
 *One note per version of Deizi, also published in the repository’s [GitHub releases](https://github.com/YoannLeGoff/Deizi/releases). The About page of the application shows the version number (`DEIZI_VERSION` in `lib/bootstrap.php`) and links to these notes. Numbering is `MAJOR.MINOR.PATCH` (semantic versioning): patch for a fix without new features, minor for compatible new features, major when an update needs an action from the administrator or changes established behaviour. Git tag `v1.1.0` for each version. For each version: write `releases/<version>.md` in French and English, set `DEIZI_VERSION` to that number, then publish the release on GitHub with the same text.*
 
+- [1.2.0 — en préparation / in progress](1.2.0.md)
 - [1.1.0 — multilingue / multilingual](1.1.0.md)
 - [1.0.0 — première version publique](1.0.0.md)

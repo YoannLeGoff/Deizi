@@ -53,6 +53,7 @@ $summaries = [
     'logistics-settings.php' => __('resume_parametres_devis'),
     'attendance-log.php' => __n('resume_journal_une', 'resume_journal', $logCount),
     'delete-events.php' => __('resume_suppression_dates'),
+    'maintenance-settings.php' => app_maintenance() !== null ? __('resume_maintenance_fermee') : __('resume_maintenance_ouverte'),
 ];
 
 app_header('Configuration', $admin);
