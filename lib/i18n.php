@@ -229,6 +229,17 @@ function __(string $key, array $values = []): string
     return $translated;
 }
 
+// Text of $key in the default language of the site, whoever reads it: for the documents the
+// association sends (quotes), whose fixed labels go with their content.
+function app_site_text(string $key, array $values = []): string
+{
+    $current = app_locale();
+    app_locale(app_site_language());
+    $text = __($key, $values);
+    app_locale($current);
+    return $text;
+}
+
 // One of two texts depending on $count ("1 date" / "3 dates"), {n} being replaced by $count.
 function __n(string $one, string $many, int $count, array $values = []): string
 {

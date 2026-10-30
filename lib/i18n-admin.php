@@ -21,7 +21,7 @@ function app_i18n_keys(): array
         $count = count($tokens);
         for ($index = 0; $index < $count; $index++) {
             $token = $tokens[$index];
-            if (!is_array($token) || $token[0] !== T_STRING || !in_array($token[1], ['__', '__n'], true)) {
+            if (!is_array($token) || $token[0] !== T_STRING || !in_array($token[1], ['__', '__n', 'app_site_text'], true)) {
                 continue;
             }
             // Literal arguments: __('text') and __n('one', 'many', …).
@@ -46,7 +46,7 @@ function app_i18n_keys(): array
         array_values(USER_ROLES), WEEKDAY_NAMES, MONTH_NAMES, SHORT_MONTH_NAMES, SHORT_WEEKDAY_NAMES, JS_TEXTS, [USERNAME_RULE],
         array_values(ATTENDANCE_RESPONSES), array_values(ATTENDANCE_FILTERS), [ATTENDANCE_NO_RESPONSE_LABEL],
         array_values(EVENT_CHANGE_FIELDS), array_values(ROADMAP_TRANSPORT), array_values(ROADMAP_OUTFITS), array_values(POLL_USER_INFO), LOG_YES_NO, LOG_LEGACY_WORDS,
-        array_values(SITE_LOGOS), array_column(PUBLIC_HOLIDAY_RULES, 0), array_values(SECTION_COLORS), array_values(SECTION_DISPLAY_PLACES), array_values(QUOTE_STATUS_TYPES), array_values(LOGISTICS_WORKFLOW_EXITS), app_rights_matrix_texts(), array_values(ACCOUNT_FLAGS), array_values(ATTENDANCE_LOG_SOURCES), array_values(ACCOUNT_LOG_ACTIONS), array_values(LOGIN_LOG_ACTIONS), array_values(EVENT_LOG_ACTIONS), array_values(EVENT_LOG_FIELDS),
+        array_values(SITE_LOGOS), array_column(PUBLIC_HOLIDAY_RULES, 0), array_values(SECTION_COLORS), array_values(SECTION_DISPLAY_PLACES), array_values(QUOTE_STATUS_TYPES), array_values(LOGISTICS_WORKFLOW_EXITS), array_values(QUOTE_KINDS), array_values(QUOTE_PARTY_LABELS), array_values(LOGISTICS_TABS), array_values(QUOTE_STATUSES), app_rights_matrix_texts(), array_values(ACCOUNT_FLAGS), array_values(ATTENDANCE_LOG_SOURCES), array_values(ACCOUNT_LOG_ACTIONS), array_values(LOGIN_LOG_ACTIONS), array_values(EVENT_LOG_ACTIONS), array_values(EVENT_LOG_FIELDS),
         array_merge(...array_map(static fn (array $group): array => [$group[0], $group[1], ...array_column($group[2], 1)], array_values(SETTINGS_GROUPS))),
     ];
     foreach ($lists as $list) {
