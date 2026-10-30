@@ -68,14 +68,6 @@ a { color: inherit; text-decoration: none; }
 .site-footer { width: min(1120px, calc(100% - 40px)); margin: 0 auto; padding: 18px 0 28px; color: var(--muted); font-size: 11px; text-align: center; border-top: 1px solid var(--line); }
 .site-footer a { color: var(--sea); text-decoration: underline; text-underline-offset: 3px; }
 .site-footer a:hover { color: var(--red); }
-.changelog { display: grid; gap: 18px; }
-.changelog-day h2 { margin-bottom: 12px; }
-.changelog-list { display: grid; gap: 0; margin: 0; padding: 0; list-style: none; }
-.changelog-list li { display: grid; grid-template-columns: minmax(180px, 260px) minmax(0, 1fr); gap: 4px 20px; padding: 10px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
-.changelog-list strong { color: var(--ink); font-weight: 700; }
-.changelog-list span { color: #42474a; }
-.changelog-list .changelog-minor strong, .changelog-list .changelog-minor span { color: var(--muted); font-weight: 500; }
-@media (max-width: 760px) { .changelog-list li { grid-template-columns: 1fr; } }
 .app-intro { border-top: 4px solid var(--red); }
 .app-intro-lead strong { color: var(--ink); }
 .app-icon-preview { width: 96px; height: 96px; border-radius: 22px; box-shadow: 0 2px 8px rgba(0, 0, 0, .18); }
@@ -116,7 +108,6 @@ body.has-install-banner { padding-bottom: 150px; }
 .app-intro-roles li { display: grid; grid-template-columns: 140px minmax(0, 1fr); gap: 4px 16px; padding: 8px 0; border-top: 1px solid var(--line); font-size: 13px; line-height: 1.5; }
 .app-intro-note { margin: 14px 0 0; color: var(--muted); font-size: 13px; }
 .app-intro-note a { color: var(--sea); }
-.app-intro-history { margin: 28px 0 14px; font-size: 22px; }
 @media (max-width: 760px) { .app-intro-roles li { grid-template-columns: 1fr; } }
 
 .brand {
@@ -1011,6 +1002,8 @@ h2 { margin-bottom: 0; font-size: clamp(34px, 4.4vw, 53px); line-height: 1.1; fo
 /* Configuration > Statuts: colour of each status button with a preview of its derived colours. */
 .status-colors-table { width: 100%; border-collapse: collapse; font-size: 13px; }
 .status-colors-table th, .status-colors-table td { padding: 12px 14px; text-align: left; vertical-align: middle; border-bottom: 1px solid var(--line); }
+.status-label-input { width: 100%; min-width: 140px; padding: 9px 11px; color: var(--ink); background: var(--white); border: 1px solid var(--line); border-radius: 0; font: inherit; }
+.status-label-input:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
 .status-colors-table thead th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
 .status-colors-table tbody th { font-weight: 700; white-space: nowrap; }
 .status-color-field { display: flex; align-items: center; gap: 10px; }
@@ -1475,3 +1468,24 @@ a.settings-row-title:hover { color: var(--sea); }
 .account-role.account-lead { color: #6b4600; background: #f3e1b5; }
 .trombi-edit { color: var(--sea); font-size: 11px; font-weight: 600; }
 @media (max-width: 760px) { .trombi-grid { grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); } .trombi-photo { width: 84px; height: 84px; } }
+
+/* Configuration > Langues: bulk export / import, and the table of translations. */
+.languages-bulk-columns { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 18px 28px; }
+.languages-bulk-columns h3 { margin: 0 0 6px; font-size: 14px; }
+.languages-bulk-columns .form-actions { flex-wrap: wrap; }
+.languages-filters { display: flex; flex-wrap: wrap; align-items: center; gap: 10px; margin: 0 0 16px; }
+.languages-filters .filter-buttons { display: flex; flex-wrap: wrap; gap: 6px; margin-right: auto; }
+.languages-filters input[type="search"] { min-width: 220px; min-height: 36px; padding: 7px 10px; border: 1px solid var(--line); border-radius: 3px; font: 13px var(--sans); }
+.languages-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+.languages-table th, .languages-table td { padding: 10px 12px; text-align: left; vertical-align: top; border-bottom: 1px solid var(--line); }
+.languages-table thead th { color: var(--muted); font-size: 11px; letter-spacing: .06em; text-transform: uppercase; }
+.languages-table td:first-child { width: 46%; }
+.languages-french label { display: block; color: var(--ink); line-height: 1.45; }
+.languages-key { display: block; margin-top: 4px; color: var(--muted); font-size: 10px; overflow-wrap: anywhere; }
+.languages-state { display: inline-block; margin-top: 6px; padding: 1px 6px; color: #6b4600; background: #f3e1b5; border-radius: 2px; font-size: 10px; font-weight: 700; text-transform: uppercase; }
+.languages-table tr.is-changed .languages-state { color: var(--sea); background: #e2f2f5; }
+.languages-table textarea { width: 100%; padding: 8px 10px; color: var(--ink); background: #fff; border: 1px solid var(--line); border-radius: 3px; font: 13px/1.45 var(--sans); resize: vertical; }
+.languages-table tr.is-missing textarea { border-color: #e0b85a; }
+.languages-table textarea:focus { outline: 2px solid var(--sea); outline-offset: 1px; }
+.languages-save { position: sticky; bottom: 0; padding: 12px 0; background: var(--white); }
+@media (max-width: 760px) { .languages-bulk-columns { grid-template-columns: 1fr; } .languages-table td:first-child { width: auto; } .languages-table, .languages-table tbody, .languages-table tr, .languages-table td { display: block; } .languages-table thead { display: none; } }

@@ -55,13 +55,13 @@ function renderAccountLink(array $account, string $leaf = ''): void
     $canImpersonate = $GLOBALS['admin']['role'] === 'admin' && app_can_be_impersonated($account);
     ?>
                 <li class="account-item<?= $canImpersonate ? ' has-impersonate' : '' ?>">
-                  <a class="account-chip<?= $isActive ? '' : ' is-inactive' ?>" href="user.php?id=<?= rawurlencode($account['id']) ?>"><?= app_escape($account['username']) ?><?php if ($role !== 'musician' || app_user_title($account) !== ''): ?> <span class="account-role account-role-<?= app_escape($role) ?>" title="<?= app_escape('Rôle : ' . (USER_ROLES[$role] ?? $role)) ?>"><?= app_escape(app_user_role_label($account)) ?></span><?php endif; ?><?php if ($leaf !== '' && app_is_section_lead($account, $leaf)): ?> <span class="account-role account-lead">Responsable</span><?php endif; ?><?php if (!$isActive): ?> <span class="account-role">Désactivé</span><?php endif; ?></a>
+                  <a class="account-chip<?= $isActive ? '' : ' is-inactive' ?>" href="user.php?id=<?= rawurlencode($account['id']) ?>"><?= app_escape($account['username']) ?><?php if ($role !== 'musician' || app_user_title($account) !== ''): ?> <span class="account-role account-role-<?= app_escape($role) ?>" title="<?= app_escape(__('role_role', ['role' => app_roles()[$role] ?? $role])) ?>"><?= app_escape(app_user_role_label($account)) ?></span><?php endif; ?><?php if ($leaf !== '' && app_is_section_lead($account, $leaf)): ?> <span class="account-role account-lead"><?= app_escape(__('responsable')) ?></span><?php endif; ?><?php if (!$isActive): ?> <span class="account-role"><?= app_escape(__('desactive')) ?></span><?php endif; ?></a>
                   <?php if ($canImpersonate): ?>
                   <form method="post" action="impersonate-action.php">
                     <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                     <input type="hidden" name="action" value="start">
                     <input type="hidden" name="user_id" value="<?= app_escape($account['id']) ?>">
-                    <button class="account-impersonate" type="submit" title="Se connecter en tant que <?= app_escape($account['username']) ?>" aria-label="Se connecter en tant que <?= app_escape($account['username']) ?>">
+                    <button class="account-impersonate" type="submit" title="<?= app_escape(__('connecter_tant_name', ['name' => $account['username']])) ?>" aria-label="<?= app_escape(__('connecter_tant_name', ['name' => $account['username']])) ?>">
                       <svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.3"/><path d="M15 15.5h6.5M18.5 12.5l3 3-3 3"/></svg>
                     </button>
                   </form>
@@ -82,36 +82,35 @@ app_header('Comptes', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> CONFIGURATION · MEMBRES</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('configuration_membres_majuscules')) ?></p>
           <?php app_page_links([['Configuration', 'settings.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Comptes<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('comptes')) ?><span class="heading-dot">.</span></h1>
           </div>
           <div class="page-actions">
             <?php if ($admin['role'] === 'admin'): ?>
-            <a class="secondary-button compact-button" href="users-import.php">Importer des comptes (CSV)</a>
+            <a class="secondary-button compact-button" href="users-import.php"><?= app_escape(__('importer_comptes_csv')) ?></a>
             <?php endif; ?>
-            <a class="primary-button compact-button" href="user.php">Créer un compte</a>
+            <a class="primary-button compact-button" href="user.php"><?= app_escape(__('creer_un_compte')) ?></a>
           </div>
         </div>
         <?php app_settings_nav('membres', 'users.php', $admin); ?>
 
-        <p class="accounts-help">Cliquez sur un nom pour ouvrir sa fiche.<?php if ($admin['role'] === 'admin'): ?> L’icône <svg class="inline-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.3"/><path d="M15 15.5h6.5M18.5 12.5l3 3-3 3"/></svg> permet de se connecter en tant qu’un artiste, un manager, un organisateur ou un logisticien pour voir et faire ce qu’il voit et fait ; ses saisies sont alors enregistrées au nom « utilisateur-i-admin ».<?php endif; ?></p>
+        <p class="accounts-help"><?= app_escape(__('cliquez_nom_ouvrir_fiche_phrase')) ?><?php if ($admin['role'] === 'admin'): ?> <?= app_escape(__('licone')) ?> <svg class="inline-icon" viewBox="0 0 24 24" aria-hidden="true"><circle cx="9" cy="8" r="3.5"/><path d="M2.5 20c.6-3.6 3.2-5.5 6.5-5.5 1.6 0 3 .4 4.1 1.3"/><path d="M15 15.5h6.5M18.5 12.5l3 3-3 3"/></svg> <?= app_escape(__('permet_connecter_tant_quun_artiste_manager')) ?><?php endif; ?></p>
         <?php
-            $countLabel = static fn (int $count, string $singular): string => $count . ' ' . $singular . ($count > 1 ? 's' : '');
             $stats = [
-                $countLabel($activeCount, 'actif'),
-                $countLabel($roleCounts['musician'], 'artiste'),
-                $countLabel($roleCounts['manager'], 'manager'),
-                $countLabel($roleCounts['organizer'], 'organisateur'),
-                $countLabel($roleCounts['logistician'], 'logisticien'),
-                $countLabel($roleCounts['admin'], 'administrateur'),
+                __n('n_actif', 'actifs', $activeCount),
+                __n('artiste', 'artistes_2', $roleCounts['musician']),
+                __n('manager_2', 'managers_2', $roleCounts['manager']),
+                __n('organisateur_2', 'organisateurs_2', $roleCounts['organizer']),
+                __n('logisticien_2', 'logisticiens_2', $roleCounts['logistician']),
+                __n('administrateur_2', 'administrateurs_2', $roleCounts['admin']),
             ];
         ?>
         <p class="accounts-stats">
-          <strong><?= count($accounts) ?></strong> compte<?= count($accounts) > 1 ? 's' : '' ?> · <?= app_escape(implode(' · ', $stats)) ?>
+          <?= app_escape(__n('compte', 'comptes_2', count($accounts))) ?> · <?= app_escape(implode(' · ', $stats)) ?>
         </p>
 
         <?php foreach (app_section_tree() as $branch => $definition): ?>
@@ -119,7 +118,7 @@ app_header('Comptes', $admin);
           <div class="accounts-branch-heading">
             <h2 class="detail-heading" id="branch-<?= app_escape($branch) ?>"><?= app_escape($definition['label']) ?></h2>
             <?php if (isset($branchManagers[$branch])): ?>
-            <p class="accounts-managers">Managers de toute la branche : <?= managerLinks($branchManagers[$branch]) ?></p>
+            <p class="accounts-managers"><?= app_escape(__('managers_toute_branche_label')) ?> <?= managerLinks($branchManagers[$branch]) ?></p>
             <?php endif; ?>
           </div>
           <?php foreach ($definition['children'] as $leaf => $label): ?>
@@ -128,16 +127,16 @@ app_header('Comptes', $admin);
             <div class="accounts-subsection-heading">
               <h3><?= app_escape($label) ?> <span class="count-badge"><?= count($members) ?></span></h3>
               <p class="accounts-managers">
-                Managers :
+                <?= app_escape(__('managers_label')) ?>
                 <?php if (isset($managersByLeaf[$leaf])): ?>
                 <?= managerLinks($managersByLeaf[$leaf]) ?>
                 <?php else: ?>
-                <span class="accounts-none">aucun</span>
+                <span class="accounts-none"><?= app_escape(__('aucun')) ?></span>
                 <?php endif; ?>
               </p>
             </div>
             <?php if ($members === []): ?>
-            <p class="accounts-none">Aucun membre.</p>
+            <p class="accounts-none"><?= app_escape(__('aucun_membre_phrase')) ?></p>
             <?php else: ?>
             <ul class="account-chips">
               <?php foreach ($members as $member): ?>
@@ -152,7 +151,7 @@ app_header('Comptes', $admin);
 
         <?php if ($withoutSection !== []): ?>
         <section class="management-panel accounts-branch" aria-labelledby="branch-none">
-          <h2 class="detail-heading" id="branch-none">Sans section</h2>
+          <h2 class="detail-heading" id="branch-none"><?= app_escape(__('sans_section')) ?></h2>
           <ul class="account-chips">
             <?php foreach ($withoutSection as $account): ?>
             <?php renderAccountLink($account); ?>

@@ -9,7 +9,7 @@ $user = app_require_roles(LOGISTICS_ROLES);
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('methode_non_autorisee_phrase'));
 }
 
 app_verify_csrf();
@@ -17,7 +17,7 @@ $action = $_POST['action'] ?? '';
 $eventId = $_POST['event_id'] ?? '';
 if (!is_string($action) || !in_array($action, ['save_status', 'save_admin_note', 'save_fee', 'save_documents', 'add_need', 'remove_need', 'save_quote', 'save_generated_quote', 'delete_quote', 'publish_quote', 'unpublish_quote', 'save_quote_tracking'], true) || !is_string($eventId) || $eventId === '') {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('demande_invalide_phrase'));
 }
 $eventExists = false;
 foreach (read_json_file(app_data_path('events.json')) as $event) {
@@ -27,7 +27,7 @@ foreach (read_json_file(app_data_path('events.json')) as $event) {
     }
 }
 if (!$eventExists) {
-    app_flash('Cette date n’existe plus.', 'error');
+    app_flash(__('cette_date_nexiste_plus_phrase'), 'error');
     app_redirect('logistics.php');
 }
 $pageUrl = 'logistics.php?event=' . rawurlencode($eventId);
@@ -63,7 +63,7 @@ if ($action === 'save_admin_note') {
         unset($event);
         return $events;
     });
-    app_flash('La note admin a été enregistrée.');
+    app_flash(__('note_admin_ete_enregistree_phrase'));
     app_redirect($returnUrl);
 }
 
@@ -73,7 +73,7 @@ if ($action === 'save_status') {
     $returnUrl = is_string($returnTab) && isset(LOGISTICS_TABS[$returnTab]) ? app_logistics_tab_url($eventId, $returnTab) : 'logistics.php?event=' . rawurlencode($eventId);
     $logisticsStatuses = app_logistics_statuses();
     if (!is_string($status) || !isset($logisticsStatuses[$status])) {
-        app_flash('Choisissez un statut logistique valide.', 'error');
+        app_flash(__('choisissez_statut_logistique_valide_phrase'), 'error');
         app_redirect($returnUrl);
     }
     $eventStatus = $logisticsStatuses[$status][2];
@@ -102,7 +102,9 @@ if ($action === 'save_status') {
         return $logistics;
     });
     [$code, $label] = $logisticsStatuses[$status];
-    app_flash('Statut logistique' . "\u{00A0}" . ': ' . $code . ' · ' . $label . ($changed ? ' — statut de la date' . "\u{00A0}" . ': ' . EVENT_STATUSES[$eventStatus] . '.' : '.'));
+    app_flash($changed
+        ? __('statut_logistique_code_label_statut_date', ['code' => $code, 'label' => $label, 'status' => app_statuses()[$eventStatus]])
+        : __('statut_logistique_code_label_phrase', ['code' => $code, 'label' => $label]));
     app_redirect($returnUrl);
 }
 
@@ -111,7 +113,7 @@ if ($action === 'add_need' || $action === 'remove_need') {
     $need = app_clean_line($_POST['need'] ?? '', 60);
     $annexesUrl = app_logistics_tab_url($eventId, 'annexes');
     if ($need === '') {
-        app_flash('Indiquez le nom du besoin (Transport, Hébergement…).', 'error');
+        app_flash(__('indiquez_nom_besoin_transport_hebergement_phrase'), 'error');
         app_redirect($annexesUrl);
     }
     $error = null;
@@ -124,17 +126,17 @@ if ($action === 'add_need' || $action === 'remove_need') {
             $lower = static fn (string $value): string => function_exists('mb_strtolower') ? mb_strtolower($value) : strtolower($value);
             $existing = array_map($lower, array_column(app_logistics_need_blocks($followUp), 'need'));
             if (in_array($lower($need), $existing, true)) {
-                $error = 'Le besoin «' . "\u{00A0}" . $need . "\u{00A0}" . '» existe déjà pour cette date.';
+                $error = __('besoin_need_existe_deja_cette_date', ['need' => $need]);
                 return $logistics;
             }
             if (count($needs) >= LOGISTICS_MAX_NEEDS) {
-                $error = 'Une date compte au plus ' . LOGISTICS_MAX_NEEDS . ' besoins.';
+                $error = __('date_compte_plus_besoins_phrase', ['n' => LOGISTICS_MAX_NEEDS]);
                 return $logistics;
             }
             $needs[] = $need;
         } else {
             if (array_filter(app_logistics_quotes($followUp, 'received'), static fn (array $quote): bool => $quote['need'] === $need) !== []) {
-                $error = 'Supprimez ou déplacez d’abord les devis de ce besoin.';
+                $error = __('supprimez_deplacez_dabord_devis_ce_besoin');
                 return $logistics;
             }
             $needs = array_values(array_diff($needs, [$need]));
@@ -143,7 +145,7 @@ if ($action === 'add_need' || $action === 'remove_need') {
         $logistics[$eventId] = $entry;
         return $logistics;
     });
-    app_flash($error ?? ($action === 'add_need' ? 'Le besoin «' . "\u{00A0}" . $need . "\u{00A0}" . '» a été ajouté.' : 'Le besoin «' . "\u{00A0}" . $need . "\u{00A0}" . '» a été retiré.'), $error !== null ? 'error' : 'success');
+    app_flash($error ?? ($action === 'add_need' ? __('besoin_need_ete_ajoute_phrase', ['need' => $need]) : __('besoin_need_ete_retire_phrase', ['need' => $need])), $error !== null ? 'error' : 'success');
     app_redirect($annexesUrl . '#besoin-' . rawurlencode($need));
 }
 
@@ -157,11 +159,11 @@ if ($action === 'save_documents') {
         $url = is_array($row) ? app_clean_line($row['url'] ?? '', 2000) : '';
         $label = is_array($row) ? app_clean_line($row['label'] ?? '', LOGISTICS_DOCUMENT_LABEL_MAX) : '';
         if ($url !== '' && !app_is_http_url($url)) {
-            app_flash('Le lien « ' . app_truncate($url, 60) . ' » n’est pas une adresse web valide (https://…).', 'error');
+            app_flash(__('lien_url_nest_adresse_web_valide', ['url' => app_truncate($url, 60)]), 'error');
             app_redirect(app_logistics_tab_url($eventId, 'documents'));
         }
         if ($url === '' && $label !== '') {
-            app_flash('Indiquez le lien du document « ' . $label . ' ».', 'error');
+            app_flash(__('indiquez_lien_document_label_phrase', ['label' => $label]), 'error');
             app_redirect(app_logistics_tab_url($eventId, 'documents'));
         }
     }
@@ -172,7 +174,7 @@ if ($action === 'save_documents') {
         $logistics[$eventId] = $entry;
         return $logistics;
     });
-    app_flash($documents === [] ? 'Aucun document annexe pour cette date.' : 'Les documents annexes ont été enregistrés.');
+    app_flash($documents === [] ? __('aucun_document_annexe_cette_date_phrase') : __('documents_annexes_ont_ete_enregistres_phrase'));
     app_redirect(app_logistics_tab_url($eventId, 'documents'));
 }
 
@@ -181,9 +183,9 @@ if ($action === 'save_fee') {
     $contract = app_parse_amount($_POST['contract'] ?? '', true);
     $costs = app_parse_amount($_POST['costs'] ?? '');
     $error = match (true) {
-        $contract === false => 'Le montant du contrat est invalide (par exemple «' . "\u{00A0}" . '2400,00' . "\u{00A0}" . '»).',
-        $costs === false => 'Le montant des frais est invalide (par exemple «' . "\u{00A0}" . '900,00' . "\u{00A0}" . '»).',
-        $contract === null && $costs !== null => 'Indiquez le montant du contrat pour calculer le cachet.',
+        $contract === false => __('montant_contrat_invalide_exemple_example', ['example' => '2400,00']),
+        $costs === false => __('montant_frais_invalide_exemple_example', ['example' => '900,00']),
+        $contract === null && $costs !== null => __('indiquez_montant_contrat_calculer_cachet'),
         default => null,
     };
     $fee = $contract !== null ? $contract - ($costs ?? 0) : null;
@@ -208,14 +210,14 @@ if ($action === 'save_fee') {
         $logistics[$eventId] = $entry;
         return $logistics;
     });
-    app_flash('Le contrat et le cachet ont été enregistrés.');
+    app_flash(__('contrat_cachet_ont_ete_enregistres_phrase'));
     app_redirect(app_logistics_tab_url($eventId, 'cachet'));
 }
 
 $quoteId = $_POST['quote_id'] ?? '';
 if (!is_string($quoteId)) {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('demande_invalide_phrase'));
 }
 
 // Public link of a generated quote. Publishing freezes the document (a copy is kept with the
@@ -231,7 +233,7 @@ if (in_array($action, ['publish_quote', 'unpublish_quote', 'save_quote_tracking'
     $trackingNote = app_clean_text($_POST['note'] ?? '', 1000);
     if ($action === 'save_quote_tracking' && !is_string($trackingStatus)) {
         http_response_code(400);
-        exit('Demande invalide.');
+        exit(__('demande_invalide_phrase'));
     }
     $error = null;
     update_json_file(app_data_path('logistics.json'), static function (array $logistics) use ($eventId, $quoteId, $action, $event, $issuer, $user, $now, $trackingStatus, $trackingOption, $trackingNote, &$error): array {
@@ -244,11 +246,11 @@ if (in_array($action, ['publish_quote', 'unpublish_quote', 'save_quote_tracking'
             }
         }
         if ($quote === null) {
-            $error = 'Ce devis n’existe plus.';
+            $error = __('ce_devis_nexiste_plus_phrase');
             return $logistics;
         }
         if ($action === 'save_quote_tracking' && !isset(app_quote_selectable_statuses($quote['share'] !== null)[$trackingStatus])) {
-            $error = 'Ce statut n’est pas possible pour ce devis (le statut «' . "\u{00A0}" . 'Publié' . "\u{00A0}" . '» suit la publication du lien).';
+            $error = __('ce_statut_nest_possible_ce_devis');
             return $logistics;
         }
         foreach ($quotes as &$stored) {
@@ -290,9 +292,9 @@ if (in_array($action, ['publish_quote', 'unpublish_quote', 'save_quote_tracking'
         app_redirect(app_logistics_tab_url($eventId, 'organisateurs'));
     }
     app_flash([
-        'publish_quote' => 'Le devis est publié : son lien public est prêt à être envoyé. Le devis ne peut plus être modifié tant que le lien est publié.',
-        'unpublish_quote' => 'Le lien public a été retiré : il ne fonctionne plus et le devis peut de nouveau être modifié. Republiez-le ensuite pour obtenir un nouveau lien.',
-        'save_quote_tracking' => 'Le suivi du devis a été enregistré.',
+        'publish_quote' => __('devis_publie_lien_public_pret_etre'),
+        'unpublish_quote' => __('lien_public_ete_retire_fonctionne_plus'),
+        'save_quote_tracking' => __('suivi_devis_ete_enregistre_phrase'),
     ][$action]);
     app_redirect($viewUrl);
 }
@@ -307,7 +309,7 @@ $isPublished = static function (string $eventId, string $quoteId): bool {
     return false;
 };
 if (in_array($action, ['delete_quote', 'save_generated_quote', 'save_quote'], true) && $quoteId !== '' && $isPublished($eventId, $quoteId)) {
-    app_flash('Ce devis est publié et donc figé : retirez d’abord son lien public pour le modifier ou le supprimer.', 'error');
+    app_flash(__('ce_devis_publie_donc_fige_retirez_dabord_lien'), 'error');
     app_redirect('logistics-quote.php?' . http_build_query(['event' => $eventId, 'devis' => $quoteId]));
 }
 
@@ -327,10 +329,10 @@ if ($action === 'delete_quote') {
         return $logistics;
     });
     if ($removed === null) {
-        app_flash('Ce devis n’existe plus.', 'error');
+        app_flash(__('ce_devis_nexiste_plus_phrase'), 'error');
     } else {
         app_delete_quote_file(is_string($removed['file'] ?? null) ? $removed['file'] : null);
-        app_flash('Le devis a été supprimé.');
+        app_flash(__('devis_ete_supprime_phrase'));
     }
     $removedKind = is_string($removed['kind'] ?? null) && isset(QUOTE_KIND_TABS[$removed['kind']]) ? $removed['kind'] : 'sent';
     app_redirect(app_logistics_tab_url($eventId, QUOTE_KIND_TABS[$removedKind]));
@@ -344,7 +346,7 @@ if ($action === 'save_generated_quote') {
     $date = app_parse_date($_POST['date'] ?? null);
     if (!is_string($status) || !isset(app_quote_selectable_statuses(false)[$status])) {
         http_response_code(400);
-        exit('Demande invalide.');
+        exit(__('demande_invalide_phrase'));
     }
     // Options in the order of the form; lines without description and options without line are
     // ignored. The option accepted by the organizer is sent by its key in the form.
@@ -363,7 +365,7 @@ if ($action === 'save_generated_quote') {
             $quantity = is_string($quantityInput) && ctype_digit(trim($quantityInput)) ? (int) trim($quantityInput) : 0;
             $unit = app_parse_amount($line['unit'] ?? '');
             if ($quantity < 1 || $quantity > 999 || $unit === false || $unit === null) {
-                app_flash('Ligne «' . "\u{00A0}" . $label . "\u{00A0}" . '»' . "\u{00A0}" . ': indiquez une quantité (1 à 999) et un prix unitaire valide.', 'error');
+                app_flash(__('ligne_label_indiquez_quantite_1_999', ['label' => $label]), 'error');
                 app_redirect($formUrl);
             }
             $lines[] = ['label' => $label, 'detail' => app_clean_text($line['detail'] ?? '', 400), 'quantity' => $quantity, 'unit' => $unit];
@@ -376,10 +378,10 @@ if ($action === 'save_generated_quote') {
         }
     }
     $error = match (true) {
-        $party === '' => 'Indiquez l’organisateur destinataire du devis.',
-        $date === null => 'La date du devis est invalide.',
-        $groups === [] => 'Ajoutez au moins une ligne au devis.',
-        max(array_map(static fn (array $group): int => app_quote_lines_total($group['lines']), $groups)) > LOGISTICS_MAX_CENTS => 'Le montant d’une option est trop élevé.',
+        $party === '' => __('indiquez_lorganisateur_destinataire_devis_phrase'),
+        $date === null => __('date_devis_invalide_phrase'),
+        $groups === [] => __('ajoutez_moins_ligne_devis_phrase'),
+        max(array_map(static fn (array $group): int => app_quote_lines_total($group['lines']), $groups)) > LOGISTICS_MAX_CENTS => __('montant_dune_option_trop_eleve_phrase'),
         default => null,
     };
     if ($error !== null) {
@@ -417,7 +419,7 @@ if ($action === 'save_generated_quote') {
         $quotes = is_array($entry['quotes'] ?? null) ? array_values($entry['quotes']) : [];
         if ($quoteId === '') {
             if (count($quotes) >= QUOTE_MAX_PER_EVENT) {
-                $error = 'Une date compte au plus ' . QUOTE_MAX_PER_EVENT . ' devis.';
+                $error = __('date_compte_plus_devis_phrase', ['n' => QUOTE_MAX_PER_EVENT]);
                 return $logistics;
             }
             $savedId = bin2hex(random_bytes(8));
@@ -450,7 +452,7 @@ if ($action === 'save_generated_quote') {
             }
             unset($quote);
             if (!$found) {
-                $error = 'Ce devis n’existe plus.';
+                $error = __('ce_devis_nexiste_plus_phrase');
                 return $logistics;
             }
         }
@@ -464,7 +466,7 @@ if ($action === 'save_generated_quote') {
         app_redirect(app_logistics_tab_url($eventId, 'organisateurs'));
     }
     app_delete_quote_file($obsoleteFile);
-    app_flash($quoteId === '' ? 'Le devis a été généré.' : 'Le devis a été enregistré.');
+    app_flash($quoteId === '' ? __('devis_ete_genere_phrase') : __('devis_ete_enregistre_phrase'));
     app_redirect('logistics-quote.php?' . http_build_query(['event' => $eventId, 'devis' => $savedId]));
 }
 
@@ -473,7 +475,7 @@ $kind = $_POST['kind'] ?? '';
 $status = $_POST['status'] ?? '';
 if (!is_string($kind) || !isset(QUOTE_KINDS[$kind]) || !is_string($status) || !isset(QUOTE_STATUSES[$status])) {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('demande_invalide_phrase'));
 }
 $formUrl = app_logistics_tab_url($eventId, QUOTE_KIND_TABS[$kind], $quoteId !== '' ? ['devis' => $quoteId] : []);
 $party = app_clean_line($_POST['party'] ?? '', 120);
@@ -492,7 +494,7 @@ if ($kind === 'sent') {
             continue;
         }
         if ($optionAmount === false || $optionAmount === null) {
-            app_flash('Indiquez un montant valide pour chaque option (par exemple «' . "\u{00A0}" . '1250,00' . "\u{00A0}" . '»).', 'error');
+            app_flash(__('indiquez_montant_valide_chaque_option_exemple', ['example' => '1250,00']), 'error');
             app_redirect($formUrl);
         }
         if (is_string($acceptedKey) && $acceptedKey === (string) $optionKey) {
@@ -504,15 +506,15 @@ if ($kind === 'sent') {
 $dateInput = $_POST['date'] ?? '';
 $date = is_string($dateInput) && $dateInput !== '' ? app_parse_date($dateInput) : null;
 if ($party === '') {
-    app_flash('Indiquez ' . ($kind === 'sent' ? 'l’organisateur' : 'le prestataire') . ' du devis.', 'error');
+    app_flash($kind === 'sent' ? __('indiquez_lorganisateur_devis_phrase') : __('indiquez_prestataire_devis_phrase'), 'error');
     app_redirect($formUrl);
 }
 if ($amount === false) {
-    app_flash('Le montant du devis est invalide (par exemple «' . "\u{00A0}" . '1250,00' . "\u{00A0}" . '»).', 'error');
+    app_flash(__('montant_devis_invalide_exemple_example', ['example' => '1250,00']), 'error');
     app_redirect($formUrl);
 }
 if (is_string($dateInput) && $dateInput !== '' && $date === null) {
-    app_flash('La date du devis est invalide.', 'error');
+    app_flash(__('date_devis_invalide_phrase'), 'error');
     app_redirect($formUrl);
 }
 $removeFile = ($_POST['remove_file'] ?? '') === '1';
@@ -553,7 +555,7 @@ update_json_file(app_data_path('logistics.json'), static function (array $logist
     }
     if ($quoteId === '') {
         if (count($quotes) >= QUOTE_MAX_PER_EVENT) {
-            $error = 'Une date compte au plus ' . QUOTE_MAX_PER_EVENT . ' devis.';
+            $error = __('date_compte_plus_devis_phrase', ['n' => QUOTE_MAX_PER_EVENT]);
             return $logistics;
         }
         $quote = ['id' => bin2hex(random_bytes(8))] + $values;
@@ -569,7 +571,7 @@ update_json_file(app_data_path('logistics.json'), static function (array $logist
             }
         }
         if ($index === null) {
-            $error = 'Ce devis n’existe plus.';
+            $error = __('ce_devis_nexiste_plus_phrase');
             return $logistics;
         }
         $quote = array_merge($quotes[$index], $values);
@@ -604,6 +606,6 @@ if ($error !== null) {
     app_redirect(app_logistics_tab_url($eventId, QUOTE_KIND_TABS[$kind]));
 }
 app_delete_quote_file($obsoleteFile);
-app_flash(($quoteId === '' ? 'Le devis a été ajouté.' : 'Le devis a été enregistré.')
-    . ($declined > 0 ? ' Il devient le devis retenu de ce besoin' . "\u{00A0}" . ': ' . ($declined > 1 ? 'les autres devis acceptés passent' : 'l’autre devis accepté passe') . ' à «' . "\u{00A0}" . 'Refusé' . "\u{00A0}" . '».' : ''));
+app_flash(($quoteId === '' ? __('devis_ete_ajoute_phrase') : __('devis_ete_enregistre_phrase'))
+    . ($declined > 0 ? ' ' . __n('devient_devis_retenu_ce_besoin_lautre', 'devient_devis_retenu_ce_besoin_autres', $declined) : ''));
 app_redirect(app_logistics_tab_url($eventId, QUOTE_KIND_TABS[$kind]) . ($kind === 'received' ? '#besoin-' . rawurlencode($need) : ''));

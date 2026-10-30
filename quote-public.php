@@ -11,10 +11,10 @@ header('Cache-Control: private, no-store');
 
 if ($found === null) {
     http_response_code(404);
-    app_header('Devis introuvable');
+    app_header(__('devis_introuvable'));
     ?>
       <section class="management-section">
-        <p class="management-panel muted-copy">Ce devis n’existe pas ou son lien a été retiré (le devis a peut-être été mis à jour). Demandez le lien à jour à l’association.</p>
+        <p class="management-panel muted-copy"><?= app_escape(__('ce_devis_nexiste_lien_ete_retire')) ?></p>
       </section>
 <?php
     app_footer();
@@ -24,11 +24,11 @@ if ($found === null) {
 [, $quote] = $found;
 $document = $quote['share']['document'];
 $token = $quote['share']['token'];
-app_header('Devis ' . $document['number'] . ' — ' . $document['issuer']['name']);
+app_header(app_site_text('devis_number_issuer', ['number' => $document['number'], 'issuer' => $document['issuer']['name']]));
 ?>
       <section class="management-section quote-public">
         <div class="roadmap-actions">
-          <button class="primary-button compact-button" type="button" data-print>Imprimer / enregistrer en PDF</button>
+          <button class="primary-button compact-button" type="button" data-print><?= app_escape(__('imprimer_enregistrer_pdf')) ?></button>
         </div>
         <?php app_render_quote_document($document, $document['issuer']['logo'] !== null ? 'quote-logo.php?' . http_build_query(['t' => $token]) : null); ?>
       </section>

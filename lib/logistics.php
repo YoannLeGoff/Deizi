@@ -244,7 +244,7 @@ function app_quote_status(array $quote, mixed $raw): array
 {
     if ($quote['kind'] === 'received') {
         $key = is_string($raw) && isset(QUOTE_STATUSES[$raw]) ? $raw : 'pending';
-        return [$key, QUOTE_STATUSES[$key], $key];
+        return [$key, app_label(QUOTE_STATUSES[$key]), $key];
     }
     $statuses = app_quote_statuses();
     $published = $quote['share'] !== null;
@@ -527,7 +527,7 @@ function app_quote_options(array $quote): array
         $options = [['title' => '', 'amount' => $quote['amount']]];
     }
     foreach ($options as $index => &$option) {
-        $option['title'] = $option['title'] !== '' ? $option['title'] : (count($options) > 1 ? 'Option ' . ($index + 1) : '');
+        $option['title'] = $option['title'] !== '' ? $option['title'] : (count($options) > 1 ? __('option_n', ['n' => $index + 1]) : '');
     }
     return $options;
 }
@@ -592,10 +592,10 @@ function app_store_quote_file(mixed $file): ?array
         return null;
     }
     if (($file['error'] ?? null) !== UPLOAD_ERR_OK || !is_string($file['tmp_name'] ?? null) || !is_uploaded_file($file['tmp_name'])) {
-        throw new InvalidArgumentException('L’envoi du fichier a échoué.');
+        throw new InvalidArgumentException(__('lenvoi_fichier_echoue_phrase'));
     }
     if (($file['size'] ?? 0) > QUOTE_MAX_FILE_BYTES) {
-        throw new InvalidArgumentException('Le fichier ne doit pas dépasser 5 Mo.');
+        throw new InvalidArgumentException(__('fichier_doit_depasser_5_mo_phrase'));
     }
     $extension = null;
     $handle = fopen($file['tmp_name'], 'rb');
@@ -615,16 +615,16 @@ function app_store_quote_file(mixed $file): ?array
         };
     }
     if ($extension === null) {
-        throw new InvalidArgumentException('Le devis doit être un fichier PDF ou une image (PNG, JPEG, WebP).');
+        throw new InvalidArgumentException(__('devis_doit_etre_fichier_pdf_image'));
     }
     $directory = app_upload_directory();
     if (!is_dir($directory) && !mkdir($directory, 0700, true) && !is_dir($directory)) {
-        throw new RuntimeException('Impossible de créer le dossier des fichiers.');
+        throw new RuntimeException(__('impossible_creer_dossier_fichiers_phrase'));
     }
     $name = 'quote-' . bin2hex(random_bytes(16)) . '.' . $extension;
     $path = $directory . '/' . $name;
     if (!move_uploaded_file($file['tmp_name'], $path) || !chmod($path, 0600)) {
-        throw new RuntimeException('Impossible d’enregistrer le fichier.');
+        throw new RuntimeException(__('impossible_denregistrer_fichier_phrase'));
     }
     $originalName = app_clean_line(basename(is_string($file['name'] ?? null) ? $file['name'] : ''), 120);
     return [$name, $originalName !== '' ? $originalName : 'devis.' . $extension];
@@ -666,16 +666,16 @@ const LOGISTICS_WORKFLOW_EXITS = [
 // payment in one column per status of the date, then the statuses outside that path.
 function app_render_logistics_workflow(): void
 {
-    $badge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(EVENT_STATUSES[$status]) . '</span>';
+    $badge = static fn (string $status): string => '<span class="status-badge status-badge-' . app_escape($status) . '">' . app_escape(app_statuses()[$status]) . '</span>';
     $statuses = app_logistics_statuses();
     $step = static fn (string $key): string => '<span class="workflow-code">' . app_escape($statuses[$key][0]) . '</span> ' . app_escape($statuses[$key][1]);
     $statusesOf = static fn (string $eventStatus): array => array_keys(array_filter($statuses, static fn (array $definition): bool => $definition[2] === $eventStatus));
     ?>
-          <div class="workflow" role="group" aria-label="Flux de travail des statuts logistiques">
+          <div class="workflow" role="group" aria-label="<?= app_escape(__('flux_travail_statuts_logistiques')) ?>">
             <ol class="workflow-lanes">
               <?php foreach (LOGISTICS_WORKFLOW_LANES as $eventStatus): ?>
               <li class="workflow-lane" style="--lane-cell: var(--status-<?= $eventStatus ?>-cell); --lane-accent: var(--status-<?= $eventStatus ?>-accent)">
-                <p class="workflow-lane-title">Statut de la date<?= "\u{00A0}" ?>: <?= $badge($eventStatus) ?></p>
+                <p class="workflow-lane-title"><?= app_escape(__('statut_date_label')) ?> <?= $badge($eventStatus) ?></p>
                 <ol class="workflow-steps">
                   <?php foreach ($statusesOf($eventStatus) as $key): ?>
                   <li class="workflow-step"><?= $step($key) ?></li>
@@ -689,7 +689,7 @@ function app_render_logistics_workflow(): void
               <?php foreach ($statusesOf($eventStatus) as $key): ?>
               <li class="workflow-exit" style="--lane-cell: var(--status-<?= $eventStatus ?>-cell); --lane-accent: var(--status-<?= $eventStatus ?>-accent)">
                 <p class="workflow-step"><?= $step($key) ?> <?= $badge($eventStatus) ?></p>
-                <p class="workflow-exit-text"><?= app_escape($description) ?></p>
+                <p class="workflow-exit-text"><?= app_escape(app_label($description)) ?></p>
               </li>
               <?php endforeach; ?>
               <?php endforeach; ?>
@@ -739,15 +739,19 @@ function app_normalize_quote_document(mixed $doc): ?array
 // The quote document (A4 sheet), from app_quote_document(); $logoUrl serves the issuer logo.
 function app_render_quote_document(array $doc, ?string $logoUrl): void
 {
+    // A document of the association: its fixed labels in the language of the site, like its
+    // content, whatever the language of the reader.
+    $readerLocale = app_locale();
+    app_locale(app_site_language());
     $issuer = $doc['issuer'];
     $quoteDate = app_parse_date($doc['date']);
     $eventDate = app_parse_date($doc['event_date']);
     $remarks = array_values(array_filter(array_map('trim', explode("\n", $doc['conditions'])), static fn (string $line): bool => $line !== ''));
-    $printTitle = ($eventDate !== null ? $eventDate->format('Ymd') . ' - ' : '') . $doc['event_title'] . ' - Devis ' . $doc['number'];
+    $printTitle = ($eventDate !== null ? $eventDate->format('Ymd') . ' - ' : '') . $doc['event_title'] . ' - ' . __('devis_un') . ' ' . $doc['number'];
     $options = [];
     foreach ($doc['groups'] as $index => $group) {
         $options[] = [
-            'title' => $group['title'] !== '' ? $group['title'] : (count($doc['groups']) > 1 ? 'Option ' . ($index + 1) : ''),
+            'title' => $group['title'] !== '' ? $group['title'] : (count($doc['groups']) > 1 ? __('option_n', ['n' => $index + 1]) : ''),
             'amount' => app_quote_lines_total($group['lines']),
         ];
     }
@@ -764,24 +768,24 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
             <?php endif; ?>
           </header>
 
-          <p class="quote-document-title">Devis</p>
-          <?php if ($quoteDate !== null): ?><p class="quote-sent-on">Envoyé le <?= app_escape($quoteDate->format('d/m/Y')) ?></p><?php endif; ?>
+          <p class="quote-document-title"><?= app_escape(__('devis_un')) ?></p>
+          <?php if ($quoteDate !== null): ?><p class="quote-sent-on"><?= app_escape(__('envoye_date', ['date' => $quoteDate->format('d/m/Y')])) ?></p><?php endif; ?>
 
           <div class="quote-parties">
             <div>
-              <p class="quote-label">Facturation pour</p>
+              <p class="quote-label"><?= app_escape(__('facturation')) ?></p>
               <p><?= app_escape($doc['party']) ?><?php if ($doc['client_address'] !== ''): ?><br><?= nl2br(app_escape($doc['client_address']), false) ?><?php endif; ?></p>
               <?php if ($doc['subject'] !== ''): ?>
-              <p class="quote-label">Projet</p>
+              <p class="quote-label"><?= app_escape(__('projet')) ?></p>
               <p><?= app_escape($doc['subject']) ?></p>
               <?php endif; ?>
             </div>
             <div>
               <?php if ($doc['due'] !== ''): ?>
-              <p class="quote-label">Date d’échéance</p>
+              <p class="quote-label"><?= app_escape(__('date_decheance')) ?></p>
               <p><?= app_escape($doc['due']) ?></p>
               <?php endif; ?>
-              <p class="quote-label">Numéro</p>
+              <p class="quote-label"><?= app_escape(__('numero')) ?></p>
               <p><?= app_escape($doc['number']) ?></p>
             </div>
           </div>
@@ -789,10 +793,10 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
           <table class="quote-table">
             <thead>
               <tr>
-                <th scope="col">Description</th>
-                <th scope="col" class="amount-cell">Qté</th>
-                <th scope="col" class="amount-cell">Prix unitaire</th>
-                <th scope="col" class="amount-cell">Prix total</th>
+                <th scope="col"><?= app_escape(__('description')) ?></th>
+                <th scope="col" class="amount-cell"><?= app_escape(__('qte')) ?></th>
+                <th scope="col" class="amount-cell"><?= app_escape(__('prix_unitaire')) ?></th>
+                <th scope="col" class="amount-cell"><?= app_escape(__('prix_total')) ?></th>
               </tr>
             </thead>
             <?php foreach ($doc['groups'] as $optionIndex => $group): ?>
@@ -824,7 +828,7 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
           <?php if ($remarks !== []): ?>
           <div class="quote-summary">
             <div class="quote-remarks">
-              <p class="quote-label">Remarques :</p>
+              <p class="quote-label"><?= app_escape(__('remarques_label')) ?></p>
               <?php foreach ($remarks as $remark): ?>
               <p>• <?= app_escape(preg_replace('/^[•*\-\s\x{00A0}]+/u', '', $remark) ?? $remark) ?></p>
               <?php endforeach; ?>
@@ -838,6 +842,7 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
         </article>
 
     <?php
+    app_locale($readerLocale);
 }
 
 function app_normalize_quote_share(mixed $share): ?array
@@ -899,17 +904,17 @@ function app_render_quote_workflow(): void
 {
     $statuses = app_quote_statuses();
     $lanes = [
-        'draft' => 'Le devis se prépare et se modifie.',
-        'published' => 'Lien public envoyé à l’organisateur ; devis figé.',
-        'accepted' => 'L’organisateur accepte (une option retenue).',
-        'declined' => 'L’organisateur décline.',
+        'draft' => __('devis_se_prepare_modifie_phrase'),
+        'published' => __('lien_public_envoye_organisateur_devis_fige'),
+        'accepted' => __('organisateur_accepte_option_retenue'),
+        'declined' => __('organisateur_decline_phrase'),
     ];
     ?>
-          <div class="workflow quote-workflow" role="group" aria-label="Flux de travail des devis">
+          <div class="workflow quote-workflow" role="group" aria-label="<?= app_escape(__('flux_travail_devis')) ?>">
             <ol class="workflow-lanes">
               <?php foreach (['draft', 'published'] as $type): ?>
               <li class="workflow-lane quote-lane-<?= $type ?>">
-                <p class="workflow-lane-title"><?= app_escape(explode(' — ', QUOTE_STATUS_TYPES[$type])[0]) ?></p>
+                <p class="workflow-lane-title"><?= app_escape(explode(' — ', app_label(QUOTE_STATUS_TYPES[$type]))[0]) ?></p>
                 <ol class="workflow-steps">
                   <?php foreach (array_keys(array_filter($statuses, static fn (array $status): bool => $status[1] === $type)) as $key): ?>
                   <li class="workflow-step"><span class="quote-status quote-status-<?= $type ?>"><?= app_escape($statuses[$key][0]) ?></span></li>
@@ -919,7 +924,7 @@ function app_render_quote_workflow(): void
               </li>
               <?php endforeach; ?>
               <li class="workflow-lane quote-lane-answer">
-                <p class="workflow-lane-title">Réponse de l’organisateur</p>
+                <p class="workflow-lane-title"><?= app_escape(__('reponse_organisateur')) ?></p>
                 <ol class="workflow-steps quote-answers">
                   <?php foreach (['accepted', 'declined'] as $type): ?>
                   <?php foreach (array_keys(array_filter($statuses, static fn (array $status): bool => $status[1] === $type)) as $key): ?>
@@ -929,7 +934,7 @@ function app_render_quote_workflow(): void
                 </ol>
               </li>
             </ol>
-            <p class="workflow-exit-text quote-workflow-back">↩ « Retirer le lien » ramène un devis publié en brouillon ; le republier crée un nouveau lien.</p>
+            <p class="workflow-exit-text quote-workflow-back">↩ <?= app_escape(__('retirer_lien_ramene_devis_publie_brouillon')) ?></p>
           </div>
     <?php
 }
@@ -1023,7 +1028,7 @@ function app_logistics_report(array $events, array $logistics, ?string $seasonKe
         foreach (app_logistics_need_blocks($followUp) as $block) {
             $retained = app_logistics_accepted_total($block['quotes']);
             if ($retained !== null) {
-                $need = $block['need'] !== '' ? $block['need'] : 'Autres devis';
+                $need = $block['need'] !== '' ? $block['need'] : __('autres_devis');
                 $figures['needs'][$need] = ($figures['needs'][$need] ?? 0) + $retained;
             }
         }

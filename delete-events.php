@@ -11,7 +11,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $eventId = $_POST['id'] ?? '';
     if (!is_string($eventId) || $eventId === '') {
         http_response_code(400);
-        exit('Demande invalide.');
+        exit(__('demande_invalide_phrase'));
     }
     $deleted = null;
     $impersonator = app_impersonator();
@@ -28,12 +28,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         return $remaining;
     });
     if ($deleted === null) {
-        app_flash('Cette date n’existe plus.', 'error');
+        app_flash(__('cette_date_nexiste_plus_phrase'), 'error');
     } else {
         app_delete_upload(app_event_roadmap($deleted)['qr']['image']);
         array_map('app_delete_roadmap_document', array_column(app_event_roadmap($deleted)['documents'], 'file'));
         app_logistics_delete_event($eventId);
-        app_flash('La date « ' . (string) ($deleted['title'] ?? '') . ' » a été supprimée.');
+        app_flash(__('date_title_ete_supprimee_phrase', ['title' => (string) ($deleted['title'] ?? '')]));
     }
     app_redirect('delete-events.php');
 }
@@ -49,48 +49,50 @@ app_header('Suppression des dates', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> CONFIGURATION · SUIVI ET SÉCURITÉ</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('configuration_suivi_securite_majuscules')) ?></p>
           <?php app_page_links([['Configuration', 'settings.php'], ['Journal d’audit', 'attendance-log.php?source=event']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Suppression des dates<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('suppression_dates')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('suivi', 'delete-events.php', $admin); ?>
 
-        <p class="accounts-help delete-events-help">La suppression d’une date est définitive : elle efface aussi les réponses de présence, les sondages et la feuille de route de la date, et son lien public cesse de fonctionner. Elle est inscrite dans le journal d’audit. Pour simplement écarter une date, préférez le statut « Annulé » ou « Refusé ».</p>
+        <p class="accounts-help delete-events-help"><?= app_escape(__('suppression_dune_date_definitive_efface_aussi')) ?></p>
 
         <section class="management-panel" aria-labelledby="delete-events-title">
-          <h2 class="detail-heading" id="delete-events-title">Dates enregistrées <span class="count-badge"><?= count($events) ?></span></h2>
+          <h2 class="detail-heading" id="delete-events-title"><?= app_escape(__('dates_enregistrees')) ?> <span class="count-badge"><?= count($events) ?></span></h2>
           <?php if ($events === []): ?>
-          <p class="muted-copy">Aucune date n’a été ajoutée.</p>
+          <p class="muted-copy"><?= app_escape(__('aucune_date_na_ete_ajoutee_phrase')) ?></p>
           <?php else: ?>
           <div class="managed-events">
             <?php foreach ($events as $event): ?>
             <?php
-                $title = (string) ($event['title'] ?? 'Événement sans titre');
+                $title = (string) ($event['title'] ?? __('evenement_sans_titre'));
                 $date = app_parse_date($event['date'] ?? null);
                 $status = is_string($event['status'] ?? null) && isset(EVENT_STATUSES[$event['status']]) ? $event['status'] : 'pending';
                 $answerCount = is_array($event['attendance'] ?? null) ? count($event['attendance']) : 0;
                 $pollCount = count(app_event_polls($event));
-                $details = [$answerCount . ' réponse' . ($answerCount > 1 ? 's' : '')];
+                $details = [__n('n_reponse', 'reponses', $answerCount)];
                 if ($pollCount > 0) {
-                    $details[] = $pollCount . ' sondage' . ($pollCount > 1 ? 's' : '');
+                    $details[] = __n('sondage_2', 'sondages_2', $pollCount);
                 }
-                $confirm = 'Supprimer définitivement « ' . $title . ' »' . ($date !== null ? ' du ' . $date->format('d/m/Y') : '') . ' ? ' . implode(' et ', $details) . ' seront effacés.';
+                $confirm = $date !== null
+                    ? __('supprimer_definitivement_title_date_details_seront', ['title' => $title, 'date' => $date->format('d/m/Y'), 'details' => implode(__('et'), $details)])
+                    : __('supprimer_definitivement_title_details_seront_effaces', ['title' => $title, 'details' => implode(__('et'), $details)]);
             ?>
             <article class="managed-event">
               <div>
                 <strong><a class="event-title-link" href="event.php?id=<?= rawurlencode($event['id']) ?>"><?= app_escape($title) ?></a></strong>
                 <span><?= $date !== null ? app_escape($date->format('d/m/Y')) : '' ?><?= !empty($event['end_date']) && ($endDate = app_parse_date($event['end_date'])) !== null ? ' – ' . app_escape($endDate->format('d/m/Y')) : '' ?> · <?= app_escape(implode(' · ', $details)) ?></span>
-                <span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(EVENT_STATUSES[$status]) ?></span>
+                <span class="status-badge status-badge-<?= app_escape($status) ?>"><?= app_escape(app_statuses()[$status]) ?></span>
               </div>
               <div class="managed-event-actions">
                 <form method="post" action="delete-events.php" onsubmit="return confirm(<?= app_escape(json_encode($confirm, JSON_UNESCAPED_UNICODE)) ?>);">
                   <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                   <input type="hidden" name="id" value="<?= app_escape($event['id']) ?>">
-                  <button class="danger-button compact-button" type="submit">Supprimer</button>
+                  <button class="danger-button compact-button" type="submit"><?= app_escape(__('supprimer')) ?></button>
                 </form>
               </div>
             </article>

@@ -1,4 +1,6 @@
 const matrixForm = document.querySelector("[data-attendance-matrix]");
+// Texts in the language of the page (menu.js, JS_TEXTS in lib/i18n.php).
+const t = (key, values) => (window.t ? window.t(key, values) : key);
 
 if (matrixForm) {
   const table = matrixForm.querySelector(".attendance-matrix");
@@ -7,7 +9,7 @@ if (matrixForm) {
   const savebarStatus = matrixForm.querySelector("[data-savebar-status]");
   // Présent → Absent → Je ne sais pas → Sans réponse ("", the answer is withdrawn) → Présent.
   const cycle = ["present", "absent", "undecided", ""];
-  const labels = { present: "Présent", absent: "Absent", undecided: "Je ne sais pas", "": "Sans réponse" };
+  const labels = { present: t("present"), absent: t("absent"), undecided: t("je_sais"), "": t("sans_reponse") };
   const shortcuts = { p: "present", a: "absent", n: "undecided", "?": "undecided", s: "", delete: "", backspace: "" };
   const icons = {
     present: '<path d="M5 12.5l4.2 4.2L19 7"/>',
@@ -30,11 +32,11 @@ if (matrixForm) {
     button.dataset.value = value;
     button.innerHTML = `<svg viewBox="0 0 24 24" aria-hidden="true">${icons[value]}</svg>`;
     const dirty = value !== select.dataset.original;
-    const audit = dirty ? "enregistrement en cours" : select.dataset.audit;
-    button.setAttribute("aria-label", `${select.dataset.label} : ${labels[value]} (${audit})`);
+    const audit = dirty ? t("matrice_enregistrement_en_cours") : select.dataset.audit;
+    button.setAttribute("aria-label", t("matrice_case_label", { member: select.dataset.label, answer: labels[value], audit }));
     button.title = select.disabled
-      ? `${labels[value]} — ${audit}\nDate terminée, annulée ou refusée : non modifiable`
-      : `${labels[value]} — ${audit}\nCliquer pour changer`;
+      ? `${labels[value]} — ${audit}\n${t("matrice_non_modifiable")}`
+      : `${labels[value]} — ${audit}\n${t("matrice_cliquer_changer")}`;
     select.closest(".matrix-cell").classList.toggle("is-dirty", dirty);
   }
 
@@ -55,11 +57,11 @@ if (matrixForm) {
     if (lastError !== "") {
       savebarStatus.textContent = lastError;
     } else if (changed > 0) {
-      savebarStatus.textContent = "Enregistrement…";
+      savebarStatus.textContent = t("matrice_enregistrement");
     } else if (lastSavedAt !== null) {
-      savebarStatus.textContent = `Réponses enregistrées automatiquement (dernière à ${lastSavedAt}).`;
+      savebarStatus.textContent = t("matrice_derniere_enregistree", { time: lastSavedAt });
     } else {
-      savebarStatus.textContent = "Chaque réponse est enregistrée automatiquement.";
+      savebarStatus.textContent = t("matrice_enregistrement_automatique");
     }
     savebar.classList.toggle("has-changes", changed > 0);
     savebar.classList.toggle("has-error", lastError !== "");
@@ -106,10 +108,10 @@ if (matrixForm) {
       });
       const result = await response.json().catch(() => null);
       if (!result) {
-        throw new Error("Votre session a peut-être expiré : rechargez la page pour continuer.");
+        throw new Error(t("matrice_session_expiree"));
       }
       if (!result.ok) {
-        throw new Error(result.message || "La réponse n’a pas pu être enregistrée.");
+        throw new Error(result.message || t("matrice_reponse_non_enregistree"));
       }
       sameMember(select).forEach((other) => {
         other.dataset.original = value;
@@ -120,14 +122,14 @@ if (matrixForm) {
         if (other.value === value) render(other);
       });
       lastError = "";
-      lastSavedAt = new Date().toLocaleTimeString("fr-FR", { hour: "2-digit", minute: "2-digit" });
+      lastSavedAt = new Date().toLocaleTimeString(document.documentElement.lang || undefined, { hour: "2-digit", minute: "2-digit" });
     } catch (error) {
       // Back to the last saved answer, so the screen never shows an answer that is not saved.
       sameMember(select).forEach((other) => {
         other.value = original;
         render(other);
       });
-      lastError = error instanceof TypeError ? "Connexion impossible : la réponse n’a pas été enregistrée." : error.message;
+      lastError = error instanceof TypeError ? t("matrice_connexion_impossible") : error.message;
     } finally {
       inFlight.delete(select.name);
       refresh();

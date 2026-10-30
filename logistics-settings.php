@@ -23,7 +23,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
         $label = app_clean_line($row['label'] ?? '', 60);
         if ($label === '') {
             if ($key !== '') {
-                app_flash('Chaque formule a un libellé (cochez «' . "\u{00A0}" . 'Supprimer' . "\u{00A0}" . '» pour en retirer une).', 'error');
+                app_flash(__('chaque_formule_libelle_cochez_supprimer_retirer'), 'error');
                 app_redirect($formulasUrl);
             }
             continue;
@@ -35,14 +35,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && ($_POST['action'] ?? '') === 'save_
     $list = array_column($rows, 2);
     $labels = array_map(static fn (string $label): string => function_exists('mb_strtolower') ? mb_strtolower($label) : strtolower($label), array_column($list, 'label'));
     if (count($labels) !== count(array_unique($labels)) || app_logistics_parse_formulas($list) === null) {
-        app_flash('Deux formules ne peuvent pas avoir le même libellé (' . LOGISTICS_FORMULA_MAX . ' formules au plus).', 'error');
+        app_flash(__('deux_formules_peuvent_avoir_meme_libelle', ['n' => LOGISTICS_FORMULA_MAX]), 'error');
         app_redirect($formulasUrl);
     }
     update_json_file(app_data_path('settings.json'), static function (array $settings) use ($list): array {
         $settings['logistics_formulas'] = $list;
         return $settings;
     });
-    app_flash('Les formules ont été enregistrées.');
+    app_flash(__('formules_ont_ete_enregistrees_phrase'));
     app_redirect($formulasUrl);
 }
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['save_statuses', 'reset_statuses'], true)) {
@@ -73,11 +73,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['
         $defaults = array_count_values(array_column(array_filter($list, static fn (array $item): bool => $item['default']), 'type'));
         $missing = array_diff_key(QUOTE_STATUS_TYPES, array_flip(array_column($list, 'type')));
         $error = match (true) {
-            array_filter($list, static fn (array $item): bool => $item['label'] === '') !== [] => 'Chaque statut a un libellé.',
-            array_filter($list, static fn (array $item): bool => !isset(QUOTE_STATUS_TYPES[$item['type']])) !== [] => 'Choisissez le comportement de chaque statut.',
-            max([0, ...array_values($defaults)]) > 1 => 'Un seul statut par défaut pour chaque comportement.',
-            $missing !== [] => 'Chaque comportement doit garder au moins un statut (Brouillon, Publié, Refusé et Validé).',
-            app_quote_parse_statuses($list) === null => 'La liste des statuts est invalide (' . QUOTE_STATUS_MAX . ' statuts au plus).',
+            array_filter($list, static fn (array $item): bool => $item['label'] === '') !== [] => __('chaque_statut_libelle_phrase'),
+            array_filter($list, static fn (array $item): bool => !isset(QUOTE_STATUS_TYPES[$item['type']])) !== [] => __('choisissez_comportement_chaque_statut_phrase'),
+            max([0, ...array_values($defaults)]) > 1 => __('seul_statut_defaut_chaque_comportement_phrase'),
+            $missing !== [] => __('chaque_comportement_doit_garder_moins_statut'),
+            app_quote_parse_statuses($list) === null => __('liste_statuts_invalide_statuts_plus', ['n' => QUOTE_STATUS_MAX]),
             default => null,
         };
         if ($error !== null) {
@@ -93,7 +93,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && in_array($_POST['action'] ?? '', ['
         }
         return $settings;
     });
-    app_flash($list === null ? 'Les statuts d’origine des devis ont été rétablis.' : 'Les statuts des devis ont été enregistrés.');
+    app_flash($list === null ? __('statuts_dorigine_devis_ont_ete_retablis_phrase') : __('statuts_devis_ont_ete_enregistres_phrase'));
     app_redirect($flowUrl);
 }
 
@@ -117,15 +117,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         'prefix' => $prefix,
     ] + $colors;
     if ($issuer['name'] === '' || $issuer['total_label'] === '') {
-        app_flash('Le nom de l’association et le libellé du total sont obligatoires.', 'error');
+        app_flash(__('nom_lassociation_libelle_total_sont_obligatoires'), 'error');
         app_redirect('logistics-settings.php');
     }
     if (in_array(null, $colors, true)) {
-        app_flash('Choisissez des couleurs valides.', 'error');
+        app_flash(__('choisissez_couleurs_valides_phrase'), 'error');
         app_redirect('logistics-settings.php');
     }
     if ($prefix !== '' && preg_match('/^[A-Za-z0-9]+$/', $prefix) !== 1) {
-        app_flash('Le préfixe de numérotation ne peut contenir que des lettres et des chiffres.', 'error');
+        app_flash(__('prefixe_numerotation_peut_contenir_lettres_chiffres'), 'error');
         app_redirect('logistics-settings.php');
     }
     try {
@@ -149,7 +149,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($obsoleteLogo !== null && !in_array($obsoleteLogo, app_published_quote_logos(), true)) {
         app_delete_upload($obsoleteLogo);
     }
-    app_flash('Les paramètres des devis ont été enregistrés.');
+    app_flash(__('parametres_devis_ont_ete_enregistres_phrase'));
     app_redirect('logistics-settings.php');
 }
 
@@ -161,20 +161,20 @@ app_header('Paramètres des devis', $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> LOGISTIQUE</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('logistique_majuscules')) ?></p>
           <?php app_page_links([['Logistique', 'logistics.php'], ['Configuration', 'settings.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Paramètres des devis<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('parametres_devis')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('documents', 'logistics-settings.php', $user); ?>
 
-        <nav class="detail-tabs" aria-label="Paramètres des devis">
-          <a class="detail-tab" href="logistics-settings.php"<?= $tab === 'mise-en-page' ? ' aria-current="page"' : '' ?>>Mise en page</a>
-          <a class="detail-tab" href="<?= app_escape($flowUrl) ?>"<?= $tab === 'flux' ? ' aria-current="page"' : '' ?>>Flux de travail</a>
-          <a class="detail-tab" href="<?= app_escape($formulasUrl) ?>"<?= $tab === 'formules' ? ' aria-current="page"' : '' ?>>Formules <span class="count-badge"><?= count(app_logistics_formulas()) ?></span></a>
+        <nav class="detail-tabs" aria-label="<?= app_escape(__('parametres_devis')) ?>">
+          <a class="detail-tab" href="logistics-settings.php"<?= $tab === 'mise-en-page' ? ' aria-current="page"' : '' ?>><?= app_escape(__('mise_page')) ?></a>
+          <a class="detail-tab" href="<?= app_escape($flowUrl) ?>"<?= $tab === 'flux' ? ' aria-current="page"' : '' ?>><?= app_escape(__('flux_travail')) ?></a>
+          <a class="detail-tab" href="<?= app_escape($formulasUrl) ?>"<?= $tab === 'formules' ? ' aria-current="page"' : '' ?>><?= app_escape(__('formules')) ?> <span class="count-badge"><?= count(app_logistics_formulas()) ?></span></a>
         </nav>
 
         <?php if ($tab === 'formules'): ?>
@@ -194,18 +194,18 @@ app_header('Paramètres des devis', $user);
             }
         ?>
         <section class="management-panel detail-panel has-tabs" aria-labelledby="formulas-title">
-          <h2 class="detail-heading" id="formulas-title">Formules</h2>
-          <p class="muted-copy">La formule décrit ce que le groupe propose pour une date (par exemple « Bagad seul », « Bagad et Cercle », « Cercle seul »). Elle se choisit dans l’onglet Cachet de chaque date de la Logistique, et le Rapport additionne les cachets par formule. Supprimer une formule la retire des dates qui l’utilisaient.</p>
+          <h2 class="detail-heading" id="formulas-title"><?= app_escape(__('formules')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('formule_decrit_ce_groupe_propose_date')) ?></p>
           <form method="post" action="logistics-settings.php">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <div class="log-scroll">
               <table class="log-table logistics-statuses-table">
                 <thead>
                   <tr>
-                    <th scope="col">Position</th>
-                    <th scope="col">Formule</th>
-                    <th scope="col">Dates</th>
-                    <th scope="col">Supprimer</th>
+                    <th scope="col"><?= app_escape(__('position')) ?></th>
+                    <th scope="col"><?= app_escape(__('formule')) ?></th>
+                    <th scope="col"><?= app_escape(__('dates')) ?></th>
+                    <th scope="col"><?= app_escape(__('supprimer')) ?></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -213,18 +213,18 @@ app_header('Paramètres des devis', $user);
                   <tr<?= $row === null ? ' class="is-new-row"' : '' ?>>
                     <td>
                       <input type="hidden" name="formulas[<?= $index ?>][key]" value="<?= app_escape($row['key'] ?? '') ?>">
-                      <input class="logistics-position" name="formulas[<?= $index ?>][position]" type="number" step="1" min="1" max="999" aria-label="Position" value="<?= $row !== null ? ($index + 1) * 10 : '' ?>" placeholder="<?= $row === null ? 'Pos.' : '' ?>">
+                      <input class="logistics-position" name="formulas[<?= $index ?>][position]" type="number" step="1" min="1" max="999" aria-label="<?= app_escape(__('position')) ?>" value="<?= $row !== null ? ($index + 1) * 10 : '' ?>" placeholder="<?= $row === null ? 'Pos.' : '' ?>">
                     </td>
-                    <td><input name="formulas[<?= $index ?>][label]" maxlength="60" aria-label="Formule" value="<?= app_escape($row['label'] ?? '') ?>"<?= $row === null ? ' placeholder="Nouvelle formule"' : '' ?>></td>
+                    <td><input name="formulas[<?= $index ?>][label]" maxlength="60" aria-label="<?= app_escape(__('formule')) ?>" value="<?= app_escape($row['label'] ?? '') ?>"<?= $row === null ? ' placeholder="Nouvelle formule"' : '' ?>></td>
                     <td><?= $row !== null ? ($formulaUsage[$row['key']] ?? 0) : '' ?></td>
-                    <td><?php if ($row !== null): ?><label class="active-toggle"><input type="checkbox" name="formulas[<?= $index ?>][delete]" value="1"> <span class="sr-only">Supprimer</span></label><?php endif; ?></td>
+                    <td><?php if ($row !== null): ?><label class="active-toggle"><input type="checkbox" name="formulas[<?= $index ?>][delete]" value="1"> <span class="sr-only"><?= app_escape(__('supprimer')) ?></span></label><?php endif; ?></td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>
               </table>
             </div>
-            <p class="field-help">Positions de 10 en 10 : une position intermédiaire (25) insère une formule entre deux autres. Les lignes vides sont ignorées ; enregistrez pour obtenir de nouvelles lignes.</p>
-            <div class="form-actions"><button class="primary-button" type="submit" name="action" value="save_formulas">Enregistrer les formules</button></div>
+            <p class="field-help"><?= app_escape(__('positions_10_10_position_intermediaire_25_insere_formule')) ?></p>
+            <div class="form-actions"><button class="primary-button" type="submit" name="action" value="save_formulas"><?= app_escape(__('enregistrer_formules')) ?></button></div>
           </form>
         </section>
         <?php elseif ($tab === 'flux'): ?>
@@ -243,26 +243,26 @@ app_header('Paramètres des devis', $user);
             }
         ?>
         <section class="management-panel detail-panel has-tabs" aria-labelledby="quote-flow-title">
-          <h2 class="detail-heading" id="quote-flow-title">Flux de travail des devis organisateurs</h2>
-          <p class="muted-copy">Un devis naît en brouillon ; « Publier le lien » le fait passer à un statut publié (lien public, devis figé) et « Retirer le lien » le ramène en brouillon. Le panneau Suivi du devis enregistre ensuite la réponse de l’organisateur : refusé ou validé (compté dans les totaux acceptés).</p>
+          <h2 class="detail-heading" id="quote-flow-title"><?= app_escape(__('flux_travail_devis_organisateurs')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('devis_nait_brouillon_publier_lien_fait')) ?></p>
           <?php app_render_quote_workflow(); ?>
         </section>
 
         <section class="management-panel" aria-labelledby="quote-statuses-title">
-          <h2 class="detail-heading" id="quote-statuses-title">Statuts des devis</h2>
-          <p class="muted-copy">Renommez, réordonnez, ajoutez ou supprimez des statuts. Le <strong>comportement</strong> de chaque statut décide de ce qu’il permet ; chaque comportement garde au moins un statut. Le statut « par défaut » d’un comportement est celui donné automatiquement (création, publication, retrait du lien) ; un devis dont le statut est supprimé reprend celui-ci.</p>
+          <h2 class="detail-heading" id="quote-statuses-title"><?= app_escape(__('statuts_devis')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('renommez_reordonnez_ajoutez_supprimez_statuts')) ?> <strong><?= app_escape(__('comportement_minuscule')) ?></strong> <?= app_escape(__('chaque_statut_decide_ce_quil_permet')) ?></p>
           <form method="post" action="logistics-settings.php">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <div class="log-scroll">
               <table class="log-table logistics-statuses-table">
                 <thead>
                   <tr>
-                    <th scope="col">Position</th>
-                    <th scope="col">Statut</th>
-                    <th scope="col">Comportement</th>
-                    <th scope="col">Par défaut</th>
-                    <th scope="col">Devis</th>
-                    <th scope="col">Supprimer</th>
+                    <th scope="col"><?= app_escape(__('position')) ?></th>
+                    <th scope="col"><?= app_escape(__('statut')) ?></th>
+                    <th scope="col"><?= app_escape(__('comportement')) ?></th>
+                    <th scope="col"><?= app_escape(__('defaut')) ?></th>
+                    <th scope="col"><?= app_escape(__('devis')) ?></th>
+                    <th scope="col"><?= app_escape(__('supprimer')) ?></th>
                   </tr>
                 </thead>
                 <tbody>
@@ -270,30 +270,30 @@ app_header('Paramètres des devis', $user);
                   <tr<?= $row === null ? ' class="is-new-row"' : '' ?>>
                     <td>
                       <input type="hidden" name="statuses[<?= $index ?>][key]" value="<?= app_escape($row['key'] ?? '') ?>">
-                      <input class="logistics-position" name="statuses[<?= $index ?>][position]" type="number" step="1" min="1" max="99" aria-label="Position" value="<?= $row !== null ? ($index + 1) * 10 : '' ?>" placeholder="<?= $row === null ? 'Pos.' : '' ?>">
+                      <input class="logistics-position" name="statuses[<?= $index ?>][position]" type="number" step="1" min="1" max="99" aria-label="<?= app_escape(__('position')) ?>" value="<?= $row !== null ? ($index + 1) * 10 : '' ?>" placeholder="<?= $row === null ? 'Pos.' : '' ?>">
                     </td>
-                    <td><input name="statuses[<?= $index ?>][label]" maxlength="40" aria-label="Statut" value="<?= app_escape($row['label'] ?? '') ?>"<?= $row === null ? ' placeholder="Nouveau statut"' : '' ?>></td>
+                    <td><input name="statuses[<?= $index ?>][label]" maxlength="40" aria-label="<?= app_escape(__('statut')) ?>" value="<?= app_escape($row['label'] ?? '') ?>"<?= $row === null ? ' placeholder="Nouveau statut"' : '' ?>></td>
                     <td>
-                      <select name="statuses[<?= $index ?>][type]" aria-label="Comportement">
+                      <select name="statuses[<?= $index ?>][type]" aria-label="<?= app_escape(__('comportement')) ?>">
                         <?php if ($row === null): ?><option value="">—</option><?php endif; ?>
                         <?php foreach (QUOTE_STATUS_TYPES as $type => $typeLabel): ?>
-                        <option value="<?= $type ?>"<?= ($row['type'] ?? '') === $type ? ' selected' : '' ?>><?= app_escape($typeLabel) ?></option>
+                        <option value="<?= $type ?>"<?= ($row['type'] ?? '') === $type ? ' selected' : '' ?>><?= app_escape(app_label($typeLabel)) ?></option>
                         <?php endforeach; ?>
                       </select>
                     </td>
-                    <td><label class="active-toggle"><input type="checkbox" name="statuses[<?= $index ?>][default]" value="1"<?= ($row['default'] ?? false) ? ' checked' : '' ?>> <span class="sr-only">Par défaut</span></label></td>
+                    <td><label class="active-toggle"><input type="checkbox" name="statuses[<?= $index ?>][default]" value="1"<?= ($row['default'] ?? false) ? ' checked' : '' ?>> <span class="sr-only"><?= app_escape(__('defaut')) ?></span></label></td>
                     <td><?= $row !== null ? ($usage[$row['key']] ?? 0) : '' ?></td>
-                    <td><?php if ($row !== null): ?><label class="active-toggle"><input type="checkbox" name="statuses[<?= $index ?>][delete]" value="1"> <span class="sr-only">Supprimer</span></label><?php endif; ?></td>
+                    <td><?php if ($row !== null): ?><label class="active-toggle"><input type="checkbox" name="statuses[<?= $index ?>][delete]" value="1"> <span class="sr-only"><?= app_escape(__('supprimer')) ?></span></label><?php endif; ?></td>
                   </tr>
                   <?php endforeach; ?>
                 </tbody>
               </table>
             </div>
-            <p class="field-help">Positions de 10 en 10 : une position intermédiaire (25) insère un statut entre deux autres. Les lignes vides sont ignorées.</p>
+            <p class="field-help"><?= app_escape(__('positions_10_10_position_intermediaire_25')) ?></p>
             <div class="form-actions">
-              <button class="primary-button" type="submit" name="action" value="save_statuses">Enregistrer les statuts</button>
+              <button class="primary-button" type="submit" name="action" value="save_statuses"><?= app_escape(__('enregistrer_statuts')) ?></button>
               <?php if (app_quote_stored_statuses() !== null): ?>
-              <button class="secondary-button" type="submit" name="action" value="reset_statuses" onclick="return confirm('Rétablir les statuts d’origine (Brouillon, Publié, Refusé, Validé) ?');">Rétablir les statuts d’origine</button>
+              <button class="secondary-button" type="submit" name="action" value="reset_statuses" onclick="return confirm(<?= app_escape(json_encode(__('retablir_statuts_dorigine_brouillon_publie_refuse'), JSON_UNESCAPED_UNICODE)) ?>);"><?= app_escape(__('retablir_statuts_dorigine')) ?></button>
               <?php endif; ?>
             </div>
           </form>
@@ -303,88 +303,88 @@ app_header('Paramètres des devis', $user);
           <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
 
           <section class="management-panel" aria-labelledby="quote-logo-title">
-            <h2 class="detail-heading" id="quote-logo-title">Logo</h2>
-            <p class="muted-copy">Imprimé en haut à droite de chaque devis (80 px de haut au plus). Une image au fond transparent rend le mieux.</p>
+            <h2 class="detail-heading" id="quote-logo-title"><?= app_escape(__('logo')) ?></h2>
+            <p class="muted-copy"><?= app_escape(__('imprime_haut_droite_chaque_devis_80')) ?></p>
             <div class="qr-settings-layout">
               <figure class="qr-preview site-logo-preview">
                 <?php if ($issuer['logo'] !== null): ?>
-                <img src="quote-logo.php?v=<?= app_escape($issuer['logo']) ?>" alt="Logo actuel des devis">
+                <img src="quote-logo.php?v=<?= app_escape($issuer['logo']) ?>" alt="<?= app_escape(__('logo_actuel_devis')) ?>">
                 <?php else: ?>
                 <span class="site-logo-empty" aria-hidden="true">—</span>
                 <?php endif; ?>
-                <figcaption><?= $issuer['logo'] !== null ? 'Logo actuel' : 'Aucun logo' ?></figcaption>
+                <figcaption><?= app_escape($issuer['logo'] !== null ? __('logo_actuel') : __('aucun_logo')) ?></figcaption>
               </figure>
               <div class="form-stack">
-                <label for="quote-logo">Nouveau logo (PNG, JPEG, GIF ou WebP, 2 Mo maximum)</label>
+                <label for="quote-logo"><?= app_escape(__('nouveau_logo_png_jpeg_gif_webp')) ?></label>
                 <input id="quote-logo" name="logo" type="file" accept="image/png,image/jpeg,image/gif,image/webp">
                 <?php if ($issuer['logo'] !== null): ?>
-                <label class="active-toggle"><input type="checkbox" name="logo_reset" value="1"> Retirer ce logo</label>
+                <label class="active-toggle"><input type="checkbox" name="logo_reset" value="1"> <?= app_escape(__('retirer_ce_logo')) ?></label>
                 <?php endif; ?>
               </div>
             </div>
           </section>
 
           <section class="management-panel" aria-labelledby="issuer-title">
-            <h2 class="detail-heading" id="issuer-title">Association</h2>
-            <p class="muted-copy">Imprimée en haut à gauche de chaque devis.</p>
+            <h2 class="detail-heading" id="issuer-title"><?= app_escape(__('association')) ?></h2>
+            <p class="muted-copy"><?= app_escape(__('imprimee_haut_gauche_chaque_devis_phrase')) ?></p>
             <div class="form-grid align-top">
               <div class="form-stack">
-                <label for="issuer-name">Nom</label>
+                <label for="issuer-name"><?= app_escape(__('nom')) ?></label>
                 <input id="issuer-name" name="name" maxlength="120" required value="<?= app_escape($issuer['name']) ?>">
-                <label for="issuer-address">Adresse</label>
+                <label for="issuer-address"><?= app_escape(__('adresse')) ?></label>
                 <textarea id="issuer-address" name="address" rows="4" maxlength="400"><?= app_escape($issuer['address']) ?></textarea>
               </div>
               <div class="form-stack">
-                <label for="issuer-email">E-mail (facultatif)</label>
+                <label for="issuer-email"><?= app_escape(__('e_mail_facultatif')) ?></label>
                 <input id="issuer-email" name="email" type="email" maxlength="120" value="<?= app_escape($issuer['email']) ?>">
-                <label for="issuer-phone">Téléphone (facultatif)</label>
+                <label for="issuer-phone"><?= app_escape(__('telephone_facultatif')) ?></label>
                 <input id="issuer-phone" name="phone" maxlength="40" value="<?= app_escape($issuer['phone']) ?>">
               </div>
             </div>
           </section>
 
           <section class="management-panel" aria-labelledby="footer-title">
-            <h2 class="detail-heading" id="footer-title">Contenu par défaut et pied de page</h2>
+            <h2 class="detail-heading" id="footer-title"><?= app_escape(__('contenu_defaut_pied_page')) ?></h2>
             <div class="form-grid align-top">
               <div class="form-stack">
-                <label for="issuer-conditions">Remarques par défaut</label>
+                <label for="issuer-conditions"><?= app_escape(__('remarques_defaut')) ?></label>
                 <textarea id="issuer-conditions" name="conditions" rows="7" maxlength="2000"><?= app_escape($issuer['conditions']) ?></textarea>
-                <p class="field-help">Une remarque par ligne ; chacune est précédée d’une puce sur le devis. Modifiables sur chaque devis.</p>
+                <p class="field-help"><?= app_escape(__('remarque_ligne_chacune_precedee_dune_puce')) ?></p>
               </div>
               <div class="form-stack">
-                <label for="issuer-due">Date d’échéance par défaut</label>
+                <label for="issuer-due"><?= app_escape(__('date_decheance_defaut')) ?></label>
                 <input id="issuer-due" name="due" maxlength="80" value="<?= app_escape($issuer['due']) ?>">
-                <label for="issuer-total-label">Libellé du total</label>
+                <label for="issuer-total-label"><?= app_escape(__('libelle_total')) ?></label>
                 <input id="issuer-total-label" name="total_label" maxlength="30" required value="<?= app_escape($issuer['total_label']) ?>">
-                <label for="issuer-footer">Pied de page</label>
+                <label for="issuer-footer"><?= app_escape(__('pied_page')) ?></label>
                 <textarea id="issuer-footer" name="footer" rows="3" maxlength="400"><?= app_escape($issuer['footer']) ?></textarea>
-                <p class="field-help">Centré en bas du devis : statut de l’association, SIRET, mention de TVA…</p>
+                <p class="field-help"><?= app_escape(__('centre_bas_devis_statut_lassociation_siret')) ?></p>
               </div>
             </div>
           </section>
 
           <section class="management-panel" aria-labelledby="look-title">
-            <h2 class="detail-heading" id="look-title">Couleurs et numérotation</h2>
+            <h2 class="detail-heading" id="look-title"><?= app_escape(__('couleurs_numerotation')) ?></h2>
             <div class="form-grid logistics-quote-grid">
               <div class="form-stack">
-                <label for="issuer-title-color">Couleur du titre « Devis »</label>
+                <label for="issuer-title-color"><?= app_escape(__('couleur_titre_devis')) ?></label>
                 <input id="issuer-title-color" name="title_color" type="color" value="<?= app_escape($issuer['title_color']) ?>">
               </div>
               <div class="form-stack">
-                <label for="issuer-accent-color">Couleur de la date d’envoi</label>
+                <label for="issuer-accent-color"><?= app_escape(__('couleur_date_denvoi')) ?></label>
                 <input id="issuer-accent-color" name="accent_color" type="color" value="<?= app_escape($issuer['accent_color']) ?>">
               </div>
               <div class="form-stack">
-                <label for="issuer-prefix">Préfixe de numérotation</label>
+                <label for="issuer-prefix"><?= app_escape(__('prefixe_numerotation')) ?></label>
                 <input id="issuer-prefix" name="prefix" maxlength="10" pattern="[A-Za-z0-9]*" value="<?= app_escape($issuer['prefix']) ?>">
-                <p class="field-help">Numéros par année : <?= app_escape(($issuer['prefix'] !== '' ? $issuer['prefix'] . '-' : '') . $year . '-001') ?>, -002…</p>
+                <p class="field-help"><?= app_escape(__('numeros_annee_example_002', ['example' => ($issuer['prefix'] !== '' ? $issuer['prefix'] . '-' : '') . $year . '-001'])) ?></p>
               </div>
             </div>
           </section>
 
           <div class="form-actions">
-            <button class="primary-button" type="submit">Enregistrer</button>
-            <a class="secondary-button" href="logistics.php">Annuler</a>
+            <button class="primary-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
+            <a class="secondary-button" href="logistics.php"><?= app_escape(__('annuler')) ?></a>
           </div>
         </form>
         <?php endif; ?>

@@ -179,7 +179,7 @@ function app_user_title(array $user): string
 function app_user_role_label(array $user): string
 {
     $title = app_user_title($user);
-    return $title !== '' ? $title : (USER_ROLES[$user['role'] ?? ''] ?? 'Utilisateur');
+    return $title !== '' ? $title : (app_roles()[$user['role'] ?? ''] ?? 'Utilisateur');
 }
 
 // "Responsable de section": the member listed first in a sub-section (one per sub-section),
@@ -749,12 +749,21 @@ const DEFAULT_SITE_TAGLINE = 'L’agenda Kerlenn Pondi';
 // code, as the licence requires for a network service. "source_url" in config.json points to the
 // code of this installation (a modified version must publish its own).
 const DEIZI_SOURCE_URL = 'https://github.com/YoannLeGoff/Deizi';
+// Version of the application, shown on the About page; its release notes are in releases/ and on
+// the releases page of the source code.
+const DEIZI_VERSION = '1.1.0';
 const DEIZI_LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
 
 function app_source_url(): string
 {
     $url = app_config()['source_url'] ?? null;
     return is_string($url) && preg_match('#^https?://\S+$#', trim($url)) === 1 ? trim($url) : DEIZI_SOURCE_URL;
+}
+
+// Release notes of the versions: the releases page of the source code (GitHub).
+function app_releases_url(): string
+{
+    return rtrim(app_source_url(), '/') . '/releases';
 }
 // Configurable logos: key in the "site" settings => label used by the console.
 const SITE_LOGOS = ['logo' => 'Logo de l’en-tête', 'login_logo' => 'Logo de la page de connexion', 'app_icon' => 'Icône de l’application (téléphone)'];
@@ -841,7 +850,9 @@ function app_site_nickname(): string
 
 function app_data_path(string $filename): string
 {
-    if (!in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json'], true)) {
+    // Texts corrected in Configuration > Langues: one file per language.
+    $isTranslations = preg_match('/^translations-[a-z]{2,3}(-[a-z0-9]{2,8})?\.json$/', $filename) === 1;
+    if (!$isTranslations && !in_array($filename, ['events.json', 'users.json', 'login_attempts.json', 'attendance_log.jsonl', 'settings.json', 'sections.json', 'calendar.json', 'seen.json', 'logistics.json', 'remember.json', 'push.json', 'announcements.json'], true)) {
         throw new InvalidArgumentException('Nom de fichier de données non autorisé.');
     }
 
@@ -972,9 +983,10 @@ function app_event_log_value(array $event, string $field): string
 {
     $value = $event[$field] ?? null;
     return match ($field) {
-        'status' => EVENT_STATUSES[is_string($value) && isset(EVENT_STATUSES[$value]) ? $value : 'pending'],
+        // The journal records the status code (shown with its current label) and yes/no in English.
+        'status' => is_string($value) && isset(EVENT_STATUSES[$value]) ? $value : 'pending',
         'date', 'end_date' => ($date = app_parse_date($value)) !== null ? $date->format('d/m/Y') : '',
-        'all_day', 'tutti', 'reserved', 'roadmap_disabled' => $value === true ? 'Oui' : 'Non',
+        'all_day', 'tutti', 'reserved', 'roadmap_disabled' => app_in_english(LOG_YES_NO[$value === true ? 1 : 0]),
         'sections' => implode(', ', array_map(
             static fn (string $section): string => app_section_labels()[$section] ?? $section,
             app_section_display_items(is_array($value) ? array_filter($value, 'is_string') : [])
@@ -1089,7 +1101,7 @@ function app_account_log_change_text(array $entry): string
     if (str_starts_with((string) ($entry['action'] ?? ''), 'photo_')) {
         return '';
     }
-    $value = static fn (mixed $text): string => is_string($text) && $text !== '' ? $text : '(vide)';
+    $value = static fn (mixed $text): string => is_string($text) && $text !== '' ? $text : __('vide_parentheses');
     return $value($entry['from'] ?? '') . ' → ' . $value($entry['to'] ?? '');
 }
 
@@ -1098,15 +1110,20 @@ function app_event_log_changes_text(array $entry): string
 {
     $parts = [];
     foreach (is_array($entry['changes'] ?? null) ? $entry['changes'] : [] as $change) {
-        $label = EVENT_LOG_FIELDS[$change['field'] ?? ''] ?? null;
-        if ($label === null) {
+        $field = (string) ($change['field'] ?? '');
+        if (!isset(EVENT_LOG_FIELDS[$field])) {
             continue;
         }
+        $label = app_label(EVENT_LOG_FIELDS[$field]);
         $parts[] = array_key_exists('from', $change)
-            ? $label . ' : ' . (($change['from'] ?? '') !== '' ? $change['from'] : '—') . ' → ' . (($change['to'] ?? '') !== '' ? $change['to'] : '—')
-            : $label . ' modifié' . ($label === 'Feuille de route' ? 'e' : '');
+            ? __('field_from_to', [
+                'field' => $label,
+                'from' => ($change['from'] ?? '') !== '' ? app_journal_value($field, (string) $change['from']) : '—',
+                'to' => ($change['to'] ?? '') !== '' ? app_journal_value($field, (string) $change['to']) : '—',
+            ])
+            : ($field === 'roadmap' ? __('field_modifiee', ['field' => $label]) : __('field_modifie', ['field' => $label]));
     }
-    return implode(' ; ', $parts);
+    return implode(__('separateur_liste'), $parts);
 }
 
 function app_attendance_log_entry(array $event, array $member, mixed $previous, string $response, array $author, string $source, ?array $impersonator = null): array
@@ -1229,7 +1246,8 @@ function app_attendance_log_read(bool $withEventChanges = false): array
 function app_format_log_time(string $at): string
 {
     try {
-        return (new DateTimeImmutable($at))->setTimezone(new DateTimeZone('Europe/Paris'))->format('d/m/Y à H:i');
+        $time = (new DateTimeImmutable($at))->setTimezone(new DateTimeZone('Europe/Paris'));
+        return __('date_time', ['date' => $time->format('d/m/Y'), 'time' => $time->format('H:i')]);
     } catch (Exception) {
         return $at;
     }
@@ -1327,7 +1345,7 @@ function app_event_time_range(array $event): string
     $start = is_string($event['time'] ?? null) ? trim($event['time']) : '';
     $end = app_event_end_time($event);
     if ($start === '') {
-        return $end !== '' ? 'Jusqu’à ' . $end : '';
+        return $end !== '' ? __('jusqua_time', ['time' => $end]) : '';
     }
     return $end !== '' ? $start . ' – ' . $end : $start;
 }
@@ -1336,9 +1354,9 @@ function app_attendance_response_label(mixed $response): string
 {
     if ($response === ATTENDANCE_NO_RESPONSE) {
         // Answer withdrawn by a manager in the attendance matrix.
-        return ATTENDANCE_NO_RESPONSE_LABEL;
+        return app_no_response_label();
     }
-    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? ATTENDANCE_RESPONSES[$response] : 'Aucune réponse';
+    return is_string($response) && isset(ATTENDANCE_RESPONSES[$response]) ? app_attendance_responses()[$response] : __('aucune_reponse');
 }
 
 function app_render_attendance_log_table(array $entries, bool $withEvent, array $existingEventIds = []): void
@@ -1348,11 +1366,11 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
             <table class="log-table">
               <thead>
                 <tr>
-                  <th scope="col">Le</th>
-                  <?php if ($withEvent): ?><th scope="col">Date concernée</th><?php endif; ?>
-                  <th scope="col">Membre</th>
-                  <th scope="col">Action</th>
-                  <th scope="col">Par</th>
+                  <th scope="col"><?= app_escape(__('le')) ?></th>
+                  <?php if ($withEvent): ?><th scope="col"><?= app_escape(__('date_concernee')) ?></th><?php endif; ?>
+                  <th scope="col"><?= app_escape(__('membre')) ?></th>
+                  <th scope="col"><?= app_escape(__('action')) ?></th>
+                  <th scope="col"><?= app_escape(__('par')) ?></th>
                 </tr>
               </thead>
               <tbody>
@@ -1373,29 +1391,29 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
                     <?php else: ?>
                     <strong><?= app_escape((string) ($entry['event_title'] ?? '')) ?></strong>
                     <?php endif; ?>
-                    <span class="log-sub"><?= $eventDate !== null ? app_escape($eventDate->format('d/m/Y')) : '' ?><?= $eventExists ? '' : ' · date supprimée' ?></span>
+                    <span class="log-sub"><?= $eventDate !== null ? app_escape($eventDate->format('d/m/Y')) : '' ?><?= $eventExists ? '' : ' · ' . app_escape(__('date_supprimee')) ?></span>
                   </td>
                   <?php endif; ?>
                   <?php if (app_is_login_log_entry($entry)): ?>
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(LOGIN_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(app_label(LOGIN_LOG_ACTIONS[$entry['action']])) ?></span>
                   </td>
                   <?php elseif (app_is_account_log_entry($entry)): ?>
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-rename"><?= app_escape(ACCOUNT_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-rename"><?= app_escape(app_label(ACCOUNT_LOG_ACTIONS[$entry['action']])) ?></span>
                     <?php if (app_account_log_change_text($entry) !== ''): ?>
                     <span class="log-sub"><?= app_escape(app_account_log_change_text($entry)) ?></span>
                     <?php endif; ?>
                     <?php if (($entry['by_id'] ?? '') !== ($entry['member_id'] ?? '')): ?>
-                    <span class="log-sub">par <?= app_escape((string) ($entry['by'] ?? '')) ?></span>
+                    <span class="log-sub"><?= app_escape(__('par_name', ['name' => (string) ($entry['by'] ?? '')])) ?></span>
                     <?php endif; ?>
                   </td>
                   <?php elseif (app_is_event_log_entry($entry)): ?>
                   <td><span class="log-sub">—</span></td>
                   <td class="log-change log-event-change">
-                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(EVENT_LOG_ACTIONS[$entry['action']]) ?></span>
+                    <span class="log-action log-action-<?= app_escape($entry['action']) ?>"><?= app_escape(app_label(EVENT_LOG_ACTIONS[$entry['action']])) ?></span>
                     <?php if (app_event_log_changes_text($entry) !== ''): ?>
                     <span class="log-sub"><?= app_escape(app_event_log_changes_text($entry)) ?></span>
                     <?php endif; ?>
@@ -1404,13 +1422,13 @@ function app_render_attendance_log_table(array $entries, bool $withEvent, array 
                   <td><?= app_escape((string) ($entry['member'] ?? '')) ?></td>
                   <td class="log-change">
                     <span class="log-response log-response-<?= app_escape($previous) ?>"><?= app_escape(app_attendance_response_label($entry['previous'] ?? null)) ?></span>
-                    <span aria-label="devient">→</span>
+                    <span aria-label="<?= app_escape(__('devient')) ?>">→</span>
                     <span class="log-response log-response-<?= app_escape($entry['response']) ?>"><?= app_escape(app_attendance_response_label($entry['response'])) ?></span>
                   </td>
                   <?php endif; ?>
                   <td>
                     <?= app_escape((string) ($entry['by'] ?? '')) ?>
-                    <span class="log-sub"><?= app_escape(ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? '') ?></span>
+                    <span class="log-sub"><?= app_escape(app_label(ATTENDANCE_LOG_SOURCES[$entry['source'] ?? ''] ?? '')) ?></span>
                   </td>
                 </tr>
                 <?php endforeach; ?>
@@ -1696,12 +1714,12 @@ function app_header(string $title, ?array $user = null): void
     header('Referrer-Policy: same-origin');
     $identity = app_site_identity();
     $siteTitle = $identity['title'];
-    $pageTitle = $title === '' ? $siteTitle : $title . ' — ' . $siteTitle;
+    $pageTitle = $title === '' ? $siteTitle : app_label($title) . ' — ' . $siteTitle;
     $flash = app_take_flash();
     $impersonator = $user !== null ? app_impersonator() : null;
     ?>
 <!doctype html>
-<html lang="fr">
+<html lang="<?= app_escape(app_locale()) ?>">
   <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
@@ -1728,20 +1746,23 @@ function app_header(string $title, ?array $user = null): void
     <?php if (($statusColorsCss = app_status_colors_css()) !== ''): ?>
     <style><?= $statusColorsCss ?></style>
     <?php endif; ?>
+    <?php // Texts of the scripts in the language of the page (French when absent). ?>
+    <?php if (($jsTranslations = app_js_translations()) !== []): ?>
+    <script type="application/json" id="deizi-i18n"><?= json_encode($jsTranslations, JSON_UNESCAPED_UNICODE | JSON_HEX_TAG | JSON_HEX_AMP) ?></script>
+    <?php endif; ?>
     <script src="<?= app_escape(app_asset_url('menu.js')) ?>" defer></script>
   </head>
   <body>
     <?php if ($impersonator !== null): ?>
     <div class="impersonation-banner" role="status">
       <p>
-        <strong><?= app_escape((string) $impersonator['username']) ?></strong> agit en tant que
-        <strong><?= app_escape((string) $user['username']) ?></strong> (<?= app_escape(USER_ROLES[$user['role']] ?? '') ?>).
-        Les réponses saisies sont enregistrées au nom de « <?= app_escape($user['username'] . '-i-' . $impersonator['username']) ?> ».
+        <?= __('admin_agit_tant_member_role_phrase', ['admin' => '<strong>' . app_escape((string) $impersonator['username']) . '</strong>', 'member' => '<strong>' . app_escape((string) $user['username']) . '</strong>', 'role' => app_escape(__(app_roles()[$user['role']] ?? ''))]) ?>
+        <?= app_escape(__('reponses_saisies_sont_enregistrees_nom_name', ['name' => $user['username'] . '-i-' . $impersonator['username']])) ?>
       </p>
       <form method="post" action="impersonate-action.php">
         <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
         <input type="hidden" name="action" value="stop">
-        <button class="impersonation-stop" type="submit">Revenir à mon compte</button>
+        <button class="impersonation-stop" type="submit"><?= app_escape(__('revenir_mon_compte')) ?></button>
       </form>
     </div>
     <?php endif; ?>
@@ -1750,7 +1771,7 @@ function app_header(string $title, ?array $user = null): void
       <?php if (app_current_user() !== null): ?>
       <?php if ($user !== null): ?>
       <?php // Large screens: the connected account sits in a band above the menu, aligned right. ?>
-      <div class="session-bar"><a href="account.php" title="Mon compte"><?= app_escape((string) $user['username']) ?></a> · <?= app_escape(app_user_role_label($user)) ?></div>
+      <div class="session-bar"><a href="account.php" title="<?= app_escape(__('mon_compte')) ?>"><?= app_escape((string) $user['username']) ?></a> · <?= app_escape(app_user_role_label($user)) ?></div>
       <?php endif; ?>
       <div class="app-brand">
         <a class="brand" href="index.php" aria-label="<?= app_escape($siteTitle) ?>">
@@ -1775,23 +1796,23 @@ function app_header(string $title, ?array $user = null): void
         $noticeReturn = app_safe_return_path(basename((string) ($_SERVER['SCRIPT_NAME'] ?? '')) . (($_SERVER['QUERY_STRING'] ?? '') !== '' ? '?' . $_SERVER['QUERY_STRING'] : ''));
         ?>
         <details class="notice-menu" data-unread-count="<?= $unreadCount ?>">
-          <summary class="notice-toggle" aria-label="<?= app_escape($unreadCount === 0 ? 'Aucune nouveauté' : ($unreadCount === 1 ? '1 date nouvelle ou modifiée' : $unreadCount . ' dates nouvelles ou modifiées')) ?>">
+          <summary class="notice-toggle" aria-label="<?= app_escape($unreadCount === 0 ? __('aucune_nouveaute') : __n('date_nouvelle_modifiee', 'dates_nouvelles_modifiees', $unreadCount)) ?>">
             <svg viewBox="0 0 24 24" width="22" height="22" aria-hidden="true"><path d="M12 3a6 6 0 0 0-6 6v3.6L4.3 15.4A1 1 0 0 0 5.2 17h13.6a1 1 0 0 0 .9-1.6L18 12.6V9a6 6 0 0 0-6-6Z" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linejoin="round"/><path d="M9.5 19.5a2.6 2.6 0 0 0 5 0" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/></svg>
             <?php if ($unreadCount > 0): ?><span class="notice-count" aria-hidden="true"><?= $unreadCount > 99 ? '99+' : $unreadCount ?></span><?php endif; ?>
           </summary>
           <div class="notice-panel">
-            <p class="notice-heading">Nouveautés</p>
+            <p class="notice-heading"><?= app_escape(__('nouveautes')) ?></p>
             <?php if ($unreadEvents === []): ?>
-            <p class="notice-empty">Aucune date nouvelle ou modifiée depuis votre dernière consultation.</p>
+            <p class="notice-empty"><?= app_escape(__('aucune_date_nouvelle_modifiee_depuis_votre')) ?></p>
             <?php else: ?>
             <ul class="notice-list">
               <?php foreach (array_slice($unreadEvents, 0, 20) as $item): ?>
               <?php $noticeDate = app_parse_date($item['event']['date'] ?? null); ?>
               <li>
                 <a href="event.php?id=<?= rawurlencode((string) $item['event']['id']) ?>">
-                  <span class="notice-kind <?= $item['notice']['type'] === 'new' ? 'is-new' : 'is-changed' ?>"><?= $item['notice']['type'] === 'new' ? 'Nouveau' : 'Modifié' ?></span>
+                  <span class="notice-kind <?= $item['notice']['type'] === 'new' ? 'is-new' : 'is-changed' ?>"><?= app_escape($item['notice']['type'] === 'new' ? __('nouveau') : __('modifie')) ?></span>
                   <strong><?= app_escape((string) ($item['event']['title'] ?? '')) ?></strong>
-                  <span class="notice-meta"><?= $noticeDate !== null ? app_escape($noticeDate->format('d/m/Y')) : '' ?><?= $item['notice']['type'] === 'changed' ? ' · ' . app_escape(implode(', ', $item['notice']['fields'])) : '' ?></span>
+                  <span class="notice-meta"><?= $noticeDate !== null ? app_escape($noticeDate->format('d/m/Y')) : '' ?><?= $item['notice']['type'] === 'changed' ? ' · ' . app_escape(implode(', ', array_map('app_label', $item['notice']['fields']))) : '' ?></span>
                 </a>
               </li>
               <?php endforeach; ?>
@@ -1800,40 +1821,40 @@ function app_header(string $title, ?array $user = null): void
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="action" value="mark_all_seen">
               <?php if ($noticeReturn !== null): ?><input type="hidden" name="return" value="<?= app_escape($noticeReturn) ?>"><?php endif; ?>
-              <button class="text-button notice-clear" type="submit">Tout marquer comme lu</button>
+              <button class="text-button notice-clear" type="submit"><?= app_escape(__('tout_marquer_comme_lu')) ?></button>
             </form>
             <?php endif; ?>
-            <a class="notice-settings" href="updates.php#notifications">Notifications sur cet appareil</a>
+            <a class="notice-settings" href="updates.php#notifications"><?= app_escape(__('notifications_cet_appareil')) ?></a>
           </div>
         </details>
         <div class="account-menu">
-          <button class="account-menu-toggle" type="button" aria-expanded="false" aria-controls="account-navigation" aria-label="Ouvrir le menu">
+          <button class="account-menu-toggle" type="button" aria-expanded="false" aria-controls="account-navigation" aria-label="<?= app_escape(__('ouvrir_menu')) ?>">
             <span></span><span></span><span></span>
           </button>
           <?php // Large screens: icons only, the text of each entry being its alternative text and tooltip; phones: icon and text. ?>
-          <nav class="account-menu-links" id="account-navigation" aria-label="Menu du compte">
+          <nav class="account-menu-links" id="account-navigation" aria-label="<?= app_escape(__('menu_compte')) ?>">
             <span class="account-menu-user"><?= app_escape((string) $user['username']) ?> · <?= app_escape(app_user_role_label($user)) ?></span>
             <?php if (in_array($user['role'], EVENT_MANAGER_ROLES, true)): ?>
-            <?= app_menu_link('manage-events.php', 'calendar-pen', 'Gérer les dates') ?>
-            <?= app_menu_link(app_matrix_tab_url(), 'grid-check', 'Tableau de présence') ?>
+            <?= app_menu_link('manage-events.php', 'calendar-pen', __('gerer_dates')) ?>
+            <?= app_menu_link(app_matrix_tab_url(), 'grid-check', __('tableau_presence')) ?>
             <?php endif; ?>
-            <?= app_menu_link('reporting.php', 'planning', 'Vues') ?>
-            <?= app_menu_link('trombinoscope.php', 'users', 'Trombinoscope') ?>
+            <?= app_menu_link('reporting.php', 'planning', __('vues')) ?>
+            <?= app_menu_link('trombinoscope.php', 'users', __('trombinoscope')) ?>
             <?php if (app_can_publish_announcements($user)): ?>
-            <?= app_menu_link('announcements.php', 'megaphone', 'Annonces') ?>
+            <?= app_menu_link('announcements.php', 'megaphone', __('annonces')) ?>
             <?php endif; ?>
             <?php if (app_can_manage_logistics($user)): ?>
-            <?= app_menu_link('logistics.php', 'receipt-euro', 'Logistique') ?>
+            <?= app_menu_link('logistics.php', 'receipt-euro', __('logistique')) ?>
             <?php endif; ?>
             <span class="menu-separator" aria-hidden="true"></span>
-            <?= app_menu_link('updates.php#installer', 'phone-install', 'Installer l’application', 'install-menu-link', ' data-install-link') ?>
+            <?= app_menu_link('updates.php#installer', 'phone-install', __('installer_lapplication'), 'install-menu-link', ' data-install-link') ?>
             <?php if (in_array($user['role'], EVENT_MANAGER_ROLES, true)): ?>
-            <?= app_menu_link('settings.php', 'gear', 'Configuration') ?>
+            <?= app_menu_link('settings.php', 'gear', __('configuration')) ?>
             <?php endif; ?>
-            <?= app_menu_link('account.php', 'user', 'Mon compte') ?>
+            <?= app_menu_link('account.php', 'user', __('mon_compte')) ?>
             <form method="post" action="logout.php">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
-              <button class="text-button menu-icon-link menu-logout" type="submit" data-label="Se déconnecter"><?= app_menu_icon('logout') ?><span class="menu-label">Se déconnecter</span></button>
+              <button class="text-button menu-icon-link menu-logout" type="submit" data-label="<?= app_escape(__('deconnecter')) ?>"><?= app_menu_icon('logout') ?><span class="menu-label"><?= app_escape(__('deconnecter')) ?></span></button>
             </form>
           </nav>
         </div>
@@ -1842,7 +1863,7 @@ function app_header(string $title, ?array $user = null): void
       <?php endif; ?>
       <?php if ($flash !== null): ?>
       <?php $flashLink = is_array($flash['link'] ?? null) && is_string($flash['link']['url'] ?? null) && is_string($flash['link']['label'] ?? null) ? $flash['link'] : null; ?>
-      <p class="flash-message <?= app_escape((string) ($flash['kind'] ?? 'success')) ?>" role="status"><?= app_escape((string) ($flash['message'] ?? '')) ?><?php if ($flashLink !== null): ?> <a class="flash-link" href="<?= app_escape($flashLink['url']) ?>"><?= app_escape($flashLink['label']) ?> <span aria-hidden="true">→</span></a><?php endif; ?></p>
+      <p class="flash-message <?= app_escape((string) ($flash['kind'] ?? 'success')) ?>" role="status"><?= app_escape(app_label((string) ($flash['message'] ?? ''))) ?><?php if ($flashLink !== null): ?> <a class="flash-link" href="<?= app_escape($flashLink['url']) ?>"><?= app_escape(app_label($flashLink['label'])) ?> <span aria-hidden="true">→</span></a><?php endif; ?></p>
       <?php endif; ?>
 <?php
 }
@@ -1895,6 +1916,7 @@ const SETTINGS_GROUPS = [
         ['site-settings.php', 'Identité du site', ['admin']],
         ['sections-settings.php', 'Sections', ['admin']],
         ['status-settings.php', 'Statuts', ['admin']],
+        ['languages-settings.php', 'Langues', ['admin']],
     ]],
     'suivi' => ['Suivi et sécurité', 'Ce qui a été fait, par qui et quand, et les opérations définitives.', [
         ['attendance-log.php', 'Journal d’audit', ACCOUNT_MANAGER_ROLES],
@@ -1919,17 +1941,18 @@ function app_settings_nav(string $group, string $current, array $user): void
         return;
     }
     ?>
-        <nav class="settings-subnav" aria-label="<?= app_escape(SETTINGS_GROUPS[$group][0]) ?>">
-          <span class="settings-subnav-group"><?= app_escape(SETTINGS_GROUPS[$group][0]) ?></span>
+        <nav class="settings-subnav" aria-label="<?= app_escape(app_label(SETTINGS_GROUPS[$group][0])) ?>">
+          <span class="settings-subnav-group"><?= app_escape(app_label(SETTINGS_GROUPS[$group][0])) ?></span>
           <?php foreach ($pages as [$file, $name]): ?>
-          <a href="<?= app_escape($file) ?>"<?= $file === $current ? ' aria-current="page"' : '' ?>><?= app_escape($name) ?></a>
+          <a href="<?= app_escape($file) ?>"<?= $file === $current ? ' aria-current="page"' : '' ?>><?= app_escape(app_label($name)) ?></a>
           <?php endforeach; ?>
         </nav>
 <?php
 }
 
 // Navigation links shown on the right of the eyebrow line of a page, the same way on every page.
-// $links: [label, url] pairs; null entries (links reserved to some roles) are skipped.
+// $links: [label, url] pairs, labels in French (translated here); null entries (links reserved to
+// some roles) are skipped.
 function app_page_links(array $links): void
 {
     $links = array_values(array_filter($links));
@@ -1937,10 +1960,10 @@ function app_page_links(array $links): void
         return;
     }
     ?>
-          <nav class="eyebrow eyebrow-links" aria-label="Navigation">
+          <nav class="eyebrow eyebrow-links" aria-label="<?= app_escape(__('navigation')) ?>">
             <?php foreach ($links as $index => [$label, $url]): ?>
             <?php if ($index > 0): ?><span class="eyebrow-sep" aria-hidden="true">/</span><?php endif; ?>
-            <a href="<?= app_escape($url) ?>"><?= app_escape(mb_strtoupper($label)) ?></a>
+            <a href="<?= app_escape($url) ?>"><?= app_escape(mb_strtoupper(app_label($label))) ?></a>
             <?php endforeach; ?>
           </nav>
 <?php
@@ -1969,15 +1992,16 @@ function app_footer(): void
     <footer class="site-footer">
       <?php // Title and last update: logged-in users only, like the site banner (not on the login page). ?>
       <?php if (app_current_user() !== null): ?>
-      <?= app_escape(app_site_title()) ?> — Dernière mise à jour le <a href="updates.php" title="Voir les nouveautés"><?= app_files_updated_at()->format('d/m/Y') ?></a> ·
+      <?= app_escape(app_site_title()) ?> — <?= app_escape(__('derniere_mise_jour')) ?> <a href="updates.php" title="<?= app_escape(__('voir_nouveautes')) ?>"><?= app_files_updated_at()->format('d/m/Y') ?></a> ·
       <?php endif; ?>
-      Deizi, logiciel libre sous <a href="<?= app_escape(DEIZI_LICENSE_URL) ?>" target="_blank" rel="noopener license">licence AGPL</a> · <a href="<?= app_escape(app_source_url()) ?>" target="_blank" rel="noopener">code source</a>
+      <?= app_escape(__('deizi_logiciel_libre_sous')) ?> <a href="<?= app_escape(DEIZI_LICENSE_URL) ?>" target="_blank" rel="noopener license"><?= app_escape(__('licence_agpl')) ?></a> · <a href="<?= app_escape(app_source_url()) ?>" target="_blank" rel="noopener"><?= app_escape(__('code_source')) ?></a>
     </footer>
   </body>
 </html>
 <?php
 }
 
+require __DIR__ . '/i18n.php';
 require __DIR__ . '/roadmap.php';
 require __DIR__ . '/polls.php';
 require __DIR__ . '/changes.php';

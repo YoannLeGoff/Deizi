@@ -72,9 +72,9 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
             return null;
         }
         if (preg_match(SECTION_CODE_PATTERN, $value) !== 1) {
-            return 'Le code « ' . $value . ' » doit compter 1 à ' . SECTION_CODE_MAX_LENGTH . ' caractères : lettres, chiffres, point, tiret ou souligné, sans espace.';
+            return __('code_code_doit_compter_1_max', ['code' => $value, 'max' => SECTION_CODE_MAX_LENGTH]);
         }
-        return app_section_code_taken($value, $exceptId) ? 'Le code « ' . $value . ' » est déjà utilisé par une autre section.' : null;
+        return app_section_code_taken($value, $exceptId) ? __('code_code_deja_utilise_autre_section', ['code' => $value]) : null;
     };
     $error = null;
     $message = '';
@@ -85,17 +85,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                 $settings['tutti_color'] = $color;
                 return $settings;
             });
-            $message = 'La couleur de l’étiquette Tutti a été enregistrée.';
+            $message = __('couleur_letiquette_tutti_ete_enregistree_phrase');
             break;
 
         case 'add_branch':
             $childLabel = sectionLabelInput($_POST['child_label'] ?? '');
             if ($label === '' || $childLabel === '') {
-                $error = 'Indiquez le nom de la branche et celui de sa première sous-section.';
+                $error = __('indiquez_nom_branche_celui_premiere_sous');
             } elseif (sectionLabelExists($label) || sectionLabelExists($childLabel) || strcasecmp($label, $childLabel) === 0) {
-                $error = 'Ce nom est déjà utilisé par une autre section.';
+                $error = __('ce_nom_deja_utilise_autre_section');
             } elseif (($error = $codeError($code) ?? $codeError($childCode)) === null && $code !== '' && strcasecmp($code, $childCode) === 0) {
-                $error = 'La branche et sa sous-section doivent avoir des codes différents.';
+                $error = __('branche_sous_section_doivent_avoir_codes');
             } elseif ($error === null) {
                 app_update_section_tree(static function (array $tree) use ($label, $childLabel, $color, $code, $childCode): array {
                     $branchId = app_new_section_id($label, $tree);
@@ -105,17 +105,17 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tree[$branchId]['child_codes'][$childId] = $childCode;
                     return $tree;
                 });
-                $message = 'La branche « ' . $label . ' » a été créée.';
+                $message = __('branche_label_ete_creee_phrase', ['label' => $label]);
             }
             break;
 
         case 'add_child':
             if (!isset($tree[$id])) {
-                $error = 'Cette branche n’existe plus.';
+                $error = __('cette_branche_nexiste_plus_phrase');
             } elseif ($label === '') {
-                $error = 'Indiquez le nom de la sous-section.';
+                $error = __('indiquez_nom_sous_section_phrase');
             } elseif (sectionLabelExists($label)) {
-                $error = 'Ce nom est déjà utilisé par une autre section.';
+                $error = __('ce_nom_deja_utilise_autre_section');
             } elseif (($error = $codeError($code)) === null) {
                 app_update_section_tree(static function (array $tree) use ($id, $label, $code): array {
                     $childId = app_new_section_id($label, $tree);
@@ -123,19 +123,19 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     $tree[$id]['child_codes'][$childId] = $code;
                     return $tree;
                 });
-                $message = 'La sous-section « ' . $label . ' » a été ajoutée.';
+                $message = __('sous_section_label_ete_ajoutee_phrase', ['label' => $label]);
             }
             break;
 
         case 'rename':
             if ($branchOf === null) {
-                $error = 'Cette section n’existe plus.';
+                $error = __('cette_section_nexiste_plus_phrase');
             } elseif ($label === '') {
-                $error = 'Le nom ne peut pas être vide.';
+                $error = __('nom_peut_etre_vide_phrase');
             } elseif (sectionLabelExists($label, $id)) {
-                $error = 'Ce nom est déjà utilisé par une autre section.';
+                $error = __('ce_nom_deja_utilise_autre_section');
             } elseif ($code === '') {
-                $error = 'Le code ne peut pas être vide.';
+                $error = __('code_peut_etre_vide_phrase');
             } elseif (($error = $codeError($code, $id)) === null) {
                 app_update_section_tree(static function (array $tree) use ($id, $branchOf, $isBranch, $label, $color, $code): array {
                     if ($isBranch) {
@@ -165,7 +165,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     return $settings;
                 });
-                $message = 'La section a été mise à jour.';
+                $message = __('section_ete_mise_jour_phrase');
             }
             break;
 
@@ -194,11 +194,11 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
 
         case 'delete':
             if ($branchOf === null) {
-                $error = 'Cette section n’existe plus.';
+                $error = __('cette_section_nexiste_plus_phrase');
             } elseif ($isBranch && count($tree) === 1) {
-                $error = 'Il doit rester au moins une branche.';
+                $error = __('doit_rester_moins_branche_phrase');
             } elseif (!$isBranch && count($tree[$branchOf]['children']) === 1) {
-                $error = 'Une branche doit garder au moins une sous-section : supprimez plutôt la branche entière.';
+                $error = __('branche_doit_garder_moins_sous_section_supprimez_plutot');
             } else {
                 $removedIds = $isBranch ? [$id, ...array_keys($tree[$id]['children'])] : [$id];
                 $removedLabel = $isBranch ? $tree[$id]['label'] : $tree[$branchOf]['children'][$id];
@@ -219,13 +219,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
                     }
                     return $settings;
                 });
-                $message = '« ' . $removedLabel . ' » a été supprimée et retirée des comptes et des dates.';
+                $message = __('label_ete_supprimee_retiree_comptes_dates', ['label' => $removedLabel]);
             }
             break;
 
         default:
             http_response_code(400);
-            exit('Action inconnue.');
+            exit(__('action_inconnue_phrase'));
     }
 
     app_flash($error ?? $message, $error === null ? 'success' : 'error');
@@ -267,26 +267,26 @@ $usage = static function (array $leaves) use ($memberCounts, $eventCounts): arra
 };
 $repertoireSections = app_repertoire_sections();
 $hiddenSections = array_map(static fn (string $place): array => array_flip(app_hidden_sections($place)), array_combine(array_keys(SECTION_DISPLAY_PLACES), array_keys(SECTION_DISPLAY_PLACES)));
-$usageText = static fn (array $counts): string => $counts[0] . ' compte' . ($counts[0] > 1 ? 's' : '') . ' · ' . $counts[1] . ' date' . ($counts[1] > 1 ? 's' : '');
+$usageText = static fn (array $counts): string => __n('compte', 'comptes_2', $counts[0]) . ' · ' . __n('date_2', 'n_dates', $counts[1]);
 
 function sectionToolForms(string $id, bool $first, bool $last, string $deleteConfirm, bool $canDelete): void
 {
     ?>
                 <div class="sections-tools">
-                  <?php foreach (['up' => ['↑', 'Monter', $first], 'down' => ['↓', 'Descendre', $last]] as $direction => [$symbol, $title, $disabled]): ?>
+                  <?php foreach (['up' => ['↑', __('monter'), $first], 'down' => ['↓', __('descendre'), $last]] as $direction => [$symbol, $title, $disabled]): ?>
                   <form method="post" action="sections-settings.php">
                     <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                     <input type="hidden" name="action" value="move">
                     <input type="hidden" name="id" value="<?= app_escape($id) ?>">
                     <input type="hidden" name="direction" value="<?= $direction ?>">
-                    <button class="sections-icon-button" type="submit" title="<?= $title ?>" aria-label="<?= $title ?>"<?= $disabled ? ' disabled' : '' ?>><?= $symbol ?></button>
+                    <button class="sections-icon-button" type="submit" title="<?= app_escape($title) ?>" aria-label="<?= app_escape($title) ?>"<?= $disabled ? ' disabled' : '' ?>><?= $symbol ?></button>
                   </form>
                   <?php endforeach; ?>
                   <form method="post" action="sections-settings.php" onsubmit="return confirm(<?= app_escape(json_encode($deleteConfirm, JSON_UNESCAPED_UNICODE)) ?>);">
                     <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                     <input type="hidden" name="action" value="delete">
                     <input type="hidden" name="id" value="<?= app_escape($id) ?>">
-                    <button class="text-button sections-delete" type="submit"<?= $canDelete ? '' : ' disabled title="Une branche doit garder au moins une sous-section"' ?>>Supprimer</button>
+                    <button class="text-button sections-delete" type="submit"<?= $canDelete ? '' : ' disabled title="' . app_escape(__('branche_doit_garder_moins_sous_section')) . '"' ?>><?= app_escape(__('supprimer')) ?></button>
                   </form>
                 </div>
 <?php
@@ -295,9 +295,9 @@ function sectionToolForms(string $id, bool $first, bool $last, string $deleteCon
 function colorSelect(string $name, string $selected, string $id): void
 {
     ?>
-                  <select id="<?= app_escape($id) ?>" name="<?= $name ?>" class="sections-color-select" aria-label="Couleur des étiquettes">
+                  <select id="<?= app_escape($id) ?>" name="<?= $name ?>" class="sections-color-select" aria-label="<?= app_escape(__('couleur_etiquettes')) ?>">
                     <?php foreach (SECTION_COLORS as $value => $label): ?>
-                    <option value="<?= $value ?>"<?= $selected === $value ? ' selected' : '' ?>><?= app_escape($label) ?></option>
+                    <option value="<?= $value ?>"<?= $selected === $value ? ' selected' : '' ?>><?= app_escape(app_label($label)) ?></option>
                     <?php endforeach; ?>
                   </select>
 <?php
@@ -307,17 +307,17 @@ app_header('Sections', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> CONFIGURATION DU SITE</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('configuration_site_majuscules')) ?></p>
           <?php app_page_links([['Configuration', 'settings.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Sections<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('sections')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('organisation', 'sections-settings.php', $admin); ?>
 
-        <p class="accounts-help">Chaque section a un <strong>code</strong> court et unique (par exemple « B », « Cor »), utilisé dans le planning annuel ; laissé vide à la création, il est déduit du nom. Les branches (sections mères) regroupent des sous-sections. Les comptes et les dates sont rattachés aux sous-sections ; renommer une section ne change rien à ces rattachements. Supprimer une section la retire des comptes et des dates concernés. Cochez « Répertoire » pour qu’une branche ou une sous-section ait sa liste de morceaux sur la feuille de route (listes à remplir dans <a href="roadmap-settings.php">Configuration › Feuille de route</a>) ; une sous-section qui joue un répertoire particulier peut avoir le sien. Décochez « Filtres » ou « Trombinoscope » pour ne plus afficher une section dans les filtres de l’agenda ou dans le trombinoscope (les comptes et les dates restent rattachés) ; une branche masquée masque aussi toutes ses sous-sections.</p>
+        <p class="accounts-help"><?= app_escape(__('chaque_section')) ?> <strong><?= app_escape(__('code_minuscule')) ?></strong> <?= app_escape(__('court_unique_exemple_b_cor_utilise')) ?> <a href="roadmap-settings.php"><?= app_escape(__('configuration_feuille_route')) ?></a><?= app_escape(__('sous_section_joue_repertoire_particulier_peut')) ?></p>
 
         <?php $branchIds = array_keys($tree); ?>
         <?php foreach ($tree as $branchId => $branch): ?>
@@ -326,26 +326,26 @@ app_header('Sections', $admin);
             $branchUsage = $usage(array_keys($branch['children']));
             $childIds = array_keys($branch['children']);
         ?>
-        <section class="management-panel sections-branch" id="section-<?= app_escape($branchId) ?>" aria-label="Branche <?= app_escape($branch['label']) ?>">
+        <section class="management-panel sections-branch" id="section-<?= app_escape($branchId) ?>" aria-label="<?= app_escape(__('branche_label', ['label' => $branch['label']])) ?>">
           <div class="sections-row sections-branch-row">
             <form class="sections-edit" method="post" action="sections-settings.php">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="action" value="rename">
               <input type="hidden" name="id" value="<?= app_escape($branchId) ?>">
               <span class="section-tag tag-<?= app_escape($branch['color']) ?> sections-preview" aria-hidden="true"><?= app_escape($branch['label']) ?></span>
-              <label class="sr-only" for="branch-label-<?= app_escape($branchId) ?>">Nom de la branche</label>
+              <label class="sr-only" for="branch-label-<?= app_escape($branchId) ?>"><?= app_escape(__('nom_branche')) ?></label>
               <input id="branch-label-<?= app_escape($branchId) ?>" name="label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" value="<?= app_escape($branch['label']) ?>" required>
-              <label class="sr-only" for="branch-code-<?= app_escape($branchId) ?>">Code de la branche</label>
-              <input class="sections-code" id="branch-code-<?= app_escape($branchId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" required value="<?= app_escape($branch['code']) ?>" placeholder="Code" title="Code unique, utilisé dans le planning annuel">
+              <label class="sr-only" for="branch-code-<?= app_escape($branchId) ?>"><?= app_escape(__('code_branche')) ?></label>
+              <input class="sections-code" id="branch-code-<?= app_escape($branchId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" required value="<?= app_escape($branch['code']) ?>" placeholder="<?= app_escape(__('code')) ?>" title="<?= app_escape(__('code_unique_utilise_dans_planning_annuel')) ?>">
               <?php colorSelect('color', $branch['color'], 'branch-color-' . $branchId); ?>
-              <label class="sections-repertoire" title="Une boîte « Répertoire » sur la feuille de route des dates de la branche"><input type="checkbox" name="repertoire" value="1"<?= isset($repertoireSections[$branchId]) ? ' checked' : '' ?>> Répertoire</label>
+              <label class="sections-repertoire" title="<?= app_escape(__('boite_repertoire_feuille_route_dates_branche')) ?>"><input type="checkbox" name="repertoire" value="1"<?= isset($repertoireSections[$branchId]) ? ' checked' : '' ?>> <?= app_escape(__('repertoire')) ?></label>
               <?php foreach (SECTION_DISPLAY_PLACES as $place => $placeLabel): ?>
-              <label class="sections-repertoire" title="<?= $place === 'filters' ? 'Afficher la branche dans les filtres de l’agenda ; décochée, ses sous-sections n’y sont pas non plus' : 'Afficher la branche dans le trombinoscope ; décochée, ses sous-sections n’y sont pas non plus' ?>"><input type="checkbox" name="show_<?= $place ?>" value="1"<?= isset($hiddenSections[$place][$branchId]) ? '' : ' checked' ?>> <?= $placeLabel ?></label>
+              <label class="sections-repertoire" title="<?= app_escape($place === 'filters' ? __('afficher_branche_dans_filtres_lagenda_decochee') : __('afficher_branche_dans_trombinoscope_decochee_sous')) ?>"><input type="checkbox" name="show_<?= $place ?>" value="1"<?= isset($hiddenSections[$place][$branchId]) ? '' : ' checked' ?>> <?= app_escape(app_label($placeLabel)) ?></label>
               <?php endforeach; ?>
-              <button class="secondary-button compact-button" type="submit">Enregistrer</button>
+              <button class="secondary-button compact-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
             </form>
             <span class="sections-usage"><?= app_escape($usageText($branchUsage)) ?></span>
-            <?php sectionToolForms($branchId, $branchIndex === 0, $branchIndex === count($branchIds) - 1, 'Supprimer la branche « ' . $branch['label'] . ' » et ses ' . count($childIds) . ' sous-sections ? Elles seront retirées de ' . $usageText($branchUsage) . '.', count($tree) > 1); ?>
+            <?php sectionToolForms($branchId, $branchIndex === 0, $branchIndex === count($branchIds) - 1, __('supprimer_branche_label_sous_sections_elles', ['label' => $branch['label'], 'n' => count($childIds), 'usage' => $usageText($branchUsage)]), count($tree) > 1); ?>
           </div>
 
           <ul class="sections-children">
@@ -356,19 +356,19 @@ app_header('Sections', $admin);
                 <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
                 <input type="hidden" name="action" value="rename">
                 <input type="hidden" name="id" value="<?= app_escape($childId) ?>">
-                <label class="sr-only" for="child-label-<?= app_escape($childId) ?>">Nom de la sous-section</label>
+                <label class="sr-only" for="child-label-<?= app_escape($childId) ?>"><?= app_escape(__('nom_sous_section')) ?></label>
                 <input id="child-label-<?= app_escape($childId) ?>" name="label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" value="<?= app_escape($childLabel) ?>" required>
-                <label class="sr-only" for="child-code-<?= app_escape($childId) ?>">Code de la sous-section</label>
-                <input class="sections-code" id="child-code-<?= app_escape($childId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" required value="<?= app_escape($branch['child_codes'][$childId]) ?>" placeholder="Code" title="Code unique, utilisé dans le planning annuel">
-                <label class="sections-repertoire" title="Une boîte « Répertoire » propre à cette sous-section sur la feuille de route de ses dates"><input type="checkbox" name="repertoire" value="1"<?= isset($repertoireSections[$childId]) ? ' checked' : '' ?>> Répertoire</label>
+                <label class="sr-only" for="child-code-<?= app_escape($childId) ?>"><?= app_escape(__('code_sous_section')) ?></label>
+                <input class="sections-code" id="child-code-<?= app_escape($childId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" required value="<?= app_escape($branch['child_codes'][$childId]) ?>" placeholder="<?= app_escape(__('code')) ?>" title="<?= app_escape(__('code_unique_utilise_dans_planning_annuel')) ?>">
+                <label class="sections-repertoire" title="<?= app_escape(__('boite_repertoire_propre_cette_sous_section')) ?>"><input type="checkbox" name="repertoire" value="1"<?= isset($repertoireSections[$childId]) ? ' checked' : '' ?>> <?= app_escape(__('repertoire')) ?></label>
                 <?php foreach (SECTION_DISPLAY_PLACES as $place => $placeLabel): ?>
                 <?php $branchHidden = isset($hiddenSections[$place][$branchId]); ?>
-                <label class="sections-repertoire<?= $branchHidden ? ' is-overridden' : '' ?>" title="<?= $branchHidden ? 'Masquée avec sa branche « ' . app_escape($branch['label']) . ' »' : ($place === 'filters' ? 'Afficher la sous-section dans les filtres de l’agenda' : 'Afficher la sous-section dans le trombinoscope') ?>"><input type="checkbox" name="show_<?= $place ?>" value="1"<?= isset($hiddenSections[$place][$childId]) ? '' : ' checked' ?>> <?= $placeLabel ?></label>
+                <label class="sections-repertoire<?= $branchHidden ? ' is-overridden' : '' ?>" title="<?= app_escape($branchHidden ? __('masquee_avec_branche_label', ['label' => $branch['label']]) : ($place === 'filters' ? __('afficher_sous_section_dans_filtres_lagenda') : __('afficher_sous_section_dans_trombinoscope'))) ?>"><input type="checkbox" name="show_<?= $place ?>" value="1"<?= isset($hiddenSections[$place][$childId]) ? '' : ' checked' ?>> <?= app_escape(app_label($placeLabel)) ?></label>
                 <?php endforeach; ?>
-                <button class="secondary-button compact-button" type="submit">Enregistrer</button>
+                <button class="secondary-button compact-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
               </form>
               <span class="sections-usage"><?= app_escape($usageText($childUsage)) ?></span>
-              <?php sectionToolForms($childId, $childIndex === 0, $childIndex === count($childIds) - 1, 'Supprimer la sous-section « ' . $childLabel . ' » ? Elle sera retirée de ' . $usageText($childUsage) . '.', count($childIds) > 1); ?>
+              <?php sectionToolForms($childId, $childIndex === 0, $childIndex === count($childIds) - 1, __('supprimer_sous_section_label_sera_retiree', ['label' => $childLabel, 'usage' => $usageText($childUsage)]), count($childIds) > 1); ?>
             </li>
             <?php endforeach; ?>
           </ul>
@@ -377,55 +377,55 @@ app_header('Sections', $admin);
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="add_child">
             <input type="hidden" name="id" value="<?= app_escape($branchId) ?>">
-            <label class="sr-only" for="new-child-<?= app_escape($branchId) ?>">Nouvelle sous-section de <?= app_escape($branch['label']) ?></label>
-            <input id="new-child-<?= app_escape($branchId) ?>" name="label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" placeholder="Nouvelle sous-section" required>
-            <label class="sr-only" for="new-child-code-<?= app_escape($branchId) ?>">Code (facultatif)</label>
-            <input class="sections-code" id="new-child-code-<?= app_escape($branchId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="Code" title="Code unique ; laissé vide, il est déduit du nom">
-            <button class="secondary-button compact-button" type="submit">Ajouter</button>
+            <label class="sr-only" for="new-child-<?= app_escape($branchId) ?>"><?= app_escape(__('nouvelle_sous_section_label', ['label' => $branch['label']])) ?></label>
+            <input id="new-child-<?= app_escape($branchId) ?>" name="label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" placeholder="<?= app_escape(__('nouvelle_sous_section')) ?>" required>
+            <label class="sr-only" for="new-child-code-<?= app_escape($branchId) ?>"><?= app_escape(__('code_facultatif')) ?></label>
+            <input class="sections-code" id="new-child-code-<?= app_escape($branchId) ?>" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="<?= app_escape(__('code')) ?>" title="<?= app_escape(__('code_unique_laisse_vide_deduit_nom')) ?>">
+            <button class="secondary-button compact-button" type="submit"><?= app_escape(__('ajouter')) ?></button>
           </form>
         </section>
         <?php endforeach; ?>
 
         <section class="management-panel" id="tutti" aria-labelledby="tutti-title">
-          <h2 class="detail-heading" id="tutti-title">Étiquette Tutti</h2>
-          <p class="muted-copy">Affichée à la place des sections pour les dates cochées « Tutti » dans les vues avancées.</p>
+          <h2 class="detail-heading" id="tutti-title"><?= app_escape(__('etiquette_tutti')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('affichee_place_sections_dates_cochees_tutti')) ?></p>
           <div class="sections-row">
             <form class="sections-edit" method="post" action="sections-settings.php">
               <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
               <input type="hidden" name="action" value="tutti_color">
-              <span class="section-tag tag-tutti tag-<?= app_escape(app_tutti_color()) ?> sections-preview" aria-hidden="true">Tutti</span>
+              <span class="section-tag tag-tutti tag-<?= app_escape(app_tutti_color()) ?> sections-preview" aria-hidden="true"><?= app_escape(__('tutti')) ?></span>
               <?php colorSelect('color', app_tutti_color(), 'tutti-color'); ?>
-              <button class="secondary-button compact-button" type="submit">Enregistrer</button>
+              <button class="secondary-button compact-button" type="submit"><?= app_escape(__('enregistrer')) ?></button>
             </form>
           </div>
         </section>
 
         <section class="management-panel" aria-labelledby="new-branch-title">
-          <h2 class="detail-heading" id="new-branch-title">Nouvelle branche</h2>
+          <h2 class="detail-heading" id="new-branch-title"><?= app_escape(__('nouvelle_branche')) ?></h2>
           <form class="sections-new-branch" method="post" action="sections-settings.php">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="add_branch">
             <div>
-              <label for="new-branch-label">Nom de la branche</label>
+              <label for="new-branch-label"><?= app_escape(__('nom_branche')) ?></label>
               <input id="new-branch-label" name="label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" required>
             </div>
             <div>
-              <label for="new-branch-code">Code</label>
-              <input class="sections-code" id="new-branch-code" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="Auto">
+              <label for="new-branch-code"><?= app_escape(__('code')) ?></label>
+              <input class="sections-code" id="new-branch-code" name="code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="<?= app_escape(__('auto')) ?>">
             </div>
             <div>
-              <label for="new-branch-child">Première sous-section</label>
+              <label for="new-branch-child"><?= app_escape(__('premiere_sous_section')) ?></label>
               <input id="new-branch-child" name="child_label" maxlength="<?= SECTION_LABEL_MAX_LENGTH ?>" required>
             </div>
             <div>
-              <label for="new-branch-child-code">Code</label>
-              <input class="sections-code" id="new-branch-child-code" name="child_code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="Auto">
+              <label for="new-branch-child-code"><?= app_escape(__('code')) ?></label>
+              <input class="sections-code" id="new-branch-child-code" name="child_code" maxlength="<?= SECTION_CODE_MAX_LENGTH ?>" placeholder="<?= app_escape(__('auto')) ?>">
             </div>
             <div>
-              <label for="new-branch-color">Couleur</label>
+              <label for="new-branch-color"><?= app_escape(__('couleur')) ?></label>
               <?php colorSelect('color', 'gray', 'new-branch-color'); ?>
             </div>
-            <button class="primary-button compact-button" type="submit">Créer la branche</button>
+            <button class="primary-button compact-button" type="submit"><?= app_escape(__('creer_branche')) ?></button>
           </form>
         </section>
       </section>

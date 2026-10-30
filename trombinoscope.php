@@ -35,23 +35,23 @@ app_header('Trombinoscope', $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> LES MEMBRES</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('membres_majuscules')) ?></p>
           <?php app_page_links([['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Trombinoscope<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('trombinoscope')) ?><span class="heading-dot">.</span></h1>
           </div>
           <?php if (app_can_edit_photo($user, $user)): ?>
           <div class="page-actions">
-            <a class="secondary-button compact-button" href="account.php#photo"><?= app_user_photo($user) !== null ? 'Changer ma photo' : 'Ajouter ma photo' ?></a>
+            <a class="secondary-button compact-button" href="account.php#photo"><?= app_user_photo($user) !== null ? __('changer_ma_photo') : __('ajouter_ma_photo') ?></a>
           </div>
           <?php endif; ?>
         </div>
-        <p class="accounts-help"><?= count($members) ?> membres, dont <?= $withPhoto ?> avec une photo. Les photos ne sont visibles que des membres connectés.<?= app_can_edit_photo($user, $user) ? ' Ajoutez ou changez la vôtre dans «' . "\u{00A0}" . 'Mon compte' . "\u{00A0}" . '».' : '' ?></p>
+        <p class="accounts-help"><?= app_escape(__('membres_dont_photos_avec_photo_photos', ['n' => count($members), 'photos' => $withPhoto])) ?><?= app_can_edit_photo($user, $user) ? ' ' . app_escape(__('ajoutez_changez_votre_dans_mon_compte')) : '' ?></p>
 
         <?php if ($groups !== []): ?>
-        <nav class="trombi-nav" aria-label="Branches">
+        <nav class="trombi-nav" aria-label="<?= app_escape(__('branches')) ?>">
           <?php foreach (array_keys($groups) as $branch): ?>
           <a href="#branche-<?= app_escape($branch) ?>"><?= app_escape($tree[$branch]['label']) ?></a>
           <?php endforeach; ?>
@@ -69,7 +69,7 @@ app_header('Trombinoscope', $user);
               <?= app_photo_zoom($member, 'trombi-photo', 104) ?>
               <span class="trombi-name"><?= app_escape(app_member_display_name($member)) ?></span>
               <?php if (app_user_title($member) !== ''): ?><span class="trombi-role"><?= app_escape(app_user_title($member)) ?></span><?php endif; ?>
-              <?php if ($isAdmin || app_can_edit_photo($user, $member)): ?><a class="trombi-edit" href="<?= (string) $member['id'] === (string) $user['id'] && !$isAdmin ? 'account.php#photo' : 'user.php?id=' . rawurlencode((string) $member['id']) . '#photo' ?>">Modifier</a><?php endif; ?>
+              <?php if ($isAdmin || app_can_edit_photo($user, $member)): ?><a class="trombi-edit" href="<?= (string) $member['id'] === (string) $user['id'] && !$isAdmin ? 'account.php#photo' : 'user.php?id=' . rawurlencode((string) $member['id']) . '#photo' ?>"><?= app_escape(__('modifier')) ?></a><?php endif; ?>
             </li>
             <?php endforeach; ?>
           </ul>

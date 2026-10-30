@@ -44,8 +44,8 @@ function importReadRows(string $content): array
         }
         $rows[] = ['line' => $index + 1, 'cells' => array_map('trim', str_getcsv($line, $separator, '"', ''))];
     }
-    // An optional header row ("Login ; Prénom ; NOM ; …") is skipped.
-    if ($rows !== [] && preg_match('/^(login|identifiant)$/i', $rows[0]['cells'][0] ?? '') === 1) {
+    // An optional header row ("Login ; Prénom ; NOM ; …", or its translation shown on the page) is skipped.
+    if ($rows !== [] && in_array(app_lowercase(trim($rows[0]['cells'][0] ?? '')), ['login', 'identifiant', app_lowercase(__('login'))], true)) {
         array_shift($rows);
     }
     return $rows;
@@ -69,12 +69,12 @@ function importCheckRows(array $rows): array
         $login = app_normalize_username($login);
         $leaf = $leaves[app_lowercase($leafInput)] ?? null;
         $error = match (true) {
-            !app_is_valid_username($login) => 'Login invalide (' . USERNAME_RULE . ').',
-            isset($existing[app_username_key($login)]) => 'Ce login existe déjà.',
-            isset($seen[app_username_key($login)]) => 'Login en double dans le fichier.',
-            $leafInput === '' => 'Sous-section principale manquante.',
-            $leaf === null => 'Sous-section « ' . $leafInput . ' » introuvable.',
-            $password !== '' && (strlen($password) < 12 || strlen($password) > 200) => 'Mot de passe trop court (12 caractères minimum).',
+            !app_is_valid_username($login) => __('login_invalide_rule_phrase', ['rule' => app_label(USERNAME_RULE)]),
+            isset($existing[app_username_key($login)]) => __('ce_login_existe_deja_phrase'),
+            isset($seen[app_username_key($login)]) => __('login_double_dans_fichier_phrase'),
+            $leafInput === '' => __('sous_section_principale_manquante_phrase'),
+            $leaf === null => __('sous_section_section_introuvable_phrase', ['section' => $leafInput]),
+            $password !== '' && (strlen($password) < 12 || strlen($password) > 200) => __('mot_passe_trop_court_12_caracteres_phrase'),
             default => null,
         };
         $seen[app_username_key($login)] = true;
@@ -109,13 +109,13 @@ if (($_GET['telecharger'] ?? '') === '1') {
     $created = $_SESSION['import_created'] ?? [];
     unset($_SESSION['import_created']);
     if (!is_array($created) || $created === []) {
-        app_flash('Les mots de passe ne sont plus disponibles : ils ne sont téléchargeables qu’une fois, juste après l’import.', 'error');
+        app_flash(__('mots_passe_sont_plus_disponibles_ils'), 'error');
         app_redirect('users-import.php');
     }
     app_send_csv(
         'comptes-importes-' . date('Y-m-d') . '.csv',
-        ['Login', 'Prénom', 'NOM', 'Sous-section principale', 'Mot de passe temporaire'],
-        array_map(static fn (array $account): array => [$account['login'], $account['first_name'], $account['last_name'], $account['leaf_label'], $account['password'] ?? 'Fourni dans le fichier importé'], $created)
+        [__('login'), __('prenom'), __('nom_2'), __('sous_section_principale'), __('mot_passe_temporaire')],
+        array_map(static fn (array $account): array => [$account['login'], $account['first_name'], $account['last_name'], $account['leaf_label'], $account['password'] ?? __('fourni_dans_fichier_importe')], $created)
     );
 }
 
@@ -128,16 +128,16 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     if ($action === 'preview') {
         $file = $_FILES['csv'] ?? null;
         if (!is_array($file) || ($file['error'] ?? UPLOAD_ERR_NO_FILE) !== UPLOAD_ERR_OK || !is_uploaded_file($file['tmp_name'])) {
-            app_flash('Choisissez un fichier CSV à importer.', 'error');
+            app_flash(__('choisissez_fichier_csv_importer_phrase'), 'error');
             app_redirect('users-import.php');
         }
         if (($file['size'] ?? 0) > IMPORT_MAX_BYTES) {
-            app_flash('Le fichier est trop volumineux (512 Ko maximum).', 'error');
+            app_flash(__('fichier_trop_volumineux_512_ko_maximum_phrase'), 'error');
             app_redirect('users-import.php');
         }
         $rows = importReadRows((string) file_get_contents($file['tmp_name']));
         if ($rows === [] || count($rows) > IMPORT_MAX_ROWS) {
-            app_flash($rows === [] ? 'Le fichier ne contient aucune ligne de compte.' : 'Le fichier contient trop de lignes (' . IMPORT_MAX_ROWS . ' au maximum).', 'error');
+            app_flash($rows === [] ? __('fichier_contient_aucune_ligne_compte_phrase') : __('fichier_contient_trop_lignes_maximum', ['n' => IMPORT_MAX_ROWS]), 'error');
             app_redirect('users-import.php');
         }
         $checked = importCheckRows($rows);
@@ -156,7 +156,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $pending = $_SESSION['import_rows'] ?? null;
         unset($_SESSION['import_rows']);
         if (!is_array($pending) || $pending === []) {
-            app_flash('Aucun import en attente : chargez à nouveau le fichier.', 'error');
+            app_flash(__('aucun_import_attente_chargez_nouveau_fichier'), 'error');
             app_redirect('users-import.php');
         }
         // Checked again at confirmation time: an account may have been created in between.
@@ -206,7 +206,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         $step = 'done';
     } else {
         http_response_code(400);
-        exit('Action inconnue.');
+        exit(__('action_inconnue_phrase'));
     }
 }
 
@@ -216,43 +216,41 @@ app_header('Import de comptes', $admin);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> CONFIGURATION · MEMBRES</p>
-          <?php app_page_links([['Tous les comptes', 'users.php'], ['Configuration', 'settings.php']]); ?>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('configuration_membres_majuscules')) ?></p>
+          <?php app_page_links([[__('tous_comptes'), 'users.php'], ['Configuration', 'settings.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Import de comptes<span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('import_comptes')) ?><span class="heading-dot">.</span></h1>
           </div>
         </div>
         <?php app_settings_nav('membres', 'users-import.php', $admin); ?>
 
         <?php if ($step === 'upload'): ?>
         <section class="management-panel" aria-labelledby="import-title">
-          <h2 class="detail-heading" id="import-title">Fichier à importer</h2>
-          <p class="muted-copy">Un fichier CSV avec une ligne par compte et ces colonnes, dans cet ordre : <strong>Login ; Prénom ; NOM ; Sous-section principale ; Mot de passe</strong>. La dernière colonne est facultative. La ligne d’en-tête est facultative ; le séparateur peut être « ; » ou « , » (export Excel accepté). La sous-section s’écrit avec son nom ou son code (par exemple « Cornemuses » ou « Corn »).</p>
-          <pre class="import-sample">Login;Prénom;NOM;Sous-section principale;Mot de passe
-anna.k;Anna;KERMARREC;Cornemuses;Exemple-de-mot-de-passe
-loig;Loïg;LE MOAL;Bombardes;</pre>
-          <p class="muted-copy">Les comptes sont créés avec le rôle <strong>Artistes</strong>, la sous-section comme unique section et comme vue par défaut, et le <strong>mot de passe</strong> de la dernière colonne (12 caractères minimum ; les espaces en début et en fin sont ignorés). Si elle est vide, un <strong>mot de passe temporaire</strong> est généré et affiché une seule fois. Les mots de passe du fichier ne sont jamais réaffichés : supprimez le fichier une fois l’import fait. Chacun pourra ensuite changer son mot de passe dans « Mon compte ».</p>
+          <h2 class="detail-heading" id="import-title"><?= app_escape(__('fichier_importer')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('fichier_csv_avec_ligne_compte_ces_label')) ?> <strong><?= app_escape(__('login_prenom_nom_sous_section_principale')) ?></strong><?= app_escape(__('derniere_colonne_facultative_ligne_den_tete')) ?></p>
+          <pre class="import-sample"><?= app_escape(__('login_prenom_nom_sous_section_principale_mot_passe')) ?></pre>
+          <p class="muted-copy"><?= app_escape(__('comptes_sont_crees_avec_role')) ?> <strong><?= app_escape(__('artistes')) ?></strong><?= app_escape(__('sous_section_comme_unique_section_comme')) ?> <strong><?= app_escape(__('mot_passe_2')) ?></strong> <?= app_escape(__('derniere_colonne_12_caracteres_minimum_espaces')) ?> <strong><?= app_escape(__('mot_passe_temporaire_minuscule')) ?></strong> <?= app_escape(__('genere_affiche_seule_fois_mots_passe')) ?></p>
           <form class="form-stack" method="post" action="users-import.php" enctype="multipart/form-data">
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="preview">
-            <label for="import-file">Fichier CSV (512 Ko et <?= IMPORT_MAX_ROWS ?> lignes au maximum)</label>
+            <label for="import-file"><?= app_escape(__('fichier_csv_512_ko_lignes_maximum', ['n' => IMPORT_MAX_ROWS])) ?></label>
             <input id="import-file" name="csv" type="file" accept=".csv,text/csv,text/plain" required>
             <div class="form-actions">
-              <button class="primary-button compact-button" type="submit">Vérifier le fichier</button>
-              <a class="secondary-button compact-button" href="users.php">Annuler</a>
+              <button class="primary-button compact-button" type="submit"><?= app_escape(__('verifier_fichier')) ?></button>
+              <a class="secondary-button compact-button" href="users.php"><?= app_escape(__('annuler')) ?></a>
             </div>
           </form>
         </section>
 
         <?php elseif ($step === 'preview'): ?>
         <section class="management-panel" aria-labelledby="preview-title">
-          <h2 class="detail-heading" id="preview-title">Vérification <span class="count-badge"><?= count($checked) ?></span></h2>
-          <p class="muted-copy"><strong><?= $validCount ?></strong> compte<?= $validCount > 1 ? 's' : '' ?> prêt<?= $validCount > 1 ? 's' : '' ?> à être créé<?= $validCount > 1 ? 's' : '' ?><?= $validCount < count($checked) ? ' ; ' . (count($checked) - $validCount) . ' ligne' . (count($checked) - $validCount > 1 ? 's' : '') . ' ignorée' . (count($checked) - $validCount > 1 ? 's' : '') . ' (voir le motif)' : '' ?>. Rien n’est encore enregistré.</p>
+          <h2 class="detail-heading" id="preview-title"><?= app_escape(__('verification')) ?> <span class="count-badge"><?= count($checked) ?></span></h2>
+          <p class="muted-copy"><?= app_escape(__n('compte_pret_etre_cree', 'comptes_prets_etre_crees', $validCount)) ?><?= $validCount < count($checked) ? app_escape(__n('ligne_ignoree_voir_motif', 'lignes_ignorees_voir_motif', count($checked) - $validCount)) : '' ?>. <?= app_escape(__('rien_nest_encore_enregistre_phrase')) ?></p>
           <div class="log-scroll">
             <table class="log-table import-table">
-              <thead><tr><th scope="col">Ligne</th><th scope="col">Login</th><th scope="col">Prénom</th><th scope="col">NOM</th><th scope="col">Sous-section</th><th scope="col">Mot de passe</th><th scope="col">Résultat</th></tr></thead>
+              <thead><tr><th scope="col"><?= app_escape(__('ligne')) ?></th><th scope="col"><?= app_escape(__('login')) ?></th><th scope="col"><?= app_escape(__('prenom')) ?></th><th scope="col"><?= app_escape(__('nom_2')) ?></th><th scope="col"><?= app_escape(__('sous_section')) ?></th><th scope="col"><?= app_escape(__('mot_passe')) ?></th><th scope="col"><?= app_escape(__('resultat')) ?></th></tr></thead>
               <tbody>
                 <?php foreach ($checked as $row): ?>
                 <tr class="<?= $row['error'] === null ? 'import-ok' : 'import-error' ?>">
@@ -261,8 +259,8 @@ loig;Loïg;LE MOAL;Bombardes;</pre>
                   <td><?= app_escape($row['first_name']) ?></td>
                   <td><?= app_escape($row['last_name']) ?></td>
                   <td><?= app_escape($row['leaf_label']) ?></td>
-                  <td><?= $row['password'] !== '' ? 'Fourni' : '<span class="log-sub">Généré à la création</span>' ?></td>
-                  <td><?= $row['error'] === null ? '<span class="log-response log-response-present">À créer</span>' : '<span class="log-response log-response-absent">Ignorée</span> <span class="log-sub">' . app_escape($row['error']) . '</span>' ?></td>
+                  <td><?= $row['password'] !== '' ? app_escape(__('fourni')) : '<span class="log-sub">' . app_escape(__('genere_creation')) . '</span>' ?></td>
+                  <td><?= $row['error'] === null ? '<span class="log-response log-response-present">' . app_escape(__('creer')) . '</span>' : '<span class="log-response log-response-absent">' . app_escape(__('ignoree')) . '</span> <span class="log-sub">' . app_escape($row['error']) . '</span>' ?></td>
                 </tr>
                 <?php endforeach; ?>
               </tbody>
@@ -272,28 +270,28 @@ loig;Loïg;LE MOAL;Bombardes;</pre>
             <input type="hidden" name="csrf_token" value="<?= app_escape(app_csrf_token()) ?>">
             <input type="hidden" name="action" value="confirm">
             <?php if ($validCount > 0): ?>
-            <button class="primary-button compact-button" type="submit">Créer <?= $validCount ?> compte<?= $validCount > 1 ? 's' : '' ?></button>
+            <button class="primary-button compact-button" type="submit"><?= app_escape(__n('creer_n_compte', 'creer_n_comptes', $validCount)) ?></button>
             <?php endif; ?>
-            <a class="secondary-button compact-button" href="users-import.php">Choisir un autre fichier</a>
+            <a class="secondary-button compact-button" href="users-import.php"><?= app_escape(__('choisir_autre_fichier')) ?></a>
           </form>
         </section>
 
         <?php else: ?>
         <section class="management-panel" aria-labelledby="done-title">
-          <h2 class="detail-heading" id="done-title">Comptes créés <span class="count-badge"><?= count($created) ?></span></h2>
+          <h2 class="detail-heading" id="done-title"><?= app_escape(__('comptes_crees')) ?> <span class="count-badge"><?= count($created) ?></span></h2>
           <?php if ($created === []): ?>
-          <p class="muted-copy">Aucun compte n’a été créé : les logins ont été pris entre-temps ou les lignes n’étaient plus valides.</p>
+          <p class="muted-copy"><?= app_escape(__('aucun_compte_na_ete_cree_logins')) ?></p>
           <?php else: ?>
           <?php $temporaryCount = count(array_filter($created, static fn (array $row): bool => $row['password'] !== null)); ?>
           <?php if ($temporaryCount > 0): ?>
-          <p class="flash-message error import-warning">Notez ou téléchargez les mots de passe temporaires maintenant : ils ne seront plus affichés. Transmettez à chacun son login et son mot de passe par un canal sûr.</p>
+          <p class="flash-message error import-warning"><?= app_escape(__('notez_telechargez_mots_passe_temporaires_maintenant')) ?></p>
           <?php else: ?>
-          <p class="muted-copy">Tous les comptes ont le mot de passe indiqué dans le fichier. Pensez à supprimer ce fichier, qui contient des mots de passe en clair.</p>
+          <p class="muted-copy"><?= app_escape(__('tous_comptes_ont_mot_passe_indique')) ?></p>
           <?php endif; ?>
-          <p><a class="primary-button compact-button" href="users-import.php?telecharger=1">Télécharger les identifiants (CSV)</a></p>
+          <p><a class="primary-button compact-button" href="users-import.php?telecharger=1"><?= app_escape(__('telecharger_identifiants_csv')) ?></a></p>
           <div class="log-scroll">
             <table class="log-table import-table">
-              <thead><tr><th scope="col">Login</th><th scope="col">Prénom</th><th scope="col">NOM</th><th scope="col">Sous-section</th><th scope="col">Mot de passe</th></tr></thead>
+              <thead><tr><th scope="col"><?= app_escape(__('login')) ?></th><th scope="col"><?= app_escape(__('prenom')) ?></th><th scope="col"><?= app_escape(__('nom_2')) ?></th><th scope="col"><?= app_escape(__('sous_section')) ?></th><th scope="col"><?= app_escape(__('mot_passe')) ?></th></tr></thead>
               <tbody>
                 <?php foreach ($created as $row): ?>
                 <tr>
@@ -308,7 +306,7 @@ loig;Loïg;LE MOAL;Bombardes;</pre>
             </table>
           </div>
           <?php endif; ?>
-          <p class="form-actions"><a class="secondary-button compact-button" href="users.php">Voir les comptes</a></p>
+          <p class="form-actions"><a class="secondary-button compact-button" href="users.php"><?= app_escape(__('voir_comptes')) ?></a></p>
         </section>
         <?php endif; ?>
       </section>

@@ -1,3 +1,14 @@
+// Texts of the scripts in the language of the page, by key (#deizi-i18n, see JS_TEXTS in
+// lib/i18n.php); {name} placeholders.
+const deiziTexts = (() => {
+  try {
+    return JSON.parse(document.getElementById("deizi-i18n")?.textContent || "{}");
+  } catch (error) {
+    return {};
+  }
+})();
+window.t = (text, values = {}) => (deiziTexts[text] || text).replace(/\{(\w+)\}/g, (match, key) => (key in values ? String(values[key]) : match));
+
 const accountMenu = document.querySelector(".account-menu");
 
 if (accountMenu) {
@@ -8,7 +19,7 @@ if (accountMenu) {
   function closeMenu() {
     accountMenu.classList.remove("menu-open");
     toggle.setAttribute("aria-expanded", "false");
-    toggle.setAttribute("aria-label", "Ouvrir le menu");
+    toggle.setAttribute("aria-label", t("ouvrir_menu"));
   }
 
   function updateMenuMode() {
@@ -19,7 +30,7 @@ if (accountMenu) {
   toggle.addEventListener("click", () => {
     const isOpen = accountMenu.classList.toggle("menu-open");
     toggle.setAttribute("aria-expanded", String(isOpen));
-    toggle.setAttribute("aria-label", isOpen ? "Fermer le menu" : "Ouvrir le menu");
+    toggle.setAttribute("aria-label", isOpen ? t("fermer_menu") : t("ouvrir_menu"));
   });
 
   navigation.addEventListener("click", (event) => {
@@ -110,7 +121,7 @@ document.querySelectorAll("[data-event-form]").forEach((form) => {
     endDate.min = startDate.value;
     endDate.setCustomValidity(
       endDate.value && startDate.value && endDate.value < startDate.value
-        ? "La date de fin doit être égale ou postérieure à la date de début."
+        ? t("js_date_fin_posterieure")
         : "",
     );
   }
@@ -134,8 +145,8 @@ document.querySelectorAll("[data-password-toggle]").forEach((toggle) => {
   toggle.addEventListener("click", () => {
     const isVisible = input.type === "password";
     input.type = isVisible ? "text" : "password";
-    toggle.textContent = isVisible ? "Masquer" : "Afficher";
-    toggle.setAttribute("aria-label", `${isVisible ? "Masquer" : "Afficher"} le mot de passe`);
+    toggle.textContent = isVisible ? t("masquer") : t("afficher");
+    toggle.setAttribute("aria-label", isVisible ? t("masquer_mot_passe") : t("afficher_mot_passe"));
     toggle.setAttribute("aria-pressed", String(isVisible));
   });
 });
@@ -158,7 +169,7 @@ document.querySelectorAll("[data-managed-scope]").forEach((scope) => {
   form.addEventListener("submit", (event) => {
     if (roleSelect.value !== "manager" || checkboxes.some((checkbox) => checkbox.checked)) return;
     event.preventDefault();
-    checkboxes[0].setCustomValidity("Cochez au moins une branche ou une sous-section gérée.");
+    checkboxes[0].setCustomValidity(t("js_cochez_section_geree"));
     checkboxes[0].reportValidity();
   });
   syncScope();
@@ -231,7 +242,7 @@ document.querySelectorAll("[data-copy]").forEach((button) => {
       field.select();
       document.execCommand("copy");
     }
-    button.textContent = "Lien copié";
+    button.textContent = t("js_lien_copie");
     setTimeout(() => {
       button.textContent = label;
     }, 2000);
@@ -275,6 +286,14 @@ document.querySelectorAll("[data-status-colors] [data-status-row]").forEach((row
     input.dispatchEvent(new Event("input"));
     input.focus();
   });
+  // Label of the status: the badge of the preview follows it (the original one when empty).
+  const label = row.querySelector("[data-status-label]");
+  const badge = preview.querySelector(".status-preview-badge");
+  if (label && badge) {
+    label.addEventListener("input", () => {
+      badge.textContent = label.value.trim() || label.placeholder;
+    });
+  }
 });
 
 // Detailed poll table: filter the rows on the login, first name or last name, ignoring case and accents.
@@ -298,7 +317,7 @@ document.querySelectorAll("[data-poll-filter]").forEach((filter) => {
       if (!row.hidden) shown += 1;
     });
     if (empty) empty.hidden = shown > 0;
-    count.textContent = terms.length > 0 ? `${shown} sur ${rows.length} affiché${shown > 1 ? "s" : ""}` : "";
+    count.textContent = terms.length > 0 ? t(shown > 1 ? "js_n_sur_total_affiches" : "js_n_sur_total_affiche", { n: shown, total: rows.length }) : "";
   }
 
   input.addEventListener("input", applyFilter);
@@ -562,21 +581,21 @@ document.querySelectorAll(".notice-menu").forEach((menu) => {
 
   if (!("serviceWorker" in navigator) || !("PushManager" in window) || !("Notification" in window)) {
     show(isIos && !isInstalledApp
-      ? "Installez d’abord l’application (voir ci-dessus), puis activez les notifications depuis cette page dans l’application."
-      : "Ce navigateur ne permet pas les notifications : la cloche en haut de page signale les nouveautés.", false, false);
+      ? t("js_notifications_installez_application")
+      : t("js_notifications_navigateur"), false, false);
     return;
   }
   const refresh = async () => {
     const registration = await navigator.serviceWorker.ready;
     const subscription = await registration.pushManager.getSubscription();
     if (Notification.permission === "denied") {
-      show("Les notifications sont bloquées pour ce site dans les réglages du navigateur ou du téléphone : la cloche en haut de page signale les nouveautés.", false, false);
+      show(t("js_notifications_bloquees"), false, false);
     } else if (subscription) {
       // Sent again at each visit: the server keeps it if it was removed meanwhile.
       post({ action: "subscribe", ...subscriptionFields(subscription) }).catch(() => {});
-      show("✓ Les notifications sont activées sur cet appareil.", true, true);
+      show(t("js_notifications_activees"), true, true);
     } else {
-      show("Les notifications ne sont pas activées sur cet appareil.", false, true);
+      show(t("js_notifications_non_activees"), false, true);
     }
   };
   const subscriptionFields = (subscription) => ({
@@ -596,12 +615,12 @@ document.querySelectorAll(".notice-menu").forEach((menu) => {
       const response = await post({ action: "subscribe", ...subscriptionFields(subscription) });
       if (!response.ok) {
         await subscription.unsubscribe();
-        show("L’activation a échoué. Réessayez plus tard.", false, true);
+        show(t("js_activation_echouee"), false, true);
         return;
       }
       await refresh();
     } catch (error) {
-      show("L’activation a échoué (" + error.message + ").", false, true);
+      show(t("js_activation_echouee_erreur", { error: error.message }), false, true);
     } finally {
       enable.disabled = false;
     }
@@ -621,9 +640,9 @@ document.querySelectorAll(".notice-menu").forEach((menu) => {
     }
   });
   // The service worker may never become ready (private browsing, blocked site data).
-  const unavailable = setTimeout(() => show("Les notifications ne sont pas disponibles ici : la cloche en haut de page signale les nouveautés.", false, false), 6000);
+  const unavailable = setTimeout(() => show(t("js_notifications_indisponibles_cloche"), false, false), 6000);
   refresh()
-    .catch(() => show("Les notifications ne sont pas disponibles ici.", false, false))
+    .catch(() => show(t("js_notifications_indisponibles"), false, false))
     .finally(() => clearTimeout(unavailable));
 })();
 
@@ -648,7 +667,7 @@ document.querySelectorAll("[data-announcement-options]").forEach((options) => {
     const everyone = form.querySelector("[data-announcement-everyone]");
     let audience = [];
     if (everyone && everyone.checked) {
-      audience = ["Tout le monde"];
+      audience = [t("tout_monde")];
     } else {
       form.querySelectorAll(".section-assignment-group").forEach((group) => {
         const parent = group.querySelector("[data-section-parent]");
@@ -661,8 +680,8 @@ document.querySelectorAll("[data-announcement-options]").forEach((options) => {
     }
     const starts = day(form.querySelector('[name="starts"]').value);
     const ends = day(form.querySelector('[name="ends"]').value);
-    summary.textContent = "Visible par : " + (audience.length ? audience.join(", ") : "personne pour l’instant")
-      + " · " + (ends ? "du " + starts + " au " + ends : "du " + starts + ", sans date de fin");
+    summary.textContent = t("js_annonce_visible_par", { audience: audience.length ? audience.join(", ") : t("js_annonce_personne") })
+      + " · " + (ends ? t("js_annonce_du_au", { first: starts, last: ends }) : t("js_annonce_du_sans_fin", { first: starts }));
   };
   form.addEventListener("change", update);
   form.addEventListener("input", update);
@@ -743,7 +762,7 @@ document.addEventListener("click", (event) => {
   dialog.className = "photo-dialog";
   const image = document.createElement("img");
   image.src = link.href;
-  image.alt = `Photo de ${link.dataset.photoName}`;
+  image.alt = t("photo_name", { name: link.dataset.photoName });
   const bar = document.createElement("div");
   bar.className = "photo-dialog-bar";
   const name = document.createElement("span");
@@ -751,7 +770,7 @@ document.addEventListener("click", (event) => {
   const close = document.createElement("button");
   close.type = "button";
   close.className = "text-button";
-  close.textContent = "Fermer";
+  close.textContent = t("fermer");
   close.addEventListener("click", () => dialog.close());
   bar.append(name, close);
   dialog.append(image, bar);

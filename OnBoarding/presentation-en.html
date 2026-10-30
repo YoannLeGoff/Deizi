@@ -1,0 +1,668 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Deizi — Presentation</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500..800&family=Instrument+Sans:wght@400..700&display=swap" rel="stylesheet">
+<style>
+  /* Deizi palette (from the application): ink, paper, red, sea; one colour per user level. */
+  :root {
+    --ink: #292b2d; --muted: #5d6266; --paper: #f5f1e8; --white: #fffefa; --line: #d8d4ca;
+    --red: #b7353f; --sea: #087e95;
+    --artistes: #087e95; --managers: #2f8a4c; --organisateurs: #6b4fa0; --logisticiens: #b7353f; --admins: #292b2d;
+    --serif: "Bricolage Grotesque", "Arial", sans-serif; --sans: "Instrument Sans", "Arial", sans-serif;
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; background: #1c1d1f; color: var(--ink); font-family: var(--sans); }
+  .deck { width: 1280px; margin: 0 auto; }
+  .slide { position: relative; width: 1280px; height: 720px; overflow: hidden; background: var(--white); display: none; }
+  .slide.is-current { display: block; }
+  .slide h1, .slide h2, .slide h3 { margin: 0; font-family: var(--serif); letter-spacing: -.02em; }
+  .slide h2 { font-size: 44px; line-height: 1.05; }
+  .slide p { margin: 0; }
+  .pad { position: absolute; inset: 56px 64px; }
+  .eyebrow { display: inline-flex; align-items: center; gap: 10px; margin-bottom: 14px; color: var(--muted); font-size: 14px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; }
+  .eyebrow::before { content: ""; width: 28px; height: 2px; background: var(--red); }
+  .level { display: inline-flex; align-items: center; gap: 8px; padding: 6px 12px; color: #fff; border-radius: 999px; font-size: 14px; font-weight: 700; }
+  .level-artistes { background: var(--artistes); } .level-managers { background: var(--managers); } .level-organisateurs { background: var(--organisateurs); }
+  .level-logisticiens { background: var(--logisticiens); } .level-admins { background: var(--admins); } .level-tous { background: var(--muted); }
+  .slide-top { display: flex; align-items: center; justify-content: space-between; margin-bottom: 26px; }
+  .dot { color: var(--red); }
+  .lead { margin-top: 14px; color: var(--muted); font-size: 20px; line-height: 1.45; }
+  .points { display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .points li { display: grid; grid-template-columns: 40px 1fr; gap: 14px; align-items: start; font-size: 16px; line-height: 1.42; }
+  .points li b { display: block; font-size: 18px; }
+  .points .n { display: grid; place-items: center; width: 40px; height: 40px; color: #fff; background: var(--sea); border-radius: 50%; font-family: var(--serif); font-size: 18px; font-weight: 700; }
+  .points.accent-managers .n { background: var(--managers); } .points.accent-organisateurs .n { background: var(--organisateurs); }
+  .points.accent-logisticiens .n { background: var(--logisticiens); } .points.accent-admins .n { background: var(--admins); }
+  /* Screens: framed like a browser window, cropped from the top. */
+  .screen { position: absolute; overflow: hidden; background: #fff; border-radius: 12px; box-shadow: 0 18px 40px rgba(20, 22, 24, .22), 0 0 0 1px rgba(20, 22, 24, .08); }
+  .screen::before { content: ""; display: block; height: 22px; background: #ecebe7 radial-gradient(circle at 14px 11px, #e06c5f 4px, transparent 5px), #ecebe7; border-bottom: 1px solid #ddd9cf; }
+  .screen::after { content: ""; position: absolute; top: 7px; left: 26px; width: 8px; height: 8px; border-radius: 50%; background: #e5b44a; box-shadow: 13px 0 0 #6cbf6a; }
+  /* Full width, cut at the bottom only; --crop (share of the width) moves the view down the page. */
+  .screen .vp { height: calc(100% - 22px); overflow: hidden; background: #f4f0e7; }
+  .screen img { display: block; width: 100%; height: auto; margin-top: calc(var(--crop, 0) * -1%); }
+  .screen.phone { border-radius: 28px; border: 10px solid #222; }
+  .screen.phone::before, .screen.phone::after { display: none; }
+  .screen.phone .vp { height: 100%; }
+  .caption { position: absolute; color: var(--muted); font-size: 14px; }
+  /* Layouts */
+  .split-text { position: absolute; top: 56px; left: 64px; width: 410px; bottom: 56px; display: flex; flex-direction: column; }
+  .split-text .points { margin-top: 22px; }
+  .split-text .tip { margin-top: auto; }
+  .split-shot { left: 512px; top: 360px; width: 712px; height: auto; transform: translateY(-50%); }
+  .split-shot .vp { height: auto; max-height: 586px; }
+  .tip { padding: 14px 16px; background: var(--paper); border-radius: 10px; font-size: 15px; line-height: 1.45; }
+  .tip b { color: var(--red); }
+  /* Title & dividers (dark) */
+  .slide.dark { background: var(--ink); color: #fff; }
+  .slide.dark .lead { color: #c9cccd; }
+  .slide.dark .eyebrow { color: #c9cccd; }
+  .title-main { position: absolute; left: 64px; top: 170px; width: 700px; }
+  .title-main h1 { font-size: 96px; line-height: .95; }
+  .title-main .lead { font-size: 24px; margin-top: 22px; }
+  .title-side { position: absolute; right: -40px; top: 90px; width: 540px; height: 540px; transform: rotate(-4deg); }
+  .divider { position: absolute; left: 64px; top: 210px; width: 760px; }
+  .divider h2 { font-size: 72px; }
+  .divider .level { margin-bottom: 26px; font-size: 16px; padding: 8px 16px; }
+  .divider-list { position: absolute; right: 64px; top: 210px; width: 360px; display: grid; gap: 12px; margin: 0; padding: 0; list-style: none; }
+  .divider-list li { padding: 14px 18px; background: rgba(255, 255, 255, .08); border-radius: 10px; font-size: 18px; }
+  .slide.divider-artistes { background: var(--artistes); } .slide.divider-managers { background: var(--managers); }
+  .slide.divider-organisateurs { background: var(--organisateurs); } .slide.divider-logisticiens { background: var(--logisticiens); }
+  .slide.divider-admins { background: var(--admins); }
+  .slide[class*="divider-"] .level { background: rgba(255, 255, 255, .18); }
+  .slide[class*="divider-"] { color: #fff; }
+  .divider .lead { margin-top: 22px; }
+  .slide[class*="divider-"] .dot { color: #fff; opacity: .6; }
+  .help { position: absolute; left: 64px; right: 64px; top: 480px; padding: 18px 22px; background: var(--ink); color: #fff; border-radius: 12px; font-size: 18px; }
+  .help b { color: #f0b9bd; }
+  /* Roles grid */
+  .roles { position: absolute; left: 64px; right: 64px; top: 210px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .role { position: relative; padding: 20px 18px 18px; background: var(--paper); border-radius: 12px; min-height: 330px; }
+  .role .level { margin-bottom: 14px; }
+  .role p { font-size: 15px; line-height: 1.5; }
+  .role .plus { margin-top: 12px; color: var(--muted); font-size: 13px; line-height: 1.45; }
+  .roles-arrow { position: absolute; left: 64px; right: 64px; top: 566px; display: flex; align-items: center; gap: 12px; color: var(--muted); font-size: 15px; }
+  .roles-arrow::before { content: ""; flex: 1; height: 2px; background: linear-gradient(90deg, var(--artistes), var(--managers), var(--organisateurs), var(--logisticiens), var(--admins)); order: 2; }
+  .roles-arrow span:last-child { order: 3; }
+  /* Agenda (sommaire) */
+  .agenda { position: absolute; left: 64px; right: 64px; top: 200px; display: grid; grid-template-columns: repeat(5, 1fr); gap: 16px; }
+  .agenda div { padding: 22px 18px; border-radius: 12px; color: #fff; min-height: 260px; }
+  .agenda b { display: block; margin: 10px 0 12px; font-family: var(--serif); font-size: 24px; }
+  .agenda span { font-size: 15px; line-height: 1.55; opacity: .92; }
+  .agenda .num { font-family: var(--serif); font-size: 40px; font-weight: 800; opacity: .5; }
+  /* Two screens */
+  .duo-a { left: 64px; top: 240px; width: 740px; height: 424px; }
+  .duo-b { left: 870px; top: 214px; width: 260px; height: 450px; }
+  /* Flow */
+  .flow { display: flex; align-items: center; gap: 10px; margin-top: 22px; flex-wrap: wrap; }
+  .flow span { padding: 7px 12px; border-radius: 6px; font-size: 14px; font-weight: 700; }
+  .flow i { color: var(--muted); font-style: normal; }
+  .chip-draft { background: #e6e3dc; color: #45494c; } .chip-pub { background: var(--sea); color: #fff; }
+  .chip-ok { background: #b9ecc4; color: #123d1c; } .chip-no { background: #f3d3d5; color: #7a2028; }
+  .formula { display: flex; align-items: center; gap: 10px; margin-top: 18px; font-size: 17px; font-weight: 700; }
+  .formula span { padding: 10px 14px; background: var(--paper); border-radius: 8px; }
+  .formula .res { color: #fff; background: var(--logisticiens); }
+  /* Next steps */
+  .steps { position: absolute; left: 64px; right: 64px; top: 200px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 18px; }
+  .steps div { padding: 24px 20px; background: var(--paper); border-radius: 12px; min-height: 240px; }
+  .steps b { display: block; margin: 12px 0 10px; font-family: var(--serif); font-size: 22px; }
+  .steps p { font-size: 16px; line-height: 1.5; color: var(--muted); }
+  .steps .n { display: grid; place-items: center; width: 44px; height: 44px; color: #fff; background: var(--red); border-radius: 50%; font-family: var(--serif); font-size: 20px; font-weight: 800; }
+  .footer { position: absolute; left: 64px; right: 64px; bottom: 22px; display: flex; justify-content: space-between; color: #9a9ea1; font-size: 12px; }
+  .slide.dark .footer, .slide[class*="divider-"] .footer { color: rgba(255, 255, 255, .55); }
+
+  /* Sharing & iCal slide */
+  .share-col { position: absolute; left: 64px; top: 196px; width: 520px; display: grid; gap: 18px; }
+  .share-card { display: grid; grid-template-columns: 52px 1fr; gap: 16px; padding: 18px 20px; background: var(--paper); border-radius: 12px; }
+  .share-card .ico { display: grid; place-items: center; width: 52px; height: 52px; color: #fff; border-radius: 50%; }
+  .share-card .ico svg { width: 26px; height: 26px; }
+  .share-card b { display: block; margin-bottom: 4px; font-size: 19px; }
+  .share-card p { font-size: 15px; line-height: 1.5; }
+  .share-card ol { margin: 8px 0 0; padding-left: 18px; font-size: 15px; line-height: 1.5; }
+  .cal-mock { position: absolute; left: 656px; top: 446px; width: 560px; padding: 16px 18px; background: #fff; border-radius: 12px; box-shadow: 0 12px 30px rgba(20, 22, 24, .16), 0 0 0 1px rgba(20, 22, 24, .06); font-size: 14px; }
+  .cal-mock .cal-head { display: flex; justify-content: space-between; margin-bottom: 10px; color: var(--muted); font-size: 12px; font-weight: 700; letter-spacing: .08em; text-transform: uppercase; }
+  .cal-mock .cal-event { display: grid; grid-template-columns: 6px 1fr; gap: 12px; }
+  .cal-mock .cal-event::before { content: ""; background: #24bd4a; border-radius: 3px; }
+  .cal-mock b { display: block; font-size: 16px; }
+  .cal-mock span { display: block; color: var(--muted); line-height: 1.5; }
+  .cal-mock a { color: var(--sea); font-weight: 600; text-decoration: none; }
+  /* Installable app slide: home screen mock */
+  .home-mock { position: absolute; left: 870px; top: 250px; width: 300px; height: 330px; padding: 26px 24px; background: linear-gradient(160deg, #2c4f63, #1c2d3a); border-radius: 30px; box-shadow: 0 18px 40px rgba(20, 22, 24, .25); display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px 14px; align-content: start; }
+  .home-mock .app { display: grid; justify-items: center; gap: 6px; color: #fff; font-size: 12px; }
+  .home-mock .app i { width: 64px; height: 64px; border-radius: 15px; background: rgba(255, 255, 255, .22); }
+  .home-mock .app img { width: 64px; height: 64px; border-radius: 15px; }
+  .home-mock .app.is-deizi { position: relative; font-weight: 700; }
+  .home-mock .app .app-badge { position: absolute; top: -7px; right: 4px; min-width: 24px; height: 24px; padding: 0 7px; color: #fff; background: #ff1f2d; border-radius: 12px; font-size: 13px; font-weight: 700; line-height: 24px; text-align: center; box-shadow: 0 0 0 2px #23394a; }
+  .home-mock .push-mock { grid-column: 1 / -1; display: grid; grid-template-columns: 34px 1fr; gap: 2px 10px; padding: 10px 12px; color: var(--ink); background: rgba(255, 255, 255, .94); border-radius: 14px; font-size: 12px; line-height: 1.35; }
+  .home-mock .push-mock img { grid-row: span 2; width: 34px; height: 34px; border-radius: 8px; }
+  .home-mock .push-mock b { font-size: 12.5px; }
+  .home-mock .push-mock span { color: var(--muted); }
+  /* Languages slide: the same agenda on four phones */
+  .lang-phones { position: absolute; left: 512px; top: 56px; width: 704px; display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin: 0; }
+  .lang-phones figure { margin: 0; }
+  .lang-phones .screen { position: relative; height: 400px; }
+  .lang-phones figcaption { margin-top: 8px; color: var(--muted); font-size: 14px; font-weight: 700; text-align: center; }
+  /* Controls (screen only) */
+  .controls { position: fixed; right: 18px; bottom: 16px; display: flex; gap: 8px; align-items: center; color: #c9cccd; font: 13px var(--sans); }
+  .controls button { padding: 7px 12px; color: #fff; background: #3a3c3f; border: 0; border-radius: 6px; font: 600 13px var(--sans); cursor: pointer; }
+  .controls button:hover { background: #4a4d50; }
+  .hint { position: fixed; left: 18px; bottom: 18px; color: #8d9194; font: 12px var(--sans); }
+  @media screen { body { min-height: 100vh; display: grid; place-items: center; } .deck { transform-origin: center center; } }
+  @media print {
+    @page { size: 1280px 720px; margin: 0; }
+    html, body { background: #fff; display: block; }
+    .deck { transform: none !important; }
+    .slide { display: block !important; page-break-after: always; break-after: page; }
+    .slide, .slide * { -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+    .controls, .hint { display: none; }
+  }
+</style>
+</head>
+<body>
+<main class="deck" id="deck">
+
+<!-- 1. Cover -->
+<section class="slide dark" data-title="Cover">
+  <div class="title-main">
+    <p class="eyebrow">Introduction for future users</p>
+    <h1>Deizi<span class="dot">.</span></h1>
+    <p class="lead">Kerlenn Pondi’s shared calendar: the group’s dates, everyone’s attendance and all the organisation of each outing, in one place — in each member’s language.</p>
+  </div>
+  <div class="screen title-side"><div class="vp"><img src="visuels/en/02-agenda.png" alt="Upcoming dates"></div></div>
+  <div class="footer"><span>Kerlenn Pondi</span><span>Getting started with Deizi</span></div>
+</section>
+
+<!-- 2. Why -->
+<section class="slide" data-title="Why Deizi">
+  <div class="split-text">
+    <p class="eyebrow">Why Deizi</p>
+    <h2>One source for every date<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>No more scattered messages</b>Dates, times, places and changes are up to date for everyone.</span></li>
+      <li><span class="n">2</span><span><b>Attendance in one click</b>Everyone answers; those in charge know straight away who will be there.</span></li>
+      <li><span class="n">3</span><span><b>Organisation in one place</b>Polls, roadmaps, contracts and quotes follow each date.</span></li>
+      <li><span class="n">4</span><span><b>In everyone’s language</b>French, English, Breton, Spanish: each member picks theirs.</span></li>
+    </ul>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/02-agenda.png" alt="Upcoming dates"></div></div>
+</section>
+
+<!-- 3. Roles -->
+<section class="slide" data-title="Roles">
+  <div class="pad">
+    <p class="eyebrow">Who does what</p>
+    <h2>Five user levels<span class="dot">.</span></h2>
+    <p class="lead">Each level sees and does everything the previous one does, with extra rights.</p>
+  </div>
+  <div class="roles">
+    <div class="role"><span class="level level-artistes">Artists</span><p>See the dates of their sections, answer attendance and polls, open the roadmaps.</p><p class="plus">All members</p></div>
+    <div class="role"><span class="level level-managers">Managers</span><p>Organise their section’s meetings (sectionals, rehearsals), post announcements to it and follow their members’ attendance.</p><p class="plus">Section or desk leaders</p></div>
+    <div class="role"><span class="level level-organisateurs">Organisers</span><p>Prepare the group’s outings: all dates, polls, roadmaps; create accounts.</p><p class="plus">Board, coordination</p></div>
+    <div class="role"><span class="level level-logisticiens">Logisticians</span><p>Handle the paperwork of each date: status, contract, fee, expenses, quotes and a report per season.</p><p class="plus">Treasury, contracts</p></div>
+    <div class="role"><span class="level level-admins">Administrators</span><p>Configure the application: accounts, sections, statuses, site identity, seasons, languages.</p><p class="plus">One or two people</p></div>
+  </div>
+  <div class="roles-arrow"><span>Fewer rights</span><span>More rights</span></div>
+</section>
+
+<!-- 4. Outline -->
+<section class="slide" data-title="Outline">
+  <div class="pad">
+    <p class="eyebrow">Outline</p>
+    <h2>One path per level<span class="dot">.</span></h2>
+    <p class="lead">Everyone follows the first part; the next ones are for the roles that use them.</p>
+  </div>
+  <div class="agenda">
+    <div style="background: var(--artistes)"><span class="num">01</span><b>All members</b><span>Logging in, language, calendar, attendance and polls, iCal, phone app, member directory, yearly planner.</span></div>
+    <div style="background: var(--managers)"><span class="num">02</span><b>Managers</b><span>Section meetings (sectionals, rehearsals), announcements, photos and logins, attendance grid.</span></div>
+    <div style="background: var(--organisateurs)"><span class="num">03</span><b>Organisers</b><span>Polls and their results, roadmaps and public link, accounts, audit log.</span></div>
+    <div style="background: var(--logisticiens)"><span class="num">04</span><b>Logisticians</b><span>Logistics status, contract and fee, quotes, report.</span></div>
+    <div style="background: var(--admins)"><span class="num">05</span><b>Administrators</b><span>Settings, statuses, languages and translations, member record, rights matrix.</span></div>
+  </div>
+</section>
+
+<!-- 5. Divider: all members -->
+<section class="slide divider-artistes" data-title="All members">
+  <div class="divider"><span class="level">Level 1 · All members</span><h2>The essentials for everyone<span class="dot">.</span></h2><p class="lead" style="color:#e3f3f6">What every artist uses day to day.</p></div>
+  <ul class="divider-list"><li>Log in, choose your language</li><li>Browse the calendar</li><li>Answer: attendance and polls</li><li>Subscribe (iCal), shared links</li><li>Install the app</li><li>Member directory</li><li>Yearly planner</li></ul>
+  <div class="footer"><span>Deizi</span><span>All members</span></div>
+</section>
+
+<!-- 6. Log in -->
+<section class="slide" data-title="Log in">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-tous">Everyone</span></div>
+    <h2>Logging in<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>Login and password</b>Given by an administrator or an organiser; change them in “My account”.</span></li>
+      <li><span class="n">2</span><span><b>Capitals and accents</b>“énora” or “ÉNORA”: the login is recognised either way.</span></li>
+      <li><span class="n">3</span><span><b>Computer or phone</b>The site adapts to the screen, and installs like an app on the phone.</span></li>
+    </ul>
+    <p class="tip"><b>On your phone:</b> tick “Stay logged in on this device” so you don’t have to log in again (90 days). On a shared computer, leave it unticked.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/01-connexion.png" alt="Login page"></div></div>
+</section>
+
+<!-- 6b. Language -->
+<section class="slide" data-title="In your language">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-tous">Everyone</span></div>
+    <h2>In your language<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>Everyone picks their own</b>“My account”, “Language” section: French, English, Breton, Spanish, or a language added by the association. By default, the site’s language.</span></li>
+      <li><span class="n">2</span><span><b>Only the labels change</b>Menus, buttons, messages and dates. The association’s content (date titles, places, announcements, sections) stays as entered.</span></li>
+      <li><span class="n">3</span><span><b>Statuses too</b>“Confirmé” shows as the association named it, whatever the language.</span></li>
+    </ul>
+    <p class="tip"><b>Your calendar (iCal)</b> follows the chosen language too.</p>
+  </div>
+  <div class="lang-phones">
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-fr.png" alt="Calendar in French"></div></div><figcaption>Français</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-en.png" alt="Calendar in English"></div></div><figcaption>English</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-br.png" alt="Calendar in Breton"></div></div><figcaption>Brezhoneg</figcaption></figure>
+    <figure><div class="screen phone"><div class="vp"><img src="visuels/34-telephone-es.png" alt="Calendar in Spanish"></div></div><figcaption>Español</figcaption></figure>
+  </div>
+  <div class="screen" style="left:512px; top:500px; width:704px; height:164px"><div class="vp"><img src="visuels/en/31-mon-compte-langue.png" alt="Choosing the language in My account" style="--crop: 27.4"></div></div>
+</section>
+
+<!-- 7. Calendar -->
+<section class="slide" data-title="The calendar">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-artistes">Artists</span></div>
+    <h2>My sections’ calendar<span class="dot">.</span></h2>
+    <p class="lead" style="width: 1150px">The next dates of your sections, the latest announcement on top, the filters folded under “Filters”. “Full calendar” also shows past dates; the calendar button subscribes your phone (iCal).</p>
+  </div>
+  <div class="screen duo-a"><div class="vp"><img src="visuels/en/02-agenda.png" alt="Calendar on a computer"></div></div>
+  <div class="screen phone duo-b"><div class="vp"><img src="visuels/en/03-agenda-telephone.png" alt="Calendar on a phone"></div></div>
+</section>
+
+<!-- 8. Attendance -->
+<section class="slide" data-title="My attendance">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-artistes">Artists</span></div>
+    <h2>Answering attendance<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>Present, Absent or Don’t know</b>In one click, changeable until the date. Nothing is ticked until you answer.</span></li>
+      <li><span class="n">2</span><span><b>“My answers”</b>The “No answer” filter finds the dates still to answer.</span></li>
+      <li><span class="n">3</span><span><b>Who is coming?</b>On the date’s page, the answers of each sub-section and the total of each answer.</span></li>
+    </ul>
+    <p class="tip"><b>On the date’s page:</b> the polls to fill in (red dot) and the roadmap of confirmed dates. “New” and a red badge flag dates created or changed.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/04-date-presence.png" alt="A date’s page"></div></div>
+</section>
+
+<!-- 9b. Share and stay up to date -->
+<section class="slide" data-title="Share and stay up to date">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-tous">Everyone</span></div>
+    <h2>Share and stay up to date<span class="dot">.</span></h2>
+  </div>
+  <div class="share-col">
+    <div class="share-card"><span class="ico" style="background: var(--sea)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M10 13a5 5 0 0 0 7.5.5l3-3a5 5 0 0 0-7-7l-1.7 1.7"/><path d="M14 11a5 5 0 0 0-7.5-.5l-3 3a5 5 0 0 0 7 7l1.7-1.7"/></svg></span><div><b>One unique link, easy to share</b><p>Each <strong>roadmap</strong> and each <strong>quote</strong> has its own address, sent by organisers and logisticians by message or e-mail: anyone can open and print it <strong>without an account</strong> (companions, driver, festival organiser…).</p></div></div>
+    <div class="share-card"><span class="ico" style="background: var(--red)"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="4.5" width="18" height="16" rx="2"/><path d="M16 2.5v4M8 2.5v4M3 10h18"/><path d="m9 15 2 2 4-4"/></svg></span><div><b>Your calendar on your phone</b><p>Subscribe once to your personal iCal calendar: the dates arrive in the phone’s calendar and <strong>update by themselves</strong> (time, place, cancellation).</p><ol><li>Calendar button at the top of the calendar</li><li>“Subscribe” in the phone’s calendar</li></ol><p style="margin-top:6px">Each event shows the polls to fill in and the link to the date.</p></div></div>
+  </div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:250px"><div class="vp"><img src="visuels/en/06b-feuille-de-route-lien.png" alt="Public link of the roadmap" style="--crop: 30; width: 150%; max-width: none; margin-left: -18%"></div></div>
+  <div class="cal-mock">
+    <div class="cal-head"><span>Phone calendar</span><span>Sun 8 Nov</span></div>
+    <div class="cal-event"><div><b>Spectacle des Gouelioù</b><span>2:00 – 5:00 PM · Palais des congrès de Pontivy</span><span>Confirmé · Poll “Repas ?” to fill in</span><span><a>Answer and see the date in Deizi ↗</a></span></div></div>
+  </div>
+</section>
+
+<!-- 9c. Phone app -->
+<section class="slide" data-title="Phone app">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-tous">Everyone</span></div>
+    <h2>Deizi on your phone<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">Install Deizi on the home screen: it opens with one tap, full screen, like an app.</p>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>iPhone (Safari)</b>Share button, then “Add to Home Screen”.</span></li>
+      <li><span class="n">2</span><span><b>Android (Chrome)</b>“Install the app” button, or Chrome’s ⋮ menu.</span></li>
+      <li><span class="n">3</span><span><b>Offered automatically</b>On a phone, the calendar offers it in a banner (“Later” hides it for 30 days); everything is also explained on the About page.</span></li>
+      <li><span class="n">4</span><span><b>Notifications and bell</b>Turn notifications on from the About page: new date in your sections, a date you opened has changed. Without them, the bell at the top counts them.</span></li>
+    </ul>
+  </div>
+  <div class="screen phone" style="left:560px; top:110px; width:280px; height:520px"><div class="vp"><img src="visuels/en/24-bandeau-installation.png" alt="Calendar on an iPhone with the install banner"></div></div>
+  <div class="home-mock" aria-label="Phone home screen">
+    <div class="push-mock"><img src="visuels/23-icone-application.png" alt=""><b>New date: Fest-noz de Pondi</b><span>Saturday 14 November · 9:00 PM · Pontivy</span></div>
+    <span class="app"><i></i>Photos</span><span class="app"><i></i>Messages</span><span class="app"><i></i>Maps</span>
+    <span class="app is-deizi"><img src="visuels/23-icone-application.png" alt=""><span class="app-badge">2</span>Deizi</span><span class="app"><i></i>Calendar</span><span class="app"><i></i>Weather</span>
+  </div>
+  <p class="caption" style="left:560px; top:646px; width:280px; font-size:13px; line-height:1.45">The banner offered on the calendar (iPhone)</p>
+  <p class="caption" style="left:870px; top:110px; width:300px; font-size:15px; line-height:1.5; color:var(--ink)">The icon chosen in Settings (Site identity) joins the home screen, with the number of new items. Tapping a notification opens the date.</p>
+  <p class="caption" style="left:870px; top:598px; width:300px; font-size:13px; line-height:1.45"><b>On a computer</b>: Chrome or Edge also install Deizi (not Firefox), in the Start menu and the taskbar.</p>
+</section>
+
+<!-- 9d. Member directory -->
+<section class="slide" data-title="Member directory">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-tous">Everyone</span></div>
+    <h2>The member directory<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">The faces of the group, by branch and sub-section: menu, people icon.</p>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>My photo</b>In “My account”, “My photo” section (JPEG or PNG). Frame the face at the top of the picture.</span></li>
+      <li><span class="n">2</span><span><b>Thumbnail and portrait</b>A square thumbnail with rounded corners; a click enlarges it as a portrait.</span></li>
+      <li><span class="n">3</span><span><b>Titles and leads</b>Under the name, the role in the association (“Penn-soner”, “Secrétaire”: entered by the association, so not translated); the section lead comes first in their sub-section.</span></li>
+    </ul>
+    <p class="tip"><b>Among us:</b> photos are only visible to logged-in members.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/27-trombinoscope.png" alt="Member directory: members by sub-section, with photo or initials" style="--crop: 8"></div></div>
+</section>
+
+<!-- 10. Advanced views -->
+<section class="slide" data-title="Advanced views">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-artistes">Artists</span></div>
+    <h2>The yearly planner<span class="dot">.</span></h2>
+    <ul class="points">
+      <li><span class="n">1</span><span><b>The whole season at a glance</b>One month per column, each date in its status colour, with the section codes.</span></li>
+      <li><span class="n">2</span><span><b>Bank and school holidays</b>Shown in the planner to anticipate availability.</span></li>
+      <li><span class="n">3</span><span><b>Filters and printing</b>By section and status; one half-year per landscape page.</span></li>
+    </ul>
+    <p class="tip"><b>“Views” menu (planner icon):</b> “Date list” and “Yearly planner” tabs.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/07-vues-avancees-planning.png" alt="Yearly planner of the advanced views" style="--crop: 22"></div></div>
+</section>
+
+<!-- 11. Divider: managers -->
+<section class="slide divider-managers" data-title="Managers">
+  <div class="divider"><span class="level">Level 2 · Managers</span><h2>Bringing a section to life<span class="dot">.</span></h2><p class="lead" style="color:#e2f2e7">The section’s internal meetings, outside performances and logistics.</p></div>
+  <ul class="divider-list"><li>Sectionals</li><li>Sub-section rehearsals</li><li>Announcements to the section</li><li>Photos and logins</li><li>Attendance grid</li></ul>
+  <div class="footer"><span>Deizi</span><span>Managers</span></div>
+</section>
+
+<!-- 12. Section meetings -->
+<section class="slide" data-title="Section meetings">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-managers">Managers</span></div>
+    <h2>My section’s meetings<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">The manager creates the internal meetings of their sub-sections, without going through the organisers.</p>
+    <ul class="points accent-managers">
+      <li><span class="n">1</span><span><b>Sectional</b>“Stage cornemuses”, “Stage Pipe Band”: sections involved, time, place, comment.</span></li>
+      <li><span class="n">2</span><span><b>Sub-section rehearsal</b>A date reserved to the members concerned: other sections don’t see it.</span></li>
+      <li><span class="n">3</span><span><b>Outside logistics</b>No contract or quote: these dates stay out of the logistics follow-up.</span></li>
+    </ul>
+    <p class="tip"><b>Then:</b> everyone answers from the calendar, and the manager follows attendance in the grid.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/09-nouvelle-date.png" alt="Form of a date created by a manager" style="--crop: 14.3"></div></div>
+</section>
+
+<!-- 12b. Announcements -->
+<section class="slide" data-title="Announcements">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-managers">Managers</span></div>
+    <h2>Announcements to my section<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">A message for all members of their sub-sections, at the top of their home page.</p>
+    <ul class="points accent-managers">
+      <li><span class="n">1</span><span><b>Title, text, link and photo</b>A change of venue, gear to bring, a reminder before a sectional.</span></li>
+      <li><span class="n">2</span><span><b>The right audience, the right time</b>The sub-sections in their scope, during the chosen period.</span></li>
+      <li><span class="n">3</span><span><b>Home page and notification</b>The latest announcement shows above the next dates and goes out as a notification to those who turned them on.</span></li>
+    </ul>
+    <p class="tip"><b>“Announcements” menu (megaphone):</b> “My announcements” to edit or delete. Everyone can hide an announcement once read.</p>
+  </div>
+  <div class="screen" style="left:512px; top:200px; width:470px; height:208px"><div class="vp"><img src="visuels/en/25-annonce-formulaire.png" alt="Form of a new announcement by a manager"></div></div>
+  <p class="caption" style="left:512px; top:424px; width:470px; font-size:13px; line-height:1.45">The manager’s form: title, photo, notification. Text, link, period and audience are folded; by default, all sub-sections in their scope.</p>
+  <div class="screen phone" style="left:1006px; top:92px; width:230px; height:470px"><div class="vp"><img src="visuels/en/26-annonce-accueil.png" alt="Announcement at the top of a member’s home page, on a phone"></div></div>
+  <p class="caption" style="left:1006px; top:578px; width:230px; font-size:13px; line-height:1.45">On a member’s phone, at the top of the home page</p>
+</section>
+
+<!-- 12c. Photos and logins -->
+<section class="slide" data-title="Photos and logins">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-managers">Managers</span></div>
+    <h2>Photos and logins<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">The manager helps the members in their scope complete the member directory.</p>
+    <ul class="points accent-managers">
+      <li><span class="n">1</span><span><b>“Edit” in the member directory</b>Under each artist or manager of their sub-sections, and under their own photo.</span></li>
+      <li><span class="n">2</span><span><b>Photo and login</b>A reduced record: change or remove the photo, change the login (the password stays the same).</span></li>
+      <li><span class="n">3</span><span><b>Everything is traced</b>Each change is written to the audit log, with its author.</span></li>
+    </ul>
+    <p class="tip"><b>Remember to tell</b> the member their new login: it is what they will log in with.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/28-manager-fiche.png" alt="Reduced record of a member seen by their manager: photo and login" style="--crop: 5"></div></div>
+</section>
+
+<!-- 13. Attendance grid -->
+<section class="slide" data-title="Attendance grid">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-managers">Managers</span></div>
+    <h2>The attendance grid<span class="dot">.</span></h2>
+    <p class="lead" style="width: 1100px">Members in rows, dates in columns. A click moves an empty cell to Present, Absent, Don’t know, then back to No answer (keys P, A, N, S); everything is saved automatically.</p>
+  </div>
+  <div class="screen" style="left:64px; top:250px; width:1152px; height:414px"><div class="vp"><img src="visuels/en/10-tableau-de-presence.png" alt="Attendance grid" style="--crop: 19"></div></div>
+</section>
+
+<!-- 14. Divider: organisers -->
+<section class="slide divider-organisateurs" data-title="Organisers">
+  <div class="divider"><span class="level">Level 3 · Organisers</span><h2>Preparing the outings<span class="dot">.</span></h2><p class="lead" style="color:#ece6f6">All the group’s dates, and the tools to organise each outing.</p></div>
+  <ul class="divider-list"><li>Polls (meal, coach…)</li><li>Roadmaps and public link</li><li>Accounts and audit log</li></ul>
+  <div class="footer"><span>Deizi</span><span>Organisers</span></div>
+</section>
+
+<!-- 15a. Polls -->
+<section class="slide" data-title="Polls">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-organisateurs">Organisers</span></div>
+    <h2>Polls<span class="dot">.</span></h2>
+    <ul class="points accent-organisateurs">
+      <li><span class="n">1</span><span><b>Create</b>The date’s “+ Poll” tab: a question (meal, coach…) and its answers.</span></li>
+      <li><span class="n">2</span><span><b>Follow the answers</b>Count and names per answer, members without an answer, vegetarian diet or minors if needed.</span></li>
+      <li><span class="n">3</span><span><b>Detailed table</b>One row per member, filterable, with totals; printable and exportable as CSV.</span></li>
+    </ul>
+    <p class="tip"><b>For a member:</b> the organiser can enter their answer on their behalf (shown as “entered by …”).</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/15b-organisateur-resultats-sondage.png" alt="Results and detailed table of a poll" style="--crop: 19"></div></div>
+</section>
+
+<!-- 15b. Roadmap -->
+<section class="slide" data-title="Roadmap">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-organisateurs">Organisers</span></div>
+    <h2>The roadmap<span class="dot">.</span></h2>
+    <ul class="points accent-organisateurs">
+      <li><span class="n">1</span><span><b>Filled in with the date</b>Contacts, place, transport, meal, outfit, repertoire, schedule, and documents (access map, organiser’s roadmap…) as a link or PDF.</span></li>
+      <li><span class="n">2</span><span><b>Visible to members</b>As soon as the date is confirmed; printable as PDF.</span></li>
+      <li><span class="n">3</span><span><b>One unique public link</b>To copy and send (companions, driver…); can be renewed or turned off.</span></li>
+    </ul>
+    <p class="tip"><b>In iCal:</b> the notes and the roadmap link also reach the phone’s calendar.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/06b-feuille-de-route-lien.png" alt="Roadmap and its public link" style="--crop: 18"></div></div>
+</section>
+
+<!-- 15c. Accounts and audit log -->
+<section class="slide" data-title="Accounts and audit log">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-organisateurs">Organisers</span></div>
+    <h2>Accounts and audit log<span class="dot">.</span></h2>
+  </div>
+  <div class="screen" style="left:64px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/11-comptes.png" alt="Accounts"></div></div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/12-historique.png" alt="Audit log"></div></div>
+  <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Accounts</b> — by branch and sub-section, the lead first; creating artist and manager accounts, sections, scope and login.</p>
+  <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Audit log</b> — logins, answers entered, dates changed, profile changes (login, name, title, photo): who, what, when; CSV export. Recorded in English, whatever the author’s language.</p>
+</section>
+
+<!-- 16. Divider: logisticians -->
+<section class="slide divider-logisticiens" data-title="Logisticians">
+  <div class="divider"><span class="level">Level 4 · Logisticians</span><h2>The paperwork<span class="dot">.</span></h2><p class="lead" style="color:#f6e2e3">The Logistics page, for logisticians and administrators.</p></div>
+  <ul class="divider-list"><li>Logistics status</li><li>Contract, expenses and fee</li><li>Organiser quotes and extras</li><li>Report per season</li></ul>
+  <div class="footer"><span>Deizi</span><span>Logisticians</span></div>
+</section>
+
+<!-- 17. Logistics dates -->
+<section class="slide" data-title="Logistics — dates">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-logisticiens">Logisticians</span></div>
+    <h2>Dates, season by season<span class="dot">.</span></h2>
+    <ul class="points accent-logisticiens">
+      <li><span class="n">1</span><span><b>Logistics status</b>Finer than the calendar’s (quote to send, awaiting contract, to invoice…), it sets the status members see.</span></li>
+      <li><span class="n">2</span><span><b>Totals per season</b>Contracts and fees, latest season first.</span></li>
+      <li><span class="n">3</span><span><b>Logistics follow-up</b>Only dates ticked “Logistics follow-up” appear.</span></li>
+    </ul>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/13-logistique-dates.png" alt="Logistics, Dates tab"></div></div>
+</section>
+
+<!-- 18. Fee -->
+<section class="slide" data-title="Contract and fee">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-logisticiens">Logisticians</span></div>
+    <h2>Contract, expenses and fee<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">For each date, choose the formula and enter the contract and expenses: the fee is calculated automatically.</p>
+    <div class="formula"><span>Contract</span>−<span>Expenses</span>=<span class="res">Fee</span></div>
+    <ul class="points accent-logisticiens" style="margin-top:22px">
+      <li><span class="n">1</span><span><b>Formula</b>“Bagad seul”, “Bagad &amp; Cercle”… for the report.</span></li>
+      <li><span class="n">2</span><span><b>Admin note</b>Internal follow-up, shared with the organisers.</span></li>
+      <li><span class="n">3</span><span><b>Attached documents</b>Links to the contract and other papers, listed under the date’s admin note.</span></li>
+    </ul>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/14-logistique-cachet.png" alt="Fee tab" style="--crop: 22"></div></div>
+</section>
+
+<!-- 19. Quotes -->
+<section class="slide" data-title="Quotes">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-logisticiens">Logisticians</span></div>
+    <h2>Quotes ready to send<span class="dot">.</span></h2>
+    <p class="lead" style="font-size:18px">The organiser quote offers one or more options, each with its lines. A unique public link sends it to the organiser, who prints it without an account.</p>
+    <div class="flow"><span class="chip-draft">Draft</span><i>→</i><span class="chip-pub">Published</span><i>→</i><span class="chip-ok">Accepted</span><i>or</i><span class="chip-no">Refused</span></div>
+    <p class="tip" style="margin-top:24px"><b>Published = frozen:</b> to change it, withdraw the link and publish again (a new link is created). Extra quotes (transport, accommodation…) are filed by need.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/16-devis-document.png" alt="Organiser quote" style="--crop: 52"></div></div>
+</section>
+
+<!-- 20. Report -->
+<section class="slide" data-title="Report">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-logisticiens">Logisticians</span></div>
+    <h2>The season report<span class="dot">.</span></h2>
+    <ul class="points accent-logisticiens">
+      <li><span class="n">1</span><span><b>Key figures</b>Dates, contracts, fees, expenses, quotes.</span></li>
+      <li><span class="n">2</span><span><b>Breakdowns</b>By status, by formula (fees included), by section.</span></li>
+      <li><span class="n">3</span><span><b>Month by month</b>With the season’s totals.</span></li>
+    </ul>
+    <p class="tip"><b>Season:</b> its start day is set in Settings.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/17-logistique-rapport.png" alt="Season report" style="--crop: 22"></div></div>
+</section>
+
+<!-- 21. Divider: administrators -->
+<section class="slide divider-admins" data-title="Administrators">
+  <div class="divider"><span class="level">Level 5 · Administrators</span><h2>Configuring Deizi<span class="dot">.</span></h2><p class="lead">The settings that apply to everyone.</p></div>
+  <ul class="divider-list"><li>Accounts and sections</li><li>Statuses and workflow</li><li>Site identity, seasons</li><li>Languages and translations</li><li>Rights matrix</li></ul>
+  <div class="footer"><span>Deizi</span><span>Administrators</span></div>
+</section>
+
+<!-- 22. Settings -->
+<section class="slide" data-title="Settings">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-admins">Administrators</span></div>
+    <h2>Settings<span class="dot">.</span></h2>
+  </div>
+  <div class="screen" style="left:64px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/18-configuration.png" alt="Settings" style="--crop: 9"></div></div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/19-flux-statuts.png" alt="Status workflow" style="--crop: 16.6"></div></div>
+  <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Settings by theme</b> — calendar, site settings, members, documents, follow-up and security; in Sections, whether each one shows in the filters and the member directory.</p>
+  <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Statuses</b> — names and colours chosen by the association (shown as they are in every language), logistics statuses and their mapping, with the workflow diagram.</p>
+</section>
+
+<!-- 22a. Languages -->
+<section class="slide" data-title="Languages">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-admins">Administrators</span></div>
+    <h2>Languages and translations<span class="dot">.</span></h2>
+  </div>
+  <div class="screen" style="left:64px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/32-langues.png" alt="Settings › Languages: bulk translation and on-screen corrections" style="--crop: 20.8"></div></div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/33-langues-creer.png" alt="A French variant and the Create a language form" style="--crop: 72.2"></div></div>
+  <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Default language, corrections</b> — the site’s default language; each text under its French version, to correct on screen, or a CSV file to hand to a translator, then import back.</p>
+  <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Create a language</b> — a variant (Québec French, Vannetais Breton…) starts from an existing language: only what differs is changed.</p>
+</section>
+
+<!-- 22b. Member record -->
+<section class="slide" data-title="Member record">
+  <div class="pad">
+    <div class="slide-top"><span class="level level-admins">Administrators</span></div>
+    <h2>A member’s record<span class="dot">.</span></h2>
+  </div>
+  <div class="screen" style="left:64px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/30-fiche-titre.png" alt="Account record: title and section lead" style="--crop: 101.4"></div></div>
+  <div class="screen" style="left:656px; top:170px; width:560px; height:400px"><div class="vp"><img src="visuels/en/29-fiche-journal.png" alt="Audit log tab of a member’s record" style="--crop: 9"></div></div>
+  <p class="caption" style="left:64px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Title and lead</b> — the role in the association shown instead of the app role (“Président”); the section lead, first in their sub-section’s lists.</p>
+  <p class="caption" style="left:656px; top:590px; width:560px; font-size:17px; line-height:1.5; color:var(--ink)"><b>Audit log</b> — a tab of the record: the member’s logins, answers and profile changes.</p>
+</section>
+
+<!-- 23. Rights matrix -->
+<section class="slide" data-title="Rights matrix">
+  <div class="split-text">
+    <div class="slide-top"><span class="level level-admins">Administrators</span></div>
+    <h2>Who can do what?</h2>
+    <p class="lead" style="font-size:18px">The rights matrix sums up, action by action, what each role allows. Managers, organisers, logisticians and administrators can open it.</p>
+    <p class="tip"><b>Remember:</b> when in doubt about a right, it is the reference.</p>
+  </div>
+  <div class="screen split-shot"><div class="vp"><img src="visuels/en/20-matrice-des-droits.png" alt="Rights matrix" style="--crop: 8.6"></div></div>
+</section>
+
+<!-- 24. Getting started -->
+<section class="slide" data-title="Getting started">
+  <div class="pad">
+    <p class="eyebrow">Getting started</p>
+    <h2>Four steps this week<span class="dot">.</span></h2>
+  </div>
+  <div class="steps">
+    <div><span class="n">1</span><b>Log in</b><p>With the login and password you received, then choose your language in “My account”.</p></div>
+    <div><span class="n">2</span><b>Install</b><p>Add Deizi to your phone’s home screen.</p></div>
+    <div><span class="n">3</span><b>Answer</b><p>Give your attendance for all the next dates.</p></div>
+    <div><span class="n">4</span><b>Subscribe</b><p>Subscribe your phone with the calendar button (iCal): it stays up to date by itself.</p></div>
+  </div>
+  <p class="help"><b>A question, a forgotten password?</b> Ask an organiser or an administrator. What’s new and this presentation are on the About page.</p>
+</section>
+
+<!-- 25. End -->
+<section class="slide dark" data-title="Questions">
+  <div class="title-main">
+    <p class="eyebrow">Thank you</p>
+    <h1>Questions<span class="dot">?</span></h1>
+    <p class="lead">Find this presentation at any time in Deizi, on the About page.</p>
+  </div>
+  <div class="screen title-side"><div class="vp"><img src="visuels/en/21-mises-a-jour.png" alt="About page" style="--crop: 12"></div></div>
+  <div class="footer"><span>Kerlenn Pondi</span><span>Getting started with Deizi</span></div>
+</section>
+
+</main>
+
+<div class="hint">← → or space to navigate · F full screen · P print / PDF</div>
+<div class="controls"><button type="button" data-prev>←</button><span data-count></span><button type="button" data-next>→</button><button type="button" data-full>Full screen</button></div>
+
+<script>
+  // One slide at a time, scaled to the window; ←/→/space to navigate, F for full screen, P to print.
+  // The URL keeps the slide number (#5) so a slide can be shared or reloaded.
+  const slides = [...document.querySelectorAll(".slide")];
+  const deck = document.getElementById("deck");
+  const count = document.querySelector("[data-count]");
+  let index = Math.min(Math.max(parseInt(location.hash.slice(1), 10) - 1 || 0, 0), slides.length - 1);
+  const show = (next) => {
+    index = Math.min(Math.max(next, 0), slides.length - 1);
+    slides.forEach((slide, i) => slide.classList.toggle("is-current", i === index));
+    count.textContent = (index + 1) + " / " + slides.length;
+    history.replaceState(null, "", "#" + (index + 1));
+  };
+  const fit = () => {
+    const scale = Math.min(window.innerWidth / 1280, window.innerHeight / 720);
+    deck.style.transform = "scale(" + scale + ")";
+  };
+  document.addEventListener("keydown", (event) => {
+    if (["ArrowRight", "PageDown", " "].includes(event.key)) { event.preventDefault(); show(index + 1); }
+    if (["ArrowLeft", "PageUp"].includes(event.key)) { event.preventDefault(); show(index - 1); }
+    if (event.key === "Home") show(0);
+    if (event.key === "End") show(slides.length - 1);
+    if (event.key.toLowerCase() === "f") document.documentElement.requestFullscreen?.();
+    if (event.key.toLowerCase() === "p") window.print();
+  });
+  document.querySelector("[data-prev]").addEventListener("click", () => show(index - 1));
+  document.querySelector("[data-next]").addEventListener("click", () => show(index + 1));
+  document.querySelector("[data-full]").addEventListener("click", () => document.documentElement.requestFullscreen?.());
+  deck.addEventListener("click", (event) => { if (!event.target.closest("a, button")) show(index + 1); });
+  window.addEventListener("resize", fit);
+  fit();
+  show(index);
+</script>
+</body>
+</html>

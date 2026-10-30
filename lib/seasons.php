@@ -6,7 +6,6 @@ declare(strict_types=1);
 // (data/settings.json, key "season": start_day, start_month). Used to group the dates by season.
 
 const SEASON_DEFAULT_START = ['day' => 1, 'month' => 9];
-const SEASON_MONTHS = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
 
 // First day of the seasons: ['day' => …, 'month' => …]. A 29 February start is not accepted.
 function app_season_start(): array
@@ -42,15 +41,17 @@ function app_season_of(DateTimeImmutable $date, ?array $start = null): array
     $calendarYear = $start['day'] === 1 && $start['month'] === 1;
     return [
         'key' => (string) $firstYear,
-        'label' => 'Saison ' . $firstYear . ($calendarYear ? '' : '-' . ($firstYear + 1)),
+        'label' => __('saison_years', ['years' => $firstYear . ($calendarYear ? '' : '-' . ($firstYear + 1))]),
         'first' => $first,
         'last' => $last,
     ];
 }
 
-// "du 1 septembre 2026 au 31 août 2027"
+// "du 1er septembre 2026 au 31 août 2027", in the language of the page.
 function app_season_range(array $season): string
 {
-    $format = static fn (DateTimeImmutable $day): string => $day->format('j') . ($day->format('j') === '1' ? 'er' : '') . ' ' . SEASON_MONTHS[(int) $day->format('n')] . ' ' . $day->format('Y');
-    return 'du ' . $format($season['first']) . ' au ' . $format($season['last']);
+    return __('first_last', [
+        'first' => app_long_date($season['first'], false, true, false),
+        'last' => app_long_date($season['last'], false, true, false),
+    ]);
 }

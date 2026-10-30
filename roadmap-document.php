@@ -39,7 +39,7 @@ if ($path !== null && is_file($path) && app_roadmap_available($event)) {
 if (!$allowed) {
     http_response_code(404);
     header('Content-Type: text/plain; charset=utf-8');
-    exit('Document introuvable.');
+    exit(__('document_introuvable_phrase'));
 }
 
 $extension = pathinfo($path, PATHINFO_EXTENSION);
