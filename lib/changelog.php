@@ -10,6 +10,7 @@ const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations d
 
 const CHANGELOG = [
     '2026-10-30' => [
+        ['Vues avancées traduites', 'La liste des dates et le planning annuel s’affichent dans la langue de chacun. En français, le planning garde ses mois en breton et en français (« Genver / Janvier ») ; ces titres se modifient dans Configuration › Langues. La légende du planning reprend les noms de statuts choisis dans la Configuration.'],
         ['Annonces traduites', 'La page Annonces (liste, formulaire, onglet Administrateur, messages) s’affiche dans la langue de chacun. Le titre, le texte et le lien d’une annonce restent dans la langue où ils ont été publiés.'],
         ['Messages traduits', 'Les messages affichés par les scripts (notifications, lien copié, recherche, vérification des formulaires, résumé d’une annonce), le renouvellement du lien iCal, la connexion en tant qu’un membre et l’export CSV des sondages suivent aussi la langue de chacun.'],
         ['Langue d’une nouvelle installation', 'Sur une installation neuve, la langue par défaut du site devient celle du navigateur de l’administrateur à sa première connexion, ou celle donnée à `setup-admin.php` (par exemple `php setup-admin.php en`). Une installation qui a déjà des membres ne change pas.'],

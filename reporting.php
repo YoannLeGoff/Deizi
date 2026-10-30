@@ -168,56 +168,58 @@ foreach (array_unique([(int) $periodStart->format('Y'), (int) $periodEnd->format
     $schoolHolidayDays += app_school_holiday_days($coveredYear, $calendarSettings);
 }
 
-// Month names shown bilingual, Breton / French, as on the group's paper planning.
-$monthNames = ['', 'Genver / Janvier', 'C’hwevrer / Février', 'Meurzh / Mars', 'Ebrel / Avril', 'Mae / Mai', 'Even / Juin',
-    'Gouere / Juillet', 'Eost / Août', 'Gwengolo / Septembre', 'Here / Octobre', 'Du / Novembre', 'Kerzu / Décembre'];
-$frenchMonths = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
+// Month titles of the planning: in French, bilingual Breton / French as on the group's paper
+// planning; texts of their own, so that each installation can adapt them (Configuration > Langues).
+$monthNames = ['', __('planning_mois_1'), __('planning_mois_2'), __('planning_mois_3'), __('planning_mois_4'), __('planning_mois_5'), __('planning_mois_6'),
+    __('planning_mois_7'), __('planning_mois_8'), __('planning_mois_9'), __('planning_mois_10'), __('planning_mois_11'), __('planning_mois_12')];
 // In the planning, the year is shown on the first month of each page and on January.
 $monthTitle = static fn (DateTimeImmutable $month, bool $withYear): string => $monthNames[(int) $month->format('n')] . ($withYear ? ' ' . $month->format('Y') : '');
-$frenchMonth = static fn (DateTimeImmutable $month): string => $frenchMonths[(int) $month->format('n')] . ' ' . $month->format('Y');
-$periodLabel = $frenchMonth($periodStart) . ' – ' . $frenchMonth($periodEnd);
-$weekdayNames = ['', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+$monthYear = static fn (DateTimeImmutable $month): string => app_month_name((int) $month->format('n')) . ' ' . $month->format('Y');
+$periodLabel = $monthYear($periodStart) . ' – ' . $monthYear($periodEnd);
 // Links keep the period and, when they differ from the defaults, the filters.
 $filterQuery = $isDefaultFilter ? [] : ['filtre' => '1', 'statut' => $selectedStatuses, 'section' => [...$selectedBranches, ...$selectedLeaves]]
     + ($showAllInformation ? ['infos' => '1'] : []) + ($showReserved ? ['reservees' => '1'] : []);
 $reportUrl = static fn (string $targetView, DateTimeImmutable $targetStart): string => 'reporting.php?'
     . http_build_query(['vue' => $targetView, 'debut' => $targetStart->format('Y-m')] + $filterQuery);
 $sectionSummary = $selectedLeaves === $allLeaves && $selectedBranches === $allBranches
-    ? 'toutes les sections'
+    ? __('toutes_sections_2')
     : ($selectedLeaves === [] && $selectedBranches === []
-        ? 'aucune section'
+        ? __('aucune_section_2')
         : implode(', ', [
-            ...array_map(static fn (string $id): string => $sectionLabels[$id] . ' (toute la branche)', $selectedBranches),
+            ...array_map(static fn (string $id): string => __('section_toute_branche_2', ['section' => $sectionLabels[$id]]), $selectedBranches),
             ...array_map(static fn (string $id): string => $sectionLabels[$id], $selectedLeaves),
         ]));
-$sectionSummary .= $showAllInformation && ($selectedLeaves !== $allLeaves) ? ', dates « Information » de toutes les sections' : '';
-$sectionSummary .= $showReserved ? '' : ', sans les dates réservées';
+$sectionSummary .= $showAllInformation && ($selectedLeaves !== $allLeaves) ? __('dates_information_de_toutes_les_sections') : '';
+$sectionSummary .= $showReserved ? '' : __('sans_dates_reservees');
 
-app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
+// Names of the views, in the language of the page.
+$viewLabel = static fn (string $view): string => $view === 'planning' ? __('planning_annuel') : __('liste_dates');
+
+app_header(__('vues_avancees_view', ['view' => $viewLabel($view)]), $user);
 ?>
       <section class="management-section reporting">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> AGENDA</p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(__('agenda_majuscules')) ?></p>
           <?php app_page_links([['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">
           <div>
-            <h1>Vues avancées<span class="print-only"> — <?= app_escape(REPORTING_VIEWS[$view]) ?></span><span class="heading-dot">.</span></h1>
+            <h1><?= app_escape(__('vues_avancees_2')) ?><span class="print-only"> — <?= app_escape($viewLabel($view)) ?></span><span class="heading-dot">.</span></h1>
           </div>
           <div class="page-actions">
-            <button class="secondary-button compact-button" type="button" data-print>Imprimer</button>
+            <button class="secondary-button compact-button" type="button" data-print><?= app_escape(__('imprimer')) ?></button>
           </div>
         </div>
 
         <div class="planning-toolbar">
-          <nav class="planning-years" aria-label="Changer de période">
-            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('-12 months'))) ?>" title="Reculer d’un an">« 1 an</a>
-            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('-1 month'))) ?>" title="Reculer d’un mois">‹ 1 mois</a>
+          <nav class="planning-years" aria-label="<?= app_escape(__('changer_periode')) ?>">
+            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('-12 months'))) ?>" title="<?= app_escape(__('reculer_dun_an')) ?>"><?= app_escape(__('1_an_2')) ?></a>
+            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('-1 month'))) ?>" title="<?= app_escape(__('reculer_dun_mois')) ?>"><?= app_escape(__('1_mois_2')) ?></a>
             <strong class="planning-year planning-period"><?= app_escape($periodLabel) ?></strong>
-            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('+1 month'))) ?>" title="Avancer d’un mois">1 mois ›</a>
-            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('+12 months'))) ?>" title="Avancer d’un an">1 an »</a>
+            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('+1 month'))) ?>" title="<?= app_escape(__('avancer_dun_mois')) ?>"><?= app_escape(__('1_mois')) ?></a>
+            <a class="secondary-button compact-button" href="<?= app_escape($reportUrl($view, $periodStart->modify('+12 months'))) ?>" title="<?= app_escape(__('avancer_dun_an')) ?>"><?= app_escape(__('1_an')) ?></a>
             <?php if ($periodStart != $currentMonthStart): ?>
-            <a class="section-note page-switch planning-reset" href="<?= app_escape($reportUrl($view, $currentMonthStart)) ?>">Revenir au mois en cours</a>
+            <a class="section-note page-switch planning-reset" href="<?= app_escape($reportUrl($view, $currentMonthStart)) ?>"><?= app_escape(__('revenir_mois_cours')) ?></a>
             <?php endif; ?>
           </nav>
         </div>
@@ -225,8 +227,8 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
         <?php // Kept open after a change of the filter (each box applies it at once, see menu.js). ?>
         <details class="report-filters"<?= isset($_GET['ouvert']) ? ' open' : '' ?>>
           <summary>
-            <span class="report-filters-title">Filtres</span>
-            <span class="report-filters-summary"><?= count($selectedStatuses) ?> statut<?= count($selectedStatuses) > 1 ? 's' : '' ?> sur <?= count(EVENT_STATUSES) ?> · <?= app_escape($sectionSummary) ?></span>
+            <span class="report-filters-title"><?= app_escape(__('filtres')) ?></span>
+            <span class="report-filters-summary"><?= app_escape(__n('statut_total', 'statuts_total', count($selectedStatuses), ['total' => count(EVENT_STATUSES)])) ?> · <?= app_escape($sectionSummary) ?></span>
           </summary>
           <form class="report-filters-form" method="get" action="reporting.php" data-autosubmit>
             <input type="hidden" name="ouvert" value="1">
@@ -234,7 +236,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
             <input type="hidden" name="debut" value="<?= $periodStart->format('Y-m') ?>">
             <input type="hidden" name="filtre" value="1">
             <fieldset class="report-filter-row">
-              <legend class="report-filter-label">Statut :</legend>
+              <legend class="report-filter-label"><?= app_escape(__('statut_label')) ?></legend>
               <div class="report-filter-options">
                 <?php foreach (app_statuses() as $status => $label): ?>
                 <label class="section-assignment-option"><input type="checkbox" name="statut[]" value="<?= $status ?>"<?= in_array($status, $selectedStatuses, true) ? ' checked' : '' ?>> <span class="planning-dot planning-dot-<?= $status ?>" aria-hidden="true"></span><?= app_escape($label) ?></label>
@@ -242,11 +244,11 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
               </div>
             </fieldset>
             <fieldset class="report-filter-row">
-              <legend class="report-filter-label">Sections :</legend>
+              <legend class="report-filter-label"><?= app_escape(__('sections_label')) ?></legend>
               <div class="report-filter-branches">
                 <?php foreach ($filterTree as $branch => $definition): ?>
                 <div class="section-assignment-group report-filter-branch">
-                  <label class="section-assignment-option section-assignment-parent" title="Dates concernant toute la branche"><input type="checkbox" name="section[]" value="<?= app_escape($branch) ?>"<?= in_array($branch, $selectedBranches, true) ? ' checked' : '' ?>> <?= app_escape($definition['label']) ?> <span class="field-optional">(toute la branche)</span> :</label>
+                  <label class="section-assignment-option section-assignment-parent" title="<?= app_escape(__('dates_concernant_toute_branche')) ?>"><input type="checkbox" name="section[]" value="<?= app_escape($branch) ?>"<?= in_array($branch, $selectedBranches, true) ? ' checked' : '' ?>> <?= app_escape($definition['label']) ?> <span class="field-optional"><?= app_escape(__('toute_branche_parentheses')) ?></span> :</label>
                   <div class="section-assignment-children">
                     <?php foreach ($definition['children'] as $leaf => $label): ?>
                     <label class="section-assignment-option"><input type="checkbox" name="section[]" value="<?= app_escape($leaf) ?>"<?= in_array($leaf, $selectedLeaves, true) ? ' checked' : '' ?>> <?= app_escape($label) ?></label>
@@ -257,56 +259,56 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
               </div>
             </fieldset>
             <fieldset class="report-filter-row">
-              <legend class="report-filter-label">Informations :</legend>
+              <legend class="report-filter-label"><?= app_escape(__('informations_label')) ?></legend>
               <div class="report-filter-options">
-                <label class="section-assignment-option"><input type="checkbox" name="infos" value="1"<?= $showAllInformation ? ' checked' : '' ?>> Dates « Information » de toutes les sections</label>
+                <label class="section-assignment-option"><input type="checkbox" name="infos" value="1"<?= $showAllInformation ? ' checked' : '' ?>> <?= app_escape(__('dates_information_toutes_sections')) ?></label>
               </div>
             </fieldset>
             <fieldset class="report-filter-row">
-              <legend class="report-filter-label">Dates réservées :</legend>
+              <legend class="report-filter-label"><?= app_escape(__('dates_reservees_label')) ?></legend>
               <div class="report-filter-options">
-                <label class="section-assignment-option"><input type="checkbox" name="reservees" value="1"<?= $showReserved ? ' checked' : '' ?>> Afficher les dates réservées <span class="field-optional">(seulement celles que vous pouvez voir)</span></label>
+                <label class="section-assignment-option"><input type="checkbox" name="reservees" value="1"<?= $showReserved ? ' checked' : '' ?>> <?= app_escape(__('afficher_dates_reservees')) ?> <span class="field-optional"><?= app_escape(__('seulement_celles_vous_pouvez_voir_parentheses')) ?></span></label>
               </div>
             </fieldset>
             <div class="report-filter-actions">
-              <button class="primary-button compact-button" type="submit" data-autosubmit-button>Appliquer</button>
+              <button class="primary-button compact-button" type="submit" data-autosubmit-button><?= app_escape(__('appliquer')) ?></button>
               <?php if (!$isDefaultFilter): ?>
-              <a class="section-note page-switch" href="reporting.php?<?= app_escape(http_build_query(['vue' => $view, 'debut' => $periodStart->format('Y-m')])) ?>">Réinitialiser</a>
+              <a class="section-note page-switch" href="reporting.php?<?= app_escape(http_build_query(['vue' => $view, 'debut' => $periodStart->format('Y-m')])) ?>"><?= app_escape(__('reinitialiser')) ?></a>
               <?php endif; ?>
             </div>
           </form>
         </details>
 
-        <nav class="detail-tabs" aria-label="Rapports">
-          <?php foreach (REPORTING_VIEWS as $tabView => $tabLabel): ?>
-          <a class="detail-tab" href="<?= app_escape($reportUrl($tabView, $periodStart)) ?>"<?= $view === $tabView ? ' aria-current="page"' : '' ?>><?= app_escape($tabLabel) ?></a>
+        <nav class="detail-tabs" aria-label="<?= app_escape(__('rapports')) ?>">
+          <?php foreach (array_keys(REPORTING_VIEWS) as $tabView): ?>
+          <a class="detail-tab" href="<?= app_escape($reportUrl($tabView, $periodStart)) ?>"<?= $view === $tabView ? ' aria-current="page"' : '' ?>><?= app_escape($viewLabel($tabView)) ?></a>
           <?php endforeach; ?>
         </nav>
 
-        <section class="management-panel detail-panel has-tabs reporting-panel" aria-label="<?= app_escape(REPORTING_VIEWS[$view]) ?>">
+        <section class="management-panel detail-panel has-tabs reporting-panel" aria-label="<?= app_escape($viewLabel($view)) ?>">
           <div class="planning-summary">
-            <p><strong><?= $totalEvents ?></strong> date<?= $totalEvents > 1 ? 's' : '' ?> affichée<?= $totalEvents > 1 ? 's' : '' ?> sur la période <?= app_escape($periodLabel) ?> · <?= app_escape($sectionSummary) ?></p>
-            <ul class="planning-legend" aria-label="Légende des statuts">
+            <p><?= app_escape(__n('date_affichee_periode_period', 'dates_affichees_periode_period', $totalEvents, ['period' => $periodLabel])) ?> · <?= app_escape($sectionSummary) ?></p>
+            <ul class="planning-legend" aria-label="<?= app_escape(__('legende_statuts')) ?>">
               <?php foreach (app_statuses() as $status => $label): ?>
-              <li class="<?= in_array($status, $selectedStatuses, true) ? '' : 'is-hidden-status' ?>"<?= in_array($status, $selectedStatuses, true) ? '' : ' title="Masqué par le filtre"' ?>><span class="planning-dot planning-dot-<?= $status ?>" aria-hidden="true"></span><?= app_escape($label) ?> <span class="planning-legend-count"><?= $statusCounts[$status] ?></span></li>
+              <li class="<?= in_array($status, $selectedStatuses, true) ? '' : 'is-hidden-status' ?>"<?= in_array($status, $selectedStatuses, true) ? '' : ' title="' . app_escape(__('masque_filtre')) . '"' ?>><span class="planning-dot planning-dot-<?= $status ?>" aria-hidden="true"></span><?= app_escape($label) ?> <span class="planning-legend-count"><?= $statusCounts[$status] ?></span></li>
               <?php endforeach; ?>
             </ul>
           </div>
 
           <?php if ($view === 'liste'): ?>
           <?php if ($periodEvents === []): ?>
-          <p class="muted-copy">Aucune date ne correspond aux filtres sur la période <?= app_escape($periodLabel) ?>.</p>
+          <p class="muted-copy"><?= app_escape(__('aucune_date_correspond_filtres_periode_period', ['period' => $periodLabel])) ?></p>
           <?php else: ?>
           <div class="log-scroll">
             <table class="report-list">
               <thead>
                 <tr>
-                  <th scope="col">Date</th>
-                  <th scope="col">Événement</th>
-                  <th scope="col">Horaire</th>
-                  <th scope="col">Lieu</th>
-                  <th scope="col">Sections</th>
-                  <th scope="col">Statut</th>
+                  <th scope="col"><?= app_escape(__('date')) ?></th>
+                  <th scope="col"><?= app_escape(__('evenement')) ?></th>
+                  <th scope="col"><?= app_escape(__('horaire')) ?></th>
+                  <th scope="col"><?= app_escape(__('lieu')) ?></th>
+                  <th scope="col"><?= app_escape(__('sections')) ?></th>
+                  <th scope="col"><?= app_escape(__('statut')) ?></th>
                 </tr>
               </thead>
               <?php $currentMonth = null; ?>
@@ -315,20 +317,20 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
               <?php if ($currentMonth !== null): ?></tbody><?php endif; ?>
               <?php $currentMonth = $item['month']; ?>
               <tbody>
-                <tr class="report-month-row"><th scope="rowgroup" colspan="6"><?= app_escape($monthNames[(int) substr($currentMonth, 5)] . ' ' . substr($currentMonth, 0, 4)) ?> <span><?= $monthCounts[$currentMonth] ?> date<?= $monthCounts[$currentMonth] > 1 ? 's' : '' ?></span></th></tr>
+                <tr class="report-month-row"><th scope="rowgroup" colspan="6"><?= app_escape($monthNames[(int) substr($currentMonth, 5)] . ' ' . substr($currentMonth, 0, 4)) ?> <span><?= app_escape(__n('date_2', 'n_dates', $monthCounts[$currentMonth])) ?></span></th></tr>
               <?php endif; ?>
                 <tr class="report-row status-<?= $item['status'] ?>">
                   <td class="report-date">
-                    <?= app_escape($weekdayNames[(int) $item['start']->format('N')] . ' ' . $item['start']->format('d/m/Y')) ?>
-                    <?php if ($item['end'] !== null): ?><span class="log-sub">→ <?= app_escape($weekdayNames[(int) $item['end']->format('N')] . ' ' . $item['end']->format('d/m/Y')) ?></span><?php endif; ?>
+                    <?= app_escape(app_weekday_short((int) $item['start']->format('N')) . ' ' . $item['start']->format('d/m/Y')) ?>
+                    <?php if ($item['end'] !== null): ?><span class="log-sub">→ <?= app_escape(app_weekday_short((int) $item['end']->format('N')) . ' ' . $item['end']->format('d/m/Y')) ?></span><?php endif; ?>
                   </td>
                   <td><?php if ($item['linked']): ?><a class="event-title-link" href="event.php?id=<?= rawurlencode($item['id']) ?>"><?= app_escape($item['title']) ?></a><?php else: ?><?= app_escape($item['title']) ?><?php endif; ?><?= app_change_badge($item['change']) ?></td>
-                  <td class="report-nowrap"><?= $item['all_day'] ? 'Journée entière' : ($item['time'] !== '' ? app_escape($item['time']) : '<span class="log-sub">—</span>') ?></td>
+                  <td class="report-nowrap"><?= $item['all_day'] ? app_escape(__('journee_entiere')) : ($item['time'] !== '' ? app_escape($item['time']) : '<span class="log-sub">—</span>') ?></td>
                   <td><?= $item['location'] !== '' ? app_escape($item['location']) : '<span class="log-sub">—</span>' ?></td>
                   <td>
                     <div class="report-sections">
                       <?php if ($item['tutti']): ?>
-                      <span class="section-tag tag-tutti tag-<?= app_escape($tuttiColor) ?>">Tutti</span>
+                      <span class="section-tag tag-tutti tag-<?= app_escape($tuttiColor) ?>"><?= app_escape(__('tutti')) ?></span>
                       <?php else: ?>
                       <?php foreach ($item['sections'] as $sectionId): ?>
                       <span class="section-tag <?= app_escape(app_section_css_class($sectionId)) ?>"><?= app_escape($sectionLabels[$sectionId]) ?></span>
@@ -345,19 +347,19 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
           <?php endif; ?>
 
           <?php else: ?>
-          <?php $weekdayLetters = ['', 'L', 'M', 'M', 'J', 'V', 'S', 'D']; ?>
+          <?php $weekdayLetters = ['', __('planning_lettre_lundi'), __('planning_lettre_mardi'), __('planning_lettre_mercredi'), __('planning_lettre_jeudi'), __('planning_lettre_vendredi'), __('planning_lettre_samedi'), __('planning_lettre_dimanche')]; ?>
           <?php foreach (array_chunk($months, 6, true) as $pageIndex => $pageMonths): ?>
           <?php $pageFirst = reset($pageMonths); $pageLast = end($pageMonths); ?>
-          <section class="semester" aria-label="<?= app_escape($frenchMonth($pageFirst) . ' – ' . $frenchMonth($pageLast)) ?>">
+          <section class="semester" aria-label="<?= app_escape($monthYear($pageFirst) . ' – ' . $monthYear($pageLast)) ?>">
             <div class="semester-heading">
-              <h2 class="semester-title"><?= app_escape(app_site_title()) ?> <span><?= app_escape($frenchMonth($pageFirst) . ' – ' . $frenchMonth($pageLast)) ?></span></h2>
-              <ul class="semester-legend" aria-label="Légende">
-                <li><span class="semester-swatch semester-swatch-confirmed"></span>Confirmé</li>
-                <li><span class="semester-swatch semester-swatch-lead"></span>Lead</li>
-                <li><span class="semester-swatch semester-swatch-pending"></span>À valider</li>
-                <li><span class="semester-swatch semester-swatch-information"></span>Information</li>
-                <li><span class="semester-swatch semester-swatch-holiday"></span>Jour férié</li>
-                <li><span class="semester-swatch semester-swatch-school"></span>Vacances scolaires</li>
+              <h2 class="semester-title"><?= app_escape(app_site_title()) ?> <span><?= app_escape($monthYear($pageFirst) . ' – ' . $monthYear($pageLast)) ?></span></h2>
+              <ul class="semester-legend" aria-label="<?= app_escape(__('legende')) ?>">
+                <li><span class="semester-swatch semester-swatch-confirmed"></span><?= app_escape(app_statuses()['confirmed']) ?></li>
+                <li><span class="semester-swatch semester-swatch-lead"></span><?= app_escape(app_statuses()['lead']) ?></li>
+                <li><span class="semester-swatch semester-swatch-pending"></span><?= app_escape(app_statuses()['pending']) ?></li>
+                <li><span class="semester-swatch semester-swatch-information"></span><?= app_escape(app_statuses()['information']) ?></li>
+                <li><span class="semester-swatch semester-swatch-holiday"></span><?= app_escape(__('jour_ferie')) ?></li>
+                <li><span class="semester-swatch semester-swatch-school"></span><?= app_escape(__('vacances_scolaires')) ?></li>
               </ul>
             </div>
             <div class="semester-scroll">
@@ -399,7 +401,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
                         if (isset($holidays[$dayKey])) {
                             $dayClasses[] = 'is-holiday';
                         }
-                        $dayTitle = implode(' · ', array_filter([$holidays[$dayKey] ?? null, $schoolHolidayDays[$dayKey] ?? null]));
+                        $dayTitle = implode(' · ', array_filter([isset($holidays[$dayKey]) ? app_label($holidays[$dayKey]) : null, $schoolHolidayDays[$dayKey] ?? null]));
                         if ($dayKey === $today->format('Y-m-d')) {
                             $dayClasses[] = 'is-today';
                         }
@@ -412,7 +414,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
                       <?php if ($item['first']): ?>
                       <<?= $tag ?> class="semester-event status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' — ' . app_statuses()[$item['status']]) ?>"><?= app_escape($item['label']) ?></<?= $tag ?>>
                       <?php else: ?>
-                      <<?= $tag ?> class="semester-event semester-continued status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape($item['label'] . ' (suite) — ' . app_statuses()[$item['status']]) ?>"><span class="sr-only"><?= app_escape($item['title']) ?> (suite)</span></<?= $tag ?>>
+                      <<?= $tag ?> class="semester-event semester-continued status-<?= $item['status'] ?>"<?= $href ?> title="<?= app_escape(__('label_suite', ['label' => $item['label']]) . ' — ' . app_statuses()[$item['status']]) ?>"><span class="sr-only"><?= app_escape(__('label_suite', ['label' => $item['title']])) ?></span></<?= $tag ?>>
                       <?php endif; ?>
                       <?php endforeach; ?>
                     </td>
@@ -444,7 +446,7 @@ app_header('Vues avancées — ' . REPORTING_VIEWS[$view], $user);
                 }
             ?>
             <?php if ($codeGroups !== []): ?>
-            <p class="semester-codes"><strong>Codes :</strong>
+            <p class="semester-codes"><strong><?= app_escape(__('codes_label')) ?></strong>
               <?php foreach ($codeGroups as $codeGroup): ?>
               <span class="semester-code-group"><?= $codeGroup ?></span>
               <?php endforeach; ?>
