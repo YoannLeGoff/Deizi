@@ -17,9 +17,24 @@
 </head>
 <body>
 <main>
-  <h1>Pas de connexion</h1>
-  <p>L’agenda a besoin d’Internet pour afficher des dates à jour. Vérifiez le réseau de votre téléphone, puis réessayez.</p>
-  <button type="button" onclick="location.reload()">Réessayer</button>
+  <h1 data-text="title">Pas de connexion</h1>
+  <p data-text="body">L’agenda a besoin d’Internet pour afficher des dates à jour. Vérifiez le réseau de votre téléphone, puis réessayez.</p>
+  <button type="button" data-text="retry" onclick="location.reload()">Réessayer</button>
 </main>
+<script>
+  // A static page (no server at hand): its texts in the languages of the application, chosen from
+  // the phone's language; French otherwise.
+  const texts = {
+    en: { page: "Offline", title: "No connection", body: "The calendar needs the Internet to show up-to-date dates. Check your phone’s network, then try again.", retry: "Try again" },
+    br: { page: "Ezlinenn", title: "Kennask ebet", body: "Ezhomm en deus an deiziataer eus Internet evit diskouez deiziadoù hizivaet. Gwiriit rouedad ho pellgomzer, ha klaskit en-dro.", retry: "Klask en-dro" },
+    es: { page: "Sin conexión", title: "Sin conexión", body: "La agenda necesita Internet para mostrar fechas actualizadas. Compruebe la red de su teléfono y vuelva a intentarlo.", retry: "Reintentar" },
+  };
+  const language = (navigator.languages || [navigator.language || ""]).map((code) => code.toLowerCase().split("-")[0]).find((code) => code in texts || code === "fr");
+  if (language && texts[language]) {
+    document.documentElement.lang = language;
+    document.title = texts[language].page;
+    document.querySelectorAll("[data-text]").forEach((element) => { element.textContent = texts[language][element.dataset.text]; });
+  }
+</script>
 </body>
 </html>

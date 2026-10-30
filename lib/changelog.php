@@ -10,6 +10,7 @@ const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations d
 
 const CHANGELOG = [
     '2026-10-30' => [
+        ['Notifications dans la langue de chacun', 'Les notifications sur téléphone (nouvelle date, date modifiée, annonce) sont rédigées dans la langue de chaque destinataire, avec la date et les éléments modifiés dans sa langue ; le titre et le texte d’une annonce restent tels que publiés. La page « Pas de connexion » de l’application installée suit la langue du téléphone.'],
         ['Logistique traduite', 'La page Logistique (dates, rapport, contrat et cachet, devis, documents annexes) et l’éditeur de devis s’affichent dans la langue de chacun. Le document de devis, envoyé à l’organisateur, garde ses libellés (« Devis », « Qté », « Prix unitaire »…) dans la langue du site, comme son contenu, quelle que soit la langue de celui qui l’ouvre ou l’imprime. Les statuts logistiques, statuts de devis et formules restent tels que nommés par l’association.'],
         ['Vues avancées traduites', 'La liste des dates et le planning annuel s’affichent dans la langue de chacun. En français, le planning garde ses mois en breton et en français (« Genver / Janvier ») ; ces titres se modifient dans Configuration › Langues. La légende du planning reprend les noms de statuts choisis dans la Configuration.'],
         ['Annonces traduites', 'La page Annonces (liste, formulaire, onglet Administrateur, messages) s’affiche dans la langue de chacun. Le titre, le texte et le lien d’une annonce restent dans la langue où ils ont été publiés.'],

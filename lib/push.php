@@ -272,11 +272,14 @@ function app_push_flush_queue(): void
     // becomes the badge of the installed application.
     $unread = [];
     $messages = [];
+    // Each notification is written in the language of the member who receives it.
+    $requestLocale = app_locale();
     foreach ($subscriptions as $subscription) {
         $user = $users[$subscription['user_id']] ?? null;
         if ($user === null) {
             continue;
         }
+        app_set_locale_for($user);
         $unread[$user['id']] ??= app_unread_events($user, $events);
         foreach ($unread[$user['id']] as $item) {
             if (($queue[$item['event']['id']] ?? null) === $item['notice']['type']) {
@@ -295,26 +298,26 @@ function app_push_flush_queue(): void
             }
         }
     }
+    app_locale($requestLocale);
     app_push_send($messages);
 }
 
-// Text of the notification: "Nouvelle date : Festival Kleg" / "Date modifiée : …", the day,
-// times and place (or what changed), and the address of the date.
+// Text of the notification, in the language of the page (that of its recipient): "Nouvelle date :
+// Festival Kleg" / "Date modifiée : …", the day, times and place (or what changed), and the address
+// of the date.
 function app_push_event_payload(array $event, array $notice): array
 {
     $isNew = $notice['type'] === 'new';
-    $weekdays = ['', 'lundi', 'mardi', 'mercredi', 'jeudi', 'vendredi', 'samedi', 'dimanche'];
-    $months = ['', 'janvier', 'février', 'mars', 'avril', 'mai', 'juin', 'juillet', 'août', 'septembre', 'octobre', 'novembre', 'décembre'];
     $date = app_parse_date($event['date'] ?? null);
-    $day = $date !== null ? ucfirst($weekdays[(int) $date->format('N')]) . ' ' . $date->format('j') . ' ' . $months[(int) $date->format('n')] : '';
-    $time = ($event['all_day'] ?? false) === true ? 'journée entière' : app_event_time_range($event);
+    $day = $date !== null ? app_long_date($date, true, false) : '';
+    $time = ($event['all_day'] ?? false) === true ? __('push_journee_entiere') : app_event_time_range($event);
     $location = is_string($event['location'] ?? null) ? trim($event['location']) : '';
     $title = (string) ($event['title'] ?? '');
     $body = $isNew
         ? implode(' · ', array_filter([$day, $time, $location], static fn (string $part): bool => $part !== ''))
-        : 'Modifié' . "\u{00A0}" . ': ' . implode(', ', $notice['fields']) . ($day !== '' ? ' — ' . $day : '');
+        : __('push_modifie_champs', ['fields' => implode(', ', array_map('app_label', array_unique($notice['fields'])))]) . ($day !== '' ? ' — ' . $day : '');
     return [
-        'title' => ($isNew ? 'Nouvelle date' : 'Date modifiée') . "\u{00A0}" . ': ' . $title,
+        'title' => $isNew ? __('push_nouvelle_date_title', ['title' => $title]) : __('push_date_modifiee_title', ['title' => $title]),
         'body' => $body,
         'url' => app_absolute_url('event.php?id=' . rawurlencode((string) $event['id'])),
         'tag' => 'date-' . $event['id'],
@@ -327,8 +330,8 @@ function app_push_announcement_payload(array $announcement): array
 {
     $body = trim(preg_replace('/\s+/u', ' ', $announcement['body']) ?? '');
     return [
-        'title' => 'Annonce' . "\u{00A0}" . ': ' . $announcement['title'],
-        'body' => $body !== '' ? app_truncate($body, 160) : 'À lire sur la page d’accueil.',
+        'title' => __('push_annonce_title', ['title' => $announcement['title']]),
+        'body' => $body !== '' ? app_truncate($body, 160) : __('push_lire_page_accueil'),
         'url' => app_absolute_url('index.php#annonce-' . $announcement['id']),
         'tag' => 'annonce-' . $announcement['id'],
     ];

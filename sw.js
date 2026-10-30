@@ -2,7 +2,7 @@
 // personal data and change all the time): pages always come from the network; only when the
 // network is missing does a page show the "offline" message kept here. It also shows the push
 // notifications (new or changed date) and opens the date when the member touches one.
-const CACHE = "deizi-offline-v1";
+const CACHE = "deizi-offline-v2";
 const OFFLINE_PAGE = "offline.html";
 
 self.addEventListener("install", (event) => {
