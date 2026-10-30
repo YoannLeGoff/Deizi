@@ -76,6 +76,27 @@ function app_site_language(): string
     return app_is_language($language) ? $language : DEFAULT_LANGUAGE;
 }
 
+// Default language of a new installation: on the first login of its only account (the
+// administrator created by setup-admin.php), the language of their browser becomes the language of
+// the site, unless one is already set. An installation with members is never changed.
+function app_adopt_site_language(array $user): void
+{
+    if (($user['role'] ?? '') !== 'admin') {
+        return;
+    }
+    $language = app_browser_language();
+    if ($language === null || count(read_json_file(app_data_path('users.json'))) !== 1) {
+        return;
+    }
+    update_json_file(app_data_path('settings.json'), static function (array $settings) use ($language): array {
+        if (!app_is_language($settings['site']['language'] ?? null)) {
+            $settings['site'] = (is_array($settings['site'] ?? null) ? $settings['site'] : []);
+            $settings['site']['language'] = $language;
+        }
+        return $settings;
+    });
+}
+
 // Preferred language of the browser among the languages ("Accept-Language"), or null: the exact
 // one ("fr-CA" for "fr-ca") first, otherwise the main one ("fr").
 function app_browser_language(): ?string

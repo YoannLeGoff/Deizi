@@ -46,6 +46,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         ) {
             app_login_record_attempt($username, true);
             app_login_log_record($user, 'login');
+            app_adopt_site_language($user);
             session_regenerate_id(true);
             $_SESSION['user_id'] = $user['id'];
             unset($_SESSION['csrf_token']);

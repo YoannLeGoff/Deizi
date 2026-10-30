@@ -10,6 +10,7 @@ const MINOR_UPDATE = ['Mise à jour mineure de l’interface', 'Améliorations d
 
 const CHANGELOG = [
     '2026-10-30' => [
+        ['Langue d’une nouvelle installation', 'Sur une installation neuve, la langue par défaut du site devient celle du navigateur de l’administrateur à sa première connexion, ou celle donnée à `setup-admin.php` (par exemple `php setup-admin.php en`). Une installation qui a déjà des membres ne change pas.'],
         ['Gestion des dates traduite', 'La gestion des dates (liste, formulaire avec la feuille de route, messages d’enregistrement) et le tableau de présence (en-têtes, légende, cases et enregistrement automatique) s’affichent dans la langue de chacun.'],
         ['Comptes et journal traduits', 'Les comptes, la fiche d’un membre, l’import de comptes, la matrice des droits et le journal d’audit (page, onglet de la fiche et export CSV) s’affichent dans la langue de chacun. L’import accepte aussi la ligne d’en-tête traduite. Les titres des membres restent tels que saisis.'],
     ],
