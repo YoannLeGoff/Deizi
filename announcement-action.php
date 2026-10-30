@@ -8,7 +8,7 @@ $user = app_require_login();
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('methode_non_autorisee_phrase'));
 }
 app_verify_csrf();
 $action = $_POST['action'] ?? '';
@@ -36,7 +36,7 @@ if ($action === 'dismiss') {
 if (!app_can_publish_announcements($user) || !in_array($action, ['save', 'delete'], true)
     || ($id !== '' && ($existing === null || !app_can_edit_announcement($user, $existing)))) {
     http_response_code(403);
-    exit('Vous ne pouvez pas modifier cette annonce.');
+    exit(__('vous_pouvez_modifier_cette_annonce_phrase'));
 }
 
 if ($action === 'delete') {
@@ -45,7 +45,7 @@ if ($action === 'delete') {
         static fn (mixed $raw): bool => !is_array($raw) || ($raw['id'] ?? null) !== $id
     ));
     app_delete_upload($existing['image']);
-    app_flash('L’annonce « ' . $existing['title'] . ' » a été supprimée.');
+    app_flash(__('lannonce_title_ete_supprimee_phrase', ['title' => $existing['title']]));
     app_redirect(($_POST['return'] ?? '') === 'administrateur' && $user['role'] === 'admin' ? 'announcements.php?onglet=administrateur' : 'announcements.php');
 }
 
@@ -69,21 +69,21 @@ $rawSections = is_array($_POST['sections'] ?? null) ? array_filter($_POST['secti
 $sections = $everyone ? [] : array_values(array_intersect(app_expand_sections($rawSections), app_section_leaves()));
 
 if ($title === '') {
-    $fail('Indiquez le titre de l’annonce.');
+    $fail(__('indiquez_titre_lannonce_phrase'));
 }
 if ($linkInput !== '' && !app_is_http_url($linkInput)) {
-    $fail('Le lien doit être une adresse http(s) valide.');
+    $fail(__('lien_doit_etre_adresse_http_valide_phrase'));
 }
 if (!$everyone && $sections === []) {
-    $fail('Choisissez les sections qui verront l’annonce.');
+    $fail(__('choisissez_sections_verront_lannonce_phrase'));
 }
 if ($isScopedManager && array_diff($sections, app_user_managed_leaves($user)) !== []) {
-    $fail('Choisissez uniquement des sous-sections de votre périmètre.');
+    $fail(__('choisissez_uniquement_sous_sections_votre_perimetre_phrase'));
 }
 $startDate = app_parse_date($starts);
 $endDate = $ends !== '' ? app_parse_date($ends) : null;
 if ($startDate === null || $startDate->format('Y-m-d') !== $starts || ($ends !== '' && ($endDate === null || $endDate->format('Y-m-d') !== $ends || $ends < $starts))) {
-    $fail('Vérifiez les dates : la fin d’affichage doit être le jour du début ou après.');
+    $fail(__('verifiez_dates_fin_daffichage_doit_etre'));
 }
 
 try {
@@ -127,5 +127,5 @@ if ($previousImage !== null && $previousImage !== $image) {
 // The notification leaves now when the announcement is already shown, otherwise on its first day.
 app_announcements_dispatch_push();
 
-app_flash($id === '' ? 'L’annonce a été publiée.' : 'L’annonce a été mise à jour.');
+app_flash($id === '' ? __('lannonce_ete_publiee_phrase') : __('lannonce_ete_mise_jour_phrase'));
 app_redirect('announcements.php');
