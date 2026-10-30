@@ -467,10 +467,10 @@ app_header($event['title'], $user);
                     <td><?= app_escape((string) ($member['first_name'] ?? '')) ?></td>
                     <td><?= app_escape((string) ($member['last_name'] ?? '')) ?></td>
                     <?php foreach ($userInfo as $flag): ?>
-                    <td class="poll-detail-option poll-detail-info"><?= ($member[$flag] ?? false) === true ? '<strong>Oui</strong>' : '<span class="log-sub">Non</span>' ?></td>
+                    <td class="poll-detail-option poll-detail-info"><?= ($member[$flag] ?? false) === true ? '<strong>' . app_escape(__('oui')) . '</strong>' : '<span class="log-sub">' . app_escape(__('non')) . '</span>' ?></td>
                     <?php endforeach; ?>
                     <?php foreach (array_keys($activePoll['options']) as $optionId): ?>
-                    <td class="poll-detail-option"><?= $answer === $optionId ? '<span class="poll-detail-check" aria-label="Oui">✓</span>' : '' ?></td>
+                    <td class="poll-detail-option"><?= $answer === $optionId ? '<span class="poll-detail-check" aria-label="' . app_escape(__('oui')) . '">✓</span>' : '' ?></td>
                     <?php endforeach; ?>
                   </tr>
                   <?php endforeach; ?>

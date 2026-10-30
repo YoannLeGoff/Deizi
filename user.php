@@ -387,7 +387,7 @@ endif; ?>
             <?php // Always shown to administrators, who set it (link to the field of the form below). ?>
             <?php if (app_user_title($account) !== '' || $actorIsAdmin): ?>
             <dt><?= app_escape(__('titre_2')) ?></dt>
-            <dd><?= app_user_title($account) !== '' ? app_escape(app_user_title($account)) : '<span class="muted-copy">Aucun</span>' ?><?php if ($actorIsAdmin && $canEdit): ?> <a class="page-switch" href="#account-title"><?= app_user_title($account) !== '' ? __('modifier') : __('ajouter_titre') ?></a><?php endif; ?></dd>
+            <dd><?= app_user_title($account) !== '' ? app_escape(app_user_title($account)) : '<span class="muted-copy">' . app_escape(app_ucfirst(__('aucun'))) . '</span>' ?><?php if ($actorIsAdmin && $canEdit): ?> <a class="page-switch" href="#account-title"><?= app_user_title($account) !== '' ? __('modifier') : __('ajouter_titre') ?></a><?php endif; ?></dd>
             <?php endif; ?>
             <dt><?= app_escape(__('role')) ?></dt>
             <dd><?= app_escape(app_roles()[$accountRole] ?? $accountRole) ?></dd>
@@ -490,7 +490,7 @@ endif; ?>
                 <label for="account-role"><?= app_escape(__('role')) ?></label>
                 <select id="account-role" name="role" required>
                   <?php foreach (array_intersect_key(USER_ROLES, array_flip($assignableRoles)) as $role => $label): ?>
-                  <option value="<?= app_escape($role) ?>"<?= $accountRole === $role ? ' selected' : '' ?>><?= app_escape($label) ?></option>
+                  <option value="<?= app_escape($role) ?>"<?= $accountRole === $role ? ' selected' : '' ?>><?= app_escape(app_label($label)) ?></option>
                   <?php endforeach; ?>
                 </select>
                 <p class="field-help"><?= app_escape(__('manager_dates_presences_perimetre_organisateur_dates')) ?></p>

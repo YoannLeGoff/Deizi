@@ -74,7 +74,7 @@ app_header('Annonces', $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
-          <p class="eyebrow"><span class="eyebrow-line"></span> <?= $isScopedManager ? 'ESPACE MANAGERS' : 'ANNONCES' ?></p>
+          <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape($isScopedManager ? __('espace_managers_majuscules') : mb_strtoupper(__('annonces'))) ?></p>
           <?php app_page_links([['Retour à l’agenda', 'index.php']]); ?>
         </div>
         <div class="section-heading">

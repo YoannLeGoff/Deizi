@@ -89,7 +89,7 @@ app_header('Connexion');
           <input id="password" name="password" type="password" autocomplete="current-password" required>
           <?php // Ticked by menu.js in the installed application, where closing it ends the session. ?>
           <label class="active-toggle login-remember"><input type="checkbox" name="remember" value="1" data-remember> <?= app_escape(__('rester_connecte_cet_appareil')) ?></label>
-          <p class="field-help login-remember-help">Pendant 90 jours, sauf déconnexion. À ne pas cocher sur un ordinateur partagé.</p>
+          <p class="field-help login-remember-help"><?= app_escape(__('rester_connecte_90_jours_aide')) ?></p>
           <button class="primary-button" type="submit"><?= app_escape(__('connecter')) ?></button>
         </form>
       </section>

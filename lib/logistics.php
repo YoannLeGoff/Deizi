@@ -747,7 +747,7 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
     $quoteDate = app_parse_date($doc['date']);
     $eventDate = app_parse_date($doc['event_date']);
     $remarks = array_values(array_filter(array_map('trim', explode("\n", $doc['conditions'])), static fn (string $line): bool => $line !== ''));
-    $printTitle = ($eventDate !== null ? $eventDate->format('Ymd') . ' - ' : '') . $doc['event_title'] . ' - ' . __('devis') . ' ' . $doc['number'];
+    $printTitle = ($eventDate !== null ? $eventDate->format('Ymd') . ' - ' : '') . $doc['event_title'] . ' - ' . __('devis_un') . ' ' . $doc['number'];
     $options = [];
     foreach ($doc['groups'] as $index => $group) {
         $options[] = [
@@ -768,7 +768,7 @@ function app_render_quote_document(array $doc, ?string $logoUrl): void
             <?php endif; ?>
           </header>
 
-          <p class="quote-document-title"><?= app_escape(__('devis')) ?></p>
+          <p class="quote-document-title"><?= app_escape(__('devis_un')) ?></p>
           <?php if ($quoteDate !== null): ?><p class="quote-sent-on"><?= app_escape(__('envoye_date', ['date' => $quoteDate->format('d/m/Y')])) ?></p><?php endif; ?>
 
           <div class="quote-parties">

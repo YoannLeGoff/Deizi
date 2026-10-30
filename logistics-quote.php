@@ -121,7 +121,7 @@ if ($editing):
         </div>
         <div class="section-heading">
           <div>
-            <h1><?= app_escape($quote === null ? __('nouveau_devis') : trim(__('devis') . ' ' . $quote['number'])) ?><span class="heading-dot">.</span></h1>
+            <h1><?= app_escape($quote === null ? __('nouveau_devis') : trim(__('devis_un') . ' ' . $quote['number'])) ?><span class="heading-dot">.</span></h1>
             <p class="section-note"><?= app_escape($event['title'] . ' · ' . $eventDate->format('d/m/Y')) ?></p>
           </div>
         </div>
@@ -219,7 +219,7 @@ $document = $share !== null ? $share['document'] : app_quote_document($quote, $e
 $documentLogo = $document['issuer']['logo'] !== null ? 'quote-logo.php?v=' . rawurlencode($document['issuer']['logo']) : null;
 $options = app_quote_options($quote);
 $csrf = app_csrf_token();
-app_header(trim(__('devis') . ' ' . $quote['number']), $user);
+app_header(trim(__('devis_un') . ' ' . $quote['number']), $user);
 ?>
       <section class="management-section">
         <div class="eyebrow-row">
