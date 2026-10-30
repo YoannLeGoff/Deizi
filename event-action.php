@@ -7,7 +7,7 @@ $user = app_require_roles(EVENT_MANAGER_ROLES);
 if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
     http_response_code(405);
     header('Allow: POST');
-    exit('Méthode non autorisée.');
+    exit(__('methode_non_autorisee_phrase'));
 }
 
 app_verify_csrf();
@@ -16,7 +16,7 @@ $eventId = $_POST['id'] ?? '';
 // Deleting a date is done from the administrators' console (delete-events.php).
 if (!is_string($action) || $action !== 'save' || !is_string($eventId)) {
     http_response_code(400);
-    exit('Demande invalide.');
+    exit(__('demande_invalide_phrase'));
 }
 
 $path = app_data_path('events.json');
@@ -35,7 +35,7 @@ $allDayInput = $_POST['all_day'] ?? '';
 $scalarInputs = [$titleInput, $date, $endDate, $timeInput, $locationInput, $urlInput, $endTimeInput, $status, $allDayInput];
 if (array_filter($scalarInputs, static fn (mixed $value): bool => !is_string($value)) !== []) {
     http_response_code(400);
-    exit('Les champs de l’événement sont invalides.');
+    exit(__('champs_levenement_sont_invalides_phrase'));
 }
 // Form to come back to after an error: the date being edited, or the "add a date" tab.
 $formUrl = 'manage-events.php' . ($eventId !== '' ? '?edit=' . rawurlencode($eventId) : '?onglet=ajouter');
@@ -46,11 +46,11 @@ $url = trim($urlInput);
 $endTime = trim($endTimeInput);
 $allDay = $allDayInput === '1';
 if (!in_array($allDayInput, ['', '1'], true)) {
-    app_flash('Le choix de journée entière est invalide.', 'error');
+    app_flash(__('choix_journee_entiere_invalide_phrase'), 'error');
     app_redirect($formUrl);
 }
 if (!array_key_exists($status, EVENT_STATUSES)) {
-    app_flash('Sélectionnez un statut valide pour cette date.', 'error');
+    app_flash(__('selectionnez_statut_valide_cette_date_phrase'), 'error');
     app_redirect($formUrl);
 }
 $rawSections = $_POST['sections'] ?? [];
@@ -61,7 +61,7 @@ $selectedSections = is_array($rawSections)
 // reserved to these sub-sections; organizers and administrators choose freely.
 $isScopedManager = $user['role'] === 'manager';
 if ($isScopedManager && ($selectedSections === [] || array_diff($selectedSections, app_user_managed_leaves($user)) !== [])) {
-    app_flash('Choisissez au moins une sous-section, uniquement parmi celles de votre périmètre de management.', 'error');
+    app_flash(__('choisissez_moins_sous_section_uniquement_parmi'), 'error');
     app_redirect($formUrl);
 }
 // A manager may open a reserved date to sub-sections outside their scope (checked against the
@@ -71,7 +71,7 @@ if ($isScopedManager) {
     $guestInput = $_POST['guest_sections'] ?? [];
     $guestSections = is_array($guestInput) ? array_values(array_unique(array_filter($guestInput, 'is_string'))) : [];
     if (array_diff($guestSections, app_section_leaves()) !== [] || array_intersect($guestSections, app_user_managed_leaves($user)) !== []) {
-        app_flash('Choisissez uniquement des sous-sections hors de votre périmètre.', 'error');
+        app_flash(__('choisissez_uniquement_sous_sections_hors_votre_phrase'), 'error');
         app_redirect($formUrl);
     }
     $selectedSections = [...$selectedSections, ...$guestSections];
@@ -97,7 +97,7 @@ $validUrl = $url === '' || (
 );
 
 if ($title === '' || strlen($title) > 200 || !$validDate || !$validEndDate || strlen($time) > 50 || strlen($endTime) > 50 || strlen($location) > 300 || !$validUrl || strlen($url) > 2000) {
-    app_flash('Vérifiez les champs : titre et date requis, date de fin égale ou postérieure à la date de début et URL http(s) valide.', 'error');
+    app_flash(__('verifiez_champs_titre_date_requis_date'), 'error');
     app_redirect($formUrl);
 }
 
@@ -109,7 +109,7 @@ $roadmap['repertoire'] = array_intersect_key($roadmap['repertoire'], app_event_r
 foreach (['location_url' => $roadmap['location_url'], 'qr' => $roadmap['qr']['link']] as $field => $cleaned) {
     $raw = $field === 'qr' ? ($roadmapInput['qr']['link'] ?? '') : ($roadmapInput[$field] ?? '');
     if (is_string($raw) && trim($raw) !== '' && $cleaned === '') {
-        app_flash('Les liens de la feuille de route doivent être des adresses http(s) valides.', 'error');
+        app_flash(__('liens_feuille_route_doivent_etre_adresses'), 'error');
         app_redirect($editUrl);
     }
 }
@@ -154,8 +154,8 @@ foreach ($documentRows as $index => $row) {
     }
     $file = $uploadedDocument ?? $keptFile;
     $documentError = match (true) {
-        $file === null && $urlInput !== '' && app_clean_url($urlInput) === '' => 'Le lien du document « ' . ($label !== '' ? $label : $urlInput) . ' » doit être une adresse http(s) valide.',
-        $file === null && $urlInput === '' && $label !== '' => 'Ajoutez un lien ou un fichier pour le document « ' . $label . ' ».',
+        $file === null && $urlInput !== '' && app_clean_url($urlInput) === '' => __('lien_document_label_doit_etre_adresse', ['label' => $label !== '' ? $label : $urlInput]),
+        $file === null && $urlInput === '' && $label !== '' => __('ajoutez_lien_fichier_document_label', ['label' => $label]),
         default => null,
     };
     if ($documentError !== null) {
@@ -300,26 +300,26 @@ $events = update_json_file($path, static function (array $events) use ($eventId,
 if ($forbidden) {
     app_delete_upload($uploadedQr);
     array_map('app_delete_roadmap_document', $newDocumentFiles);
-    app_flash('Cette date concerne des sous-sections hors de votre périmètre de management : vous ne pouvez pas la modifier.', 'error');
+    app_flash(__('cette_date_concerne_sous_sections_hors'), 'error');
     app_redirect('manage-events.php');
 }
 if ($notReserved) {
     app_delete_upload($uploadedQr);
     array_map('app_delete_roadmap_document', $newDocumentFiles);
-    app_flash('Seule une date réservée peut être ouverte à des sous-sections hors de votre périmètre.', 'error');
+    app_flash(__('seule_date_reservee_peut_etre_ouverte'), 'error');
     app_redirect($formUrl);
 }
 if (!$found) {
     app_delete_upload($uploadedQr);
     array_map('app_delete_roadmap_document', $newDocumentFiles);
-    app_flash('Cette date n’existe plus ; aucune modification n’a été enregistrée.', 'error');
+    app_flash(__('cette_date_nexiste_plus_aucune_modification'), 'error');
     app_redirect('manage-events.php');
 }
 app_delete_upload($obsoleteQr);
 array_map('app_delete_roadmap_document', $obsoleteDocuments);
 app_flash(
-    $eventId === '' ? 'La date a été ajoutée.' : 'La date a été mise à jour.',
+    $eventId === '' ? __('date_ete_ajoutee_phrase') : __('date_ete_mise_jour_phrase'),
     'success',
-    ['url' => 'event.php?id=' . rawurlencode($savedEventId), 'label' => 'Consultez la date']
+    ['url' => 'event.php?id=' . rawurlencode($savedEventId), 'label' => __('consultez_date')]
 );
 app_redirect('manage-events.php');

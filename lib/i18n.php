@@ -230,11 +230,25 @@ function app_month_name(int $month, bool $capital = false): string
     return $capital ? app_ucfirst($name) : $name;
 }
 
+const SHORT_WEEKDAY_NAMES = ['', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
+
+// "lun." (1 = Monday) in the language of the page.
+function app_weekday_short(int $day): string
+{
+    return app_label(SHORT_WEEKDAY_NAMES[$day] ?? '');
+}
+
 const SHORT_MONTH_NAMES = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
 
 function app_month_short(int $month): string
 {
-    return app_label(SHORT_MONTH_NAMES[$month] ?? '');
+    // Their own keys: "mars", "mai", "juin" and "août" are also the full names in French.
+    return match ($month) {
+        1 => __('janv_phrase'), 2 => __('fevr_phrase'), 3 => __('mars_court'), 4 => __('avr_phrase'),
+        5 => __('mai_court'), 6 => __('juin_court'), 7 => __('juil_phrase'), 8 => __('aout_court'),
+        9 => __('sept_phrase'), 10 => __('oct_phrase'), 11 => __('nov_phrase'), 12 => __('dec_phrase'),
+        default => '',
+    };
 }
 
 // Time of day: "14h30" in French, "14:30" otherwise.
@@ -355,6 +369,21 @@ const JS_TEXTS = [
     'masquer_mot_passe',
     'fermer',
     'photo_name',
+    // Attendance grid (attendance-matrix.js).
+    'present',
+    'absent',
+    'je_sais',
+    'sans_reponse',
+    'matrice_enregistrement_en_cours',
+    'matrice_case_label',
+    'matrice_non_modifiable',
+    'matrice_cliquer_changer',
+    'matrice_enregistrement',
+    'matrice_derniere_enregistree',
+    'matrice_enregistrement_automatique',
+    'matrice_session_expiree',
+    'matrice_reponse_non_enregistree',
+    'matrice_connexion_impossible',
 ];
 
 function app_js_translations(): array

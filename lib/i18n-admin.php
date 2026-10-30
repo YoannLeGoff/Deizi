@@ -43,7 +43,7 @@ function app_i18n_keys(): array
         }
     }
     $lists = [
-        array_values(USER_ROLES), WEEKDAY_NAMES, MONTH_NAMES, SHORT_MONTH_NAMES, JS_TEXTS, [USERNAME_RULE],
+        array_values(USER_ROLES), WEEKDAY_NAMES, MONTH_NAMES, SHORT_MONTH_NAMES, SHORT_WEEKDAY_NAMES, JS_TEXTS, [USERNAME_RULE],
         array_values(ATTENDANCE_RESPONSES), array_values(ATTENDANCE_FILTERS), [ATTENDANCE_NO_RESPONSE_LABEL],
         array_values(EVENT_CHANGE_FIELDS), array_values(ROADMAP_TRANSPORT), array_values(ROADMAP_OUTFITS), array_values(POLL_USER_INFO), LOG_YES_NO, LOG_LEGACY_WORDS,
         array_values(SITE_LOGOS), array_column(PUBLIC_HOLIDAY_RULES, 0), array_values(SECTION_COLORS), array_values(SECTION_DISPLAY_PLACES), array_values(QUOTE_STATUS_TYPES), array_values(LOGISTICS_WORKFLOW_EXITS), app_rights_matrix_texts(), array_values(ACCOUNT_FLAGS), array_values(ATTENDANCE_LOG_SOURCES), array_values(ACCOUNT_LOG_ACTIONS), array_values(LOGIN_LOG_ACTIONS), array_values(EVENT_LOG_ACTIONS), array_values(EVENT_LOG_FIELDS),

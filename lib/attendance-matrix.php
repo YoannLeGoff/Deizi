@@ -107,21 +107,21 @@ function app_matrix_tab(array $manager, bool $showPast): void
 {
     if (app_user_managed_leaves($manager) === []) {
         ?>
-          <p class="muted-copy">Aucun périmètre de management ne vous est attribué. Demandez à un administrateur de préciser les sections que vous gérez.</p>
+          <p class="muted-copy"><?= app_escape(__('aucun_perimetre_management_vous_attribue_demandez')) ?></p>
 <?php
         return;
     }
     $events = app_matrix_events($manager, $showPast);
     ?>
           <?php if ($manager['role'] === 'manager'): ?>
-          <p class="matrix-scope">Votre périmètre : <strong><?= app_escape(app_describe_sections(app_user_managed_sections($manager))) ?></strong></p>
+          <p class="matrix-scope"><?= app_escape(__('votre_perimetre_label')) ?> <strong><?= app_escape(app_describe_sections(app_user_managed_sections($manager))) ?></strong></p>
           <?php endif; ?>
           <div class="matrix-toolbar">
             <?php app_matrix_legend(app_can_view_history($manager)); ?>
-            <a class="section-note page-switch" href="<?= app_escape(app_matrix_tab_url(!$showPast)) ?>"><?= $showPast ? 'Dates à venir uniquement' : 'Afficher aussi les dates passées' ?></a>
+            <a class="section-note page-switch" href="<?= app_escape(app_matrix_tab_url(!$showPast)) ?>"><?= $showPast ? __('dates_venir_uniquement') : __('afficher_aussi_dates_passees') ?></a>
           </div>
           <?php if ($events === []): ?>
-          <p class="muted-copy"><?= $showPast ? 'Aucune date ne concerne vos sections.' : 'Aucune date à venir ne concerne vos sections.' ?></p>
+          <p class="muted-copy"><?= $showPast ? __('aucune_date_concerne_vos_sections_phrase') : __('aucune_date_venir_concerne_vos_sections_phrase') ?></p>
           <?php else: ?>
           <?php app_matrix_render($manager, $events, app_matrix_members($manager), 'attendance-matrix.php', $showPast ? ['periode' => 'toutes'] : []); ?>
           <?php endif; ?>
@@ -140,13 +140,15 @@ function app_matrix_response(array $event, string $userId): string
 function app_matrix_audit(?array $lastEntry, string $memberId, bool $hasAnswer, bool $showAudit): array
 {
     if (!$showAudit) {
-        return ['text' => $hasAnswer ? 'réponse enregistrée' : 'aucune réponse', 'proxy' => false];
+        return ['text' => $hasAnswer ? __('reponse_enregistree_minuscule') : __('aucune_reponse_2'), 'proxy' => false];
     }
     $isProxy = $lastEntry !== null && ($lastEntry['by_id'] !== $memberId || isset($lastEntry['impersonator_id']));
     if ($lastEntry !== null) {
-        $text = ($isProxy ? 'Saisi par ' . (string) ($lastEntry['by'] ?? '?') : 'Réponse du membre') . ' le ' . app_format_log_time($lastEntry['at']);
+        $text = $isProxy
+            ? __('saisi_name_time', ['name' => (string) ($lastEntry['by'] ?? '?'), 'time' => app_format_log_time($lastEntry['at'])])
+            : __('reponse_membre_time', ['time' => app_format_log_time($lastEntry['at'])]);
     } else {
-        $text = $hasAnswer ? 'Réponse antérieure au journal d’audit' : 'Aucune réponse';
+        $text = $hasAnswer ? __('reponse_anterieure_journal_daudit') : __('aucune_reponse');
     }
     return ['text' => $text, 'proxy' => $isProxy];
 }
@@ -158,19 +160,19 @@ function app_matrix_save(array $manager, string $redirectUrl): never
 {
     $isAjax = ($_POST['ajax'] ?? '') === '1';
     if ($isAjax && !hash_equals(app_csrf_token(), is_string($_POST['csrf_token'] ?? null) ? $_POST['csrf_token'] : '')) {
-        app_matrix_json(403, ['ok' => false, 'message' => 'La vérification de sécurité a échoué. Rechargez la page.']);
+        app_matrix_json(403, ['ok' => false, 'message' => __('verification_securite_echoue_rechargez_page')]);
     }
     app_verify_csrf();
     $maxInputVars = (int) ini_get('max_input_vars');
     if ($maxInputVars > 0 && count($_POST, COUNT_RECURSIVE) >= $maxInputVars) {
-        app_flash('Trop de cases envoyées en une fois : aucune modification n’a été enregistrée. Activez JavaScript ou affichez moins de dates.', 'error');
+        app_flash(__('trop_cases_envoyees_fois_aucune_modification'), 'error');
         app_redirect($redirectUrl);
     }
     $submitted = $_POST['attendance'] ?? [];
     $originalsInput = $_POST['originals'] ?? '';
     if (!is_array($submitted) || !is_string($originalsInput)) {
         http_response_code(400);
-        exit('Données de présence invalides.');
+        exit(__('donnees_presence_invalides_phrase'));
     }
     try {
         $originals = json_decode($originalsInput, true, 8, JSON_THROW_ON_ERROR);
@@ -240,7 +242,7 @@ function app_matrix_save(array $manager, string $redirectUrl): never
 
     if ($isAjax) {
         if ($rejected > 0) {
-            app_matrix_json(422, ['ok' => false, 'message' => 'Réponse refusée : ce membre ou cette date est hors de vos sections, ou la date est terminée, annulée ou refusée.']);
+            app_matrix_json(422, ['ok' => false, 'message' => __('reponse_refusee_ce_membre_cette_date')]);
         }
         $entry = end($savedEntries);
         $audit = $entry !== false
@@ -250,9 +252,9 @@ function app_matrix_save(array $manager, string $redirectUrl): never
     }
 
     if ($rejected > 0) {
-        app_flash($changed . ' réponse(s) enregistrée(s) ; ' . $rejected . ' case(s) ignorée(s) car hors de vos sections, sur une date terminée, annulée ou refusée, ou invalides.', 'error');
+        app_flash(__n('reponse_enregistree', 'reponses_enregistrees', $changed) . __n('case_ignoree_car_hors_vos_sections', 'cases_ignorees_car_hors_vos_sections', $rejected), 'error');
     } else {
-        app_flash($changed === 0 ? 'Aucune modification à enregistrer.' : $changed . ' réponse' . ($changed > 1 ? 's enregistrées.' : ' enregistrée.'));
+        app_flash($changed === 0 ? __('aucune_modification_enregistrer_phrase') : __n('reponse_enregistree_phrase', 'reponses_enregistrees_phrase', $changed));
     }
     app_redirect($redirectUrl);
 }
@@ -270,15 +272,15 @@ function app_matrix_json(int $status, array $payload): never
 function app_matrix_legend(bool $showAudit): void
 {
     ?>
-          <ul class="matrix-legend" aria-label="Légende">
-            <li><span class="matrix-legend-icon" data-value="present" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span> Présent</li>
-            <li><span class="matrix-legend-icon" data-value="absent" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></span> Absent</li>
-            <li><span class="matrix-legend-icon" data-value="undecided" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.3 2.5c-.9.5-1.5 1.2-1.5 2.3v.5"/><path d="M12 18h.01"/></svg></span> Je ne sais pas</li>
-            <li><span class="matrix-legend-icon" data-value="" aria-hidden="true"><svg viewBox="0 0 24 24"></svg></span> Sans réponse</li>
+          <ul class="matrix-legend" aria-label="<?= app_escape(__('legende')) ?>">
+            <li><span class="matrix-legend-icon" data-value="present" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M5 12.5l4.2 4.2L19 7"/></svg></span> <?= app_escape(__('present')) ?></li>
+            <li><span class="matrix-legend-icon" data-value="absent" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M6.5 6.5l11 11M17.5 6.5l-11 11"/></svg></span> <?= app_escape(__('absent')) ?></li>
+            <li><span class="matrix-legend-icon" data-value="undecided" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9.2 9.2a2.9 2.9 0 1 1 4.3 2.5c-.9.5-1.5 1.2-1.5 2.3v.5"/><path d="M12 18h.01"/></svg></span> <?= app_escape(__('je_sais')) ?></li>
+            <li><span class="matrix-legend-icon" data-value="" aria-hidden="true"><svg viewBox="0 0 24 24"></svg></span> <?= app_escape(__('sans_reponse')) ?></li>
             <?php if ($showAudit): ?>
-            <li><span class="matrix-legend-proxy" aria-hidden="true"></span> Saisi par un tiers</li>
+            <li><span class="matrix-legend-proxy" aria-hidden="true"></span> <?= app_escape(__('saisi_tiers')) ?></li>
             <?php endif; ?>
-            <li class="matrix-legend-hint">Cliquez sur une case pour changer l’état · touches P, A, N, et S pour « Sans réponse » · flèches pour se déplacer</li>
+            <li class="matrix-legend-hint"><?= app_escape(__('cliquez_case_changer_letat_touches_p')) ?></li>
           </ul>
 <?php
 }
@@ -317,8 +319,6 @@ function app_matrix_render(array $manager, array $events, array $members, string
             $branches[$branch] = $children;
         }
     }
-    $weekdayNames = ['', 'lun.', 'mar.', 'mer.', 'jeu.', 'ven.', 'sam.', 'dim.'];
-    $monthNames = ['', 'janv.', 'févr.', 'mars', 'avr.', 'mai', 'juin', 'juil.', 'août', 'sept.', 'oct.', 'nov.', 'déc.'];
     $isSingle = count($events) === 1;
     ?>
         <form method="post" action="<?= app_escape($formAction) ?>" class="matrix-form" data-attendance-matrix>
@@ -329,17 +329,19 @@ function app_matrix_render(array $manager, array $events, array $members, string
           <input type="hidden" name="originals" value="<?= app_escape(json_encode($originals, JSON_THROW_ON_ERROR)) ?>">
           <div class="matrix-scroll<?= $isSingle ? ' is-single' : '' ?>">
             <table class="attendance-matrix">
-              <caption class="sr-only">Présences des membres par date</caption>
+              <caption class="sr-only"><?= app_escape(__('presences_membres_date')) ?></caption>
               <thead>
                 <tr>
-                  <th scope="col" class="matrix-corner">Membre</th>
+                  <th scope="col" class="matrix-corner"><?= app_escape(__('membre')) ?></th>
                   <?php foreach ($events as $event): ?>
                   <?php
-                      $fullDate = $event['date']->format('d/m/Y') . ($event['end_date'] !== null ? ' au ' . $event['end_date']->format('d/m/Y') : '');
+                      $fullDate = $event['end_date'] !== null
+                          ? __('du_first_last_court', ['first' => $event['date']->format('d/m/Y'), 'last' => $event['end_date']->format('d/m/Y')])
+                          : $event['date']->format('d/m/Y');
                   ?>
                   <th scope="col" class="matrix-date status-<?= app_escape($event['status']) ?>" title="<?= app_escape($event['title'] . ' — ' . $fullDate . ' — ' . app_statuses()[$event['status']]) ?>">
-                    <span class="matrix-date-weekday"><?= app_escape($weekdayNames[(int) $event['date']->format('N')]) ?></span>
-                    <span class="matrix-date-day"><?= app_escape($event['date']->format('j')) ?> <?= app_escape($monthNames[(int) $event['date']->format('n')]) ?></span>
+                    <span class="matrix-date-weekday"><?= app_escape(app_weekday_short((int) $event['date']->format('N'))) ?></span>
+                    <span class="matrix-date-day"><?= app_escape($event['date']->format('j')) ?> <?= app_escape(app_month_short((int) $event['date']->format('n'))) ?></span>
                     <a class="matrix-date-title" href="event.php?id=<?= rawurlencode($event['id']) ?>"><?= app_escape($event['title']) ?></a>
                   </th>
                   <?php endforeach; ?>
@@ -357,7 +359,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                   <?php foreach ($events as $event): ?>
                   <?php if (in_array($child, $event['leaves'], true) && $childMembers !== []): ?>
                   <?php $presentCount = count(array_filter($childMembers, static fn (array $member): bool => app_matrix_response($event, $member['id']) === 'present')); ?>
-                  <td class="matrix-count" data-count-event="<?= app_escape($event['id']) ?>" data-count-subsection="<?= app_escape($child) ?>" title="Présents / membres concernés"><?= $presentCount ?>/<?= count($childMembers) ?></td>
+                  <td class="matrix-count" data-count-event="<?= app_escape($event['id']) ?>" data-count-subsection="<?= app_escape($child) ?>" title="<?= app_escape(__('presents_membres_concernes')) ?>"><?= $presentCount ?>/<?= count($childMembers) ?></td>
                   <?php else: ?>
                   <td class="matrix-count"></td>
                   <?php endif; ?>
@@ -365,7 +367,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                 </tr>
                 <?php if ($childMembers === []): ?>
                 <tr class="matrix-empty-row">
-                  <td colspan="<?= count($events) + 1 ?>">Aucun membre actif dans cette sous-section.</td>
+                  <td colspan="<?= count($events) + 1 ?>"><?= app_escape(__('aucun_membre_actif_dans_cette_sous_phrase')) ?></td>
                 </tr>
                 <?php endif; ?>
                 <?php foreach ($childMembers as $member): ?>
@@ -379,7 +381,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                   <?php
                       $response = app_matrix_response($event, $member['id']);
                       $fieldId = 'cell-' . $child . '-' . $event['id'] . '-' . $member['id'];
-                      $cellLabel = $member['username'] . ', ' . $event['title'] . ' du ' . $event['date']->format('d/m/Y');
+                      $cellLabel = __('matrice_case_membre_date', ['member' => $member['username'], 'title' => $event['title'], 'date' => $event['date']->format('d/m/Y')]);
                       $cellAudit = app_matrix_audit($lastEntries[$event['id']][$member['id']] ?? null, $member['id'], isset($event['attendance'][$member['id']]), $showAudit);
                       $audit = $cellAudit['text'];
                       $isProxy = $cellAudit['proxy'];
@@ -396,7 +398,7 @@ function app_matrix_render(array $manager, array $events, array $members, string
                     </select>
                   </td>
                   <?php else: ?>
-                  <td class="matrix-na"><span aria-hidden="true">·</span><span class="sr-only">Non concerné</span></td>
+                  <td class="matrix-na"><span aria-hidden="true">·</span><span class="sr-only"><?= app_escape(__('non_concerne')) ?></span></td>
                   <?php endif; ?>
                   <?php endforeach; ?>
                 </tr>
@@ -407,10 +409,10 @@ function app_matrix_render(array $manager, array $events, array $members, string
             </table>
           </div>
           <div class="matrix-savebar" data-savebar>
-            <p class="matrix-savebar-status" data-savebar-status role="status">Modifiez les cases puis enregistrez.</p>
+            <p class="matrix-savebar-status" data-savebar-status role="status"><?= app_escape(__('modifiez_cases_puis_enregistrez_phrase')) ?></p>
             <div class="form-actions" data-manual-save>
-              <button class="secondary-button compact-button" type="reset">Annuler les modifications</button>
-              <button class="primary-button compact-button" type="submit" data-save-button>Enregistrer</button>
+              <button class="secondary-button compact-button" type="reset"><?= app_escape(__('annuler_modifications')) ?></button>
+              <button class="primary-button compact-button" type="submit" data-save-button><?= app_escape(__('enregistrer')) ?></button>
             </div>
           </div>
         </form>
