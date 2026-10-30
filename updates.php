@@ -2,14 +2,11 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib/bootstrap.php';
-require __DIR__ . '/lib/changelog.php';
 $user = app_require_login();
 
-$days = CHANGELOG;
 $nickname = app_site_nickname();
 // Words in bold inside translated sentences.
 $strong = static fn (string $text): string => '<strong>' . app_escape($text) . '</strong>';
-krsort($days);
 
 app_header('Mises à jour', $user);
 ?>
@@ -127,26 +124,12 @@ app_header('Mises à jour', $user);
           <p class="app-intro-note"><?= app_escape(__('iphone_ipad_notifications_fonctionnent_dans_lapplication')) ?></p>
         </section>
 
-        <h2 class="app-intro-history"><?= app_escape(__('dernieres_mises_jour')) ?></h2>
-        <div class="changelog">
-          <?php foreach ($days as $day => $entries): ?>
-          <?php $date = app_parse_date($day); ?>
-          <section class="management-panel changelog-day" aria-labelledby="changelog-<?= app_escape($day) ?>">
-            <h2 class="detail-heading" id="changelog-<?= app_escape($day) ?>">
-              <?= $date !== null ? app_escape(app_long_date($date)) : app_escape($day) ?>
-              <span class="count-badge" title="<?= app_escape(__('nouveautes_ce_jour')) ?>"><?= count(array_filter($entries, static fn (array $entry): bool => $entry !== MINOR_UPDATE)) ?></span>
-            </h2>
-            <ul class="changelog-list">
-              <?php foreach ($entries as $entry): ?>
-              <?php [$title, $description] = $entry; ?>
-              <li<?= $entry === MINOR_UPDATE ? ' class="changelog-minor"' : '' ?>>
-                <strong><?= app_escape($title) ?></strong>
-                <span><?= app_escape($description) ?></span>
-              </li>
-              <?php endforeach; ?>
-            </ul>
-          </section>
-          <?php endforeach; ?>
-        </div>
+        <?php // What is new: the release notes of each version, kept with the source code (releases/, GitHub). ?>
+        <section class="management-panel install-panel" id="nouveautes" aria-labelledby="releases-title">
+          <h2 class="detail-heading" id="releases-title"><?= app_escape(__('nouveautes')) ?></h2>
+          <p class="muted-copy"><?= app_escape(__('version_date_mise_jour', ['version' => DEIZI_VERSION, 'date' => app_long_date(app_files_updated_at(), false)])) ?></p>
+          <p class="muted-copy"><?= app_escape(__('notes_version_decrivent_nouveautes')) ?></p>
+          <p><a class="secondary-button compact-button" href="<?= app_escape(app_releases_url()) ?>" target="_blank" rel="noopener"><?= app_escape(__('voir_nouveautes')) ?> <span aria-hidden="true">↗</span></a></p>
+        </section>
       </section>
 <?php app_footer(); ?>

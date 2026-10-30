@@ -2,7 +2,6 @@
 declare(strict_types=1);
 
 require __DIR__ . '/lib/bootstrap.php';
-require __DIR__ . '/lib/changelog.php';
 // Configuration grouped by theme (SETTINGS_GROUPS): each group lists the pages the user may open,
 // with a short summary of their current state. Administrators see everything; organizers and
 // logisticians the accounts, holidays, roadmap and audit journal; managers the rights matrix.
@@ -25,7 +24,7 @@ $identity = app_site_identity();
 $season = app_season_of(new DateTimeImmutable('today', new DateTimeZone('Europe/Paris')));
 $customStatusCount = count(app_status_custom_colors());
 $schoolCount = count($calendarSettings['school_holidays']);
-$lastUpdate = app_parse_date(array_key_first(CHANGELOG));
+$lastUpdate = app_files_updated_at();
 
 // Current state of each page, under its name.
 $seasonYears = $season['first']->format('Y') . ($season['first']->format('Y') === $season['last']->format('Y') ? '' : '-' . $season['last']->format('Y'));
@@ -78,7 +77,7 @@ app_header('Configuration', $admin);
               <li class="settings-row">
                 <div class="settings-row-text">
                   <a class="settings-row-title" href="updates.php"><?= app_escape(__('mises_a_jour')) ?></a>
-                  <span class="settings-row-summary"><?= app_escape($lastUpdate !== null ? __('resume_mises_a_jour_date', ['date' => app_long_date($lastUpdate, false, true, false)]) : __('resume_mises_a_jour')) ?></span>
+                  <span class="settings-row-summary"><?= app_escape(__('resume_mises_a_jour_date', ['date' => app_long_date($lastUpdate, false, true, false)])) ?></span>
                 </div>
                 <a class="secondary-button compact-button" href="updates.php" aria-label="<?= app_escape(__('ouvrir_page', ['page' => __('mises_a_jour')])) ?>"><?= app_escape(__('ouvrir')) ?></a>
               </li>

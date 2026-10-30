@@ -749,12 +749,21 @@ const DEFAULT_SITE_TAGLINE = 'L’agenda Kerlenn Pondi';
 // code, as the licence requires for a network service. "source_url" in config.json points to the
 // code of this installation (a modified version must publish its own).
 const DEIZI_SOURCE_URL = 'https://github.com/YoannLeGoff/Deizi';
+// Version of the application, shown on the About page; its release notes are in releases/ and on
+// the releases page of the source code.
+const DEIZI_VERSION = '1.1.0';
 const DEIZI_LICENSE_URL = 'https://www.gnu.org/licenses/agpl-3.0.html';
 
 function app_source_url(): string
 {
     $url = app_config()['source_url'] ?? null;
     return is_string($url) && preg_match('#^https?://\S+$#', trim($url)) === 1 ? trim($url) : DEIZI_SOURCE_URL;
+}
+
+// Release notes of the versions: the releases page of the source code (GitHub).
+function app_releases_url(): string
+{
+    return rtrim(app_source_url(), '/') . '/releases';
 }
 // Configurable logos: key in the "site" settings => label used by the console.
 const SITE_LOGOS = ['logo' => 'Logo de l’en-tête', 'login_logo' => 'Logo de la page de connexion', 'app_icon' => 'Icône de l’application (téléphone)'];
