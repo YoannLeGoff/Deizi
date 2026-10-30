@@ -1669,9 +1669,61 @@ function app_login_record_attempt(string $username, bool $success): void
     });
 }
 
+// Temporary closing of the application (Configuration > Maintenance): while it lasts, only
+// administrators (and an administrator acting as a member) use the application; everyone else
+// sees its message. Stored under "maintenance" in data/settings.json.
+const MAINTENANCE_MESSAGE_MAX_LENGTH = 600;
+
+// ['message' => …, 'since' => ATOM time, 'by' => login] while the application is closed, or null.
+function app_maintenance(): ?array
+{
+    $stored = read_json_file(app_data_path('settings.json'))['maintenance'] ?? null;
+    if (!is_array($stored) || ($stored['active'] ?? false) !== true) {
+        return null;
+    }
+    return [
+        'message' => is_string($stored['message'] ?? null) ? $stored['message'] : '',
+        'since' => is_string($stored['since'] ?? null) ? $stored['since'] : '',
+        'by' => is_string($stored['by'] ?? null) ? $stored['by'] : '',
+    ];
+}
+
+// Whether the closing keeps $user out: everyone but the administrators.
+function app_maintenance_excludes(?array $user): bool
+{
+    return app_maintenance() !== null && ($user['role'] ?? null) !== 'admin' && app_impersonator() === null;
+}
+
+// Page shown instead of the application while it is closed (503, to come back later).
+function app_render_maintenance_page(): never
+{
+    $maintenance = app_maintenance() ?? ['message' => '', 'since' => '', 'by' => ''];
+    http_response_code(503);
+    header('Retry-After: 3600');
+    header('Cache-Control: no-store');
+    app_header(__('maintenance_titre'));
+    ?>
+      <section class="login-panel maintenance-panel" aria-labelledby="maintenance-title">
+        <p class="eyebrow"><span class="eyebrow-line"></span> <?= app_escape(mb_strtoupper(app_site_title())) ?></p>
+        <h1 id="maintenance-title"><?= app_escape(__('maintenance_titre')) ?><span class="heading-dot">.</span></h1>
+        <?php if (trim($maintenance['message']) !== ''): ?>
+        <p class="maintenance-message"><?= nl2br(app_escape($maintenance['message']), false) ?></p>
+        <?php else: ?>
+        <p class="maintenance-message"><?= app_escape(__('maintenance_message_defaut')) ?></p>
+        <?php endif; ?>
+        <p class="muted-copy"><?= app_escape(__('maintenance_revenez_plus_tard')) ?></p>
+      </section>
+<?php
+    app_footer();
+    exit;
+}
+
 function app_require_login(): array
 {
     $user = app_current_user();
+    if ($user !== null && app_maintenance_excludes($user)) {
+        app_render_maintenance_page();
+    }
     if ($user === null) {
         // Page asked for (e.g. a date opened from the iCal calendar), shown again after logging in.
         if (($_SERVER['REQUEST_METHOD'] ?? 'GET') === 'GET') {
@@ -1700,7 +1752,7 @@ function app_require_roles(array $roles): array
     $user = app_require_login();
     if (!in_array($user['role'] ?? null, $roles, true)) {
         http_response_code(403);
-        exit('Vous n’avez pas les droits nécessaires pour accéder à cette page.');
+        exit(__('vous_navez_pas_droits_necessaires_page'));
     }
     return $user;
 }
@@ -1764,6 +1816,13 @@ function app_header(string $title, ?array $user = null): void
         <input type="hidden" name="action" value="stop">
         <button class="impersonation-stop" type="submit"><?= app_escape(__('revenir_mon_compte')) ?></button>
       </form>
+    </div>
+    <?php endif; ?>
+    <?php // Administrators are reminded on every page that the application is closed to the others. ?>
+    <?php if ($user !== null && ($user['role'] ?? null) === 'admin' && $impersonator === null && ($maintenance = app_maintenance()) !== null): ?>
+    <div class="maintenance-banner" role="status">
+      <p><?= app_escape(__('maintenance_bandeau_admin')) ?></p>
+      <a class="maintenance-banner-link" href="maintenance-settings.php"><?= app_escape(__('maintenance_rouvrir_lien')) ?></a>
     </div>
     <?php endif; ?>
     <main class="app-main">
@@ -1921,6 +1980,7 @@ const SETTINGS_GROUPS = [
     'suivi' => ['Suivi et sécurité', 'Ce qui a été fait, par qui et quand, et les opérations définitives.', [
         ['attendance-log.php', 'Journal d’audit', ACCOUNT_MANAGER_ROLES],
         ['delete-events.php', 'Suppression des dates', ['admin']],
+        ['maintenance-settings.php', 'Fermeture temporaire', ['admin']],
     ]],
 ];
 

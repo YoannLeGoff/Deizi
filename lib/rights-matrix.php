@@ -82,5 +82,6 @@ const RIGHTS_MATRIX = [
         ['Régler le début des saisons', [false, false, false, false, true]],
         ['Choisir le libellé et la couleur des statuts', [false, false, false, false, true]],
         ['Modifier l’identité du site (titre, pseudo, phrase d’accroche, logos, icône de l’application)', [false, false, false, false, true]],
+        ['Fermer temporairement l’application aux autres rôles, avec un message (mise à jour)', [false, false, false, false, true]],
     ],
 ];

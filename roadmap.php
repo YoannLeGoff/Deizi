@@ -4,6 +4,9 @@ declare(strict_types=1);
 // Public page of a shared roadmap: no account needed, reached through its unique link.
 require __DIR__ . '/lib/bootstrap.php';
 
+if (app_maintenance_excludes(app_current_user())) {
+    app_render_maintenance_page();
+}
 $token = $_GET['t'] ?? '';
 $event = is_string($token) ? app_event_by_share_token($token) : null;
 header('Cache-Control: private, no-store');
